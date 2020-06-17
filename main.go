@@ -44,7 +44,7 @@ func parseEnvironmentVariables() error {
 		return errors.New("no client id provided")
 	}
 	clientSecret = os.Getenv("CLIENT_SECRET")
-	if len(clientSecret) > 1 {
+	if len(clientSecret) < 1 {
 		return errors.New("no client secret provided")
 	}
 	host = os.Getenv("HOST")
