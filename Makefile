@@ -1,0 +1,3 @@
+.PHONY: start
+start:
+	CLIENT_ID=TEST CLIENT_SERCRET=TEST HOST=TEST go run main.go
