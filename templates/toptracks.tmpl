@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Spotify Views by Webby</title>
+    </head>
+    <body>
+        <h1>Top Tracks</h1>
+        {{ range . }}
+            {{ .EmbeddedPlayer() }}
+        {{ end }}
+    </body>
+</html>
