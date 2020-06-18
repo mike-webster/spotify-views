@@ -90,12 +90,17 @@ func runServer() {
 			c.Redirect(http.StatusTemporaryRedirect, "/login")
 			return
 		}
-
 		ctx := context.WithValue(c, "access_token", token)
+
+		tr := c.Query("time_range")
+		if len(tr) > 0 {
+			ctx = context.WithValue(ctx, "time_range", tr)
+		}
+
 		tracks, err := spotify.GetTopTracks(ctx)
 		markups := []template.HTML{}
 		for _, i := range *tracks {
-			markups = append(markups, template.HTML(i.EmbeddedPlayer()))
+			markups = append(markups, template.HTML(i.EmbeddedPlayer()+"<br />"))
 		}
 		if err != nil {
 			c.JSON(500, gin.H{"err": err})
