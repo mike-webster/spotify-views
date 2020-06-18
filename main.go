@@ -90,12 +90,16 @@ func runServer() {
 
 		ctx = context.WithValue(c, "access_token", token)
 		tracks, err := spotify.GetTopTracks(ctx)
+		markups := []string{}
+		for _, i := range *tracks {
+			markups = append(markups, i.EmbeddedPlayer())
+		}
 		if err != nil {
 			c.JSON(500, gin.H{"err": err})
 			return
 		}
 
-		c.HTML(200, "toptracks.tmpl", *tracks)
+		c.HTML(200, "toptracks.tmpl", markups)
 	})
 
 	r.GET("/login", func(c *gin.Context) {
