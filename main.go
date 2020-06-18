@@ -96,26 +96,19 @@ func requestTokens(code string) ([]string, error) {
 	}
 
 	client := &http.Client{}
-	url := "https://accounts.spotify.com/api/token"
-	contentType := "application/x-www-form-urlencoded"
-	body := map[string]string{
-		"grant_type":    "authorization_code",
-		"code":          code,
-		"redirect_uri":  returnURL,
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return []string{}, err
-	}
-	log.Println("json body: ", string(jsonBody))
+	tokenURL := "https://accounts.spotify.com/api/token"
+	body := url.Values{}
+	body.Set("grant_type", "authorization_code")
+	body.Set("code", code)
+	body.Set("redirect_uri", returnURL)
+	body.Set("client_id", clientID)
+	body.Set("client_secret", clientSecret)
 
-	req, err := http.NewRequest("POST", url, strings.NewReader(string(jsonBody)))
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(body.Encode()))
 	if err != nil {
 		return []string{}, err
 	}
-	req.Header.Add("Content-Type", contentType)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
 	if err != nil {
