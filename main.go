@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -92,9 +93,9 @@ func runServer() {
 
 		ctx := context.WithValue(c, "access_token", token)
 		tracks, err := spotify.GetTopTracks(ctx)
-		markups := []string{}
+		markups := []template.HTML{}
 		for _, i := range *tracks {
-			markups = append(markups, i.EmbeddedPlayer())
+			markups = append(markups, template.HTML(i.EmbeddedPlayer()))
 		}
 		if err != nil {
 			c.JSON(500, gin.H{"err": err})
