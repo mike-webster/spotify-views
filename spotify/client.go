@@ -14,7 +14,15 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
-	url := "https://api.spotify.com/v1/me/top/tracks"
+	tr := ctx.Value("time_range")
+	strRange := ""
+	if tr != nil {
+		strRange = tr.(string)
+	}
+	url := "https://api.spotify.com/v1/me/top/tracks?limit=25"
+	if len(strRange) > 0 {
+		url += fmt.Sprint("&time_range=", strRange)
+	}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
