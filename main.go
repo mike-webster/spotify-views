@@ -89,14 +89,23 @@ func runServer() {
 	r.Run()
 }
 
+type spotifyResponse struct {
+	AccessToken  string `json:"access_token"`
+	Type         string `json:"token_type"`
+	Scope        string `json:"scope"`
+	Exp          int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (sr *spotifyResponse) ToString() string {
+	ret := ""
+	ret += "-- Spotify Response\n"
+	ret += fmt.Sprint("\tAccessToken: ", sr.AccessToken, "\n")
+	ret += fmt.Sprint("\tScope: ", sr.Scope, "\n")
+	return ret
+}
+
 func requestTokens(code string) ([]string, error) {
-	type spotifyResponse struct {
-		AccessToken  string `json:"access_token"`
-		Type         string `json:"token_type"`
-		Scope        string `json:"scope"`
-		Exp          int    `json:"expires_in"`
-		RefreshToken string `json:"refresh_token"`
-	}
 
 	client := &http.Client{}
 	tokenURL := "https://accounts.spotify.com/api/token"
@@ -130,6 +139,7 @@ func requestTokens(code string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
+	log.Println(r.ToString())
 	return []string{
 		r.AccessToken, r.RefreshToken,
 	}, nil
