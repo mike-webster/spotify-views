@@ -80,7 +80,7 @@ func runServer() {
 			return
 		}
 		c.SetCookie("svauth", fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-		c.JSON(200, gin.H{"msg": "yay"})
+		c.Redirect(http.StatusTemporaryRedirect, "/tracks/top")
 	})
 
 	r.GET("/tracks/top", func(c *gin.Context) {
