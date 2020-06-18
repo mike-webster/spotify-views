@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,11 +98,12 @@ func requestTokens(code string) ([]string, error) {
 	client := &http.Client{}
 	url := "https://accounts.spotify.com/api/token"
 	contentType := "application/x-www-form-urlencoded"
-	authHeader := base64.StdEncoding.EncodeToString([]byte(fmt.Sprint(clientID, ":", clientSecret)))
 	body := map[string]string{
-		"grant_type":   "authorization_code",
-		"code":         code,
-		"redirect_uri": returnURL,
+		"grant_type":    "authorization_code",
+		"code":          code,
+		"redirect_uri":  returnURL,
+		"client_id":     clientID,
+		"client_secret": clientSecret,
 	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -116,7 +116,6 @@ func requestTokens(code string) ([]string, error) {
 		return []string{}, err
 	}
 	req.Header.Add("Content-Type", contentType)
-	req.Header.Add("Authorization", fmt.Sprint("Basic ", authHeader))
 
 	resp, err := client.Do(req)
 	if err != nil {
