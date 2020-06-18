@@ -55,11 +55,13 @@ func parseEnvironmentVariables() error {
 }
 
 func runServer() {
-	ctx := context.Background()
 	var err error
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/spotify/oauth", func(c *gin.Context) {
+		ctx := context.WithValue(c, "return_url", returnURL)
+		ctx = context.WithValue(ctx, "client_id", clientID)
+		ctx = context.WithValue(ctx, "client_secret", clientSecret)
 		code := c.Query("code")
 		//state := c.Query("state")
 		qErr := c.Query("error")
@@ -88,7 +90,7 @@ func runServer() {
 			return
 		}
 
-		ctx = context.WithValue(c, "access_token", token)
+		ctx := context.WithValue(c, "access_token", token)
 		tracks, err := spotify.GetTopTracks(ctx)
 		markups := []string{}
 		for _, i := range *tracks {
