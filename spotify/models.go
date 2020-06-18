@@ -5,12 +5,13 @@ import "fmt"
 type Track struct {
 	Links map[string]string `json:"external_urls"`
 	Name  string            `json:"name"`
+	URI   string            `json:"uri"`
 }
 
 type Tracks []Track
 
 func (t *Track) EmbeddedPlayer() string {
-	return fmt.Sprintf(`<iframe src="%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.Links["spotify"])
+	return fmt.Sprintf(`<iframe src="%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.URI)
 }
 
 type spotifyResponse struct {
