@@ -1,17 +1,16 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	spotify "github.com/mike-webster/spotify-views/spotify"
 )
 
 var scopes = []string{
@@ -55,6 +54,8 @@ func parseEnvironmentVariables() error {
 }
 
 func runServer() {
+	ctx := context.Background()
+	var err error
 	r := gin.Default()
 	r.GET("/spotify/oauth", func(c *gin.Context) {
 		code := c.Query("code")
@@ -63,13 +64,11 @@ func runServer() {
 		if len(qErr) > 0 {
 			// the user is a fucker and they denied access
 		}
-		tokens, err := requestTokens(code)
+		ctx, err = spotify.HandleOauth(ctx, code)
 		if err != nil {
-			log.Println("could not retrieve tokens for user; error: ", err)
-			c.JSON(500, gin.H{"msg": err})
+			c.JSON(500, gin.H{"err": err})
 		}
-		log.Println(fmt.Sprint("success - tokens: \n\tAccess: ", tokens[0], "\n\tRefres: ", tokens[1]))
-		c.JSON(200, gin.H{"msg": tokens})
+		c.JSON(200, gin.H{"msg": "yay"})
 	})
 
 	r.GET("/login", func(c *gin.Context) {
@@ -87,60 +86,4 @@ func runServer() {
 	})
 
 	r.Run()
-}
-
-type spotifyResponse struct {
-	AccessToken  string `json:"access_token"`
-	Type         string `json:"token_type"`
-	Scope        string `json:"scope"`
-	Exp          int    `json:"expires_in"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-func (sr *spotifyResponse) ToString() string {
-	ret := ""
-	ret += "-- Spotify Response\n"
-	ret += fmt.Sprint("\tAccessToken: ", sr.AccessToken, "\n")
-	ret += fmt.Sprint("\tScope: ", sr.Scope, "\n")
-	return ret
-}
-
-func requestTokens(code string) ([]string, error) {
-
-	client := &http.Client{}
-	tokenURL := "https://accounts.spotify.com/api/token"
-	body := url.Values{}
-	body.Set("grant_type", "authorization_code")
-	body.Set("code", code)
-	body.Set("redirect_uri", returnURL)
-	body.Set("client_id", clientID)
-	body.Set("client_secret", clientSecret)
-
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(body.Encode()))
-	if err != nil {
-		return []string{}, err
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return []string{}, err
-	}
-	defer resp.Body.Close()
-	b, _ := ioutil.ReadAll(resp.Body)
-
-	if resp.StatusCode != 200 {
-		log.Println(fmt.Sprintf("error -- non 200 response -- Body: %s", b))
-		return []string{}, errors.New(fmt.Sprint("non 200 response from spotify: ", resp.Status))
-	}
-
-	var r spotifyResponse
-	err = json.Unmarshal(b, &r)
-	if err != nil {
-		return []string{}, err
-	}
-	log.Println(r.ToString())
-	return []string{
-		r.AccessToken, r.RefreshToken,
-	}, nil
 }
