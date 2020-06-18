@@ -56,7 +56,6 @@ func parseEnvironmentVariables() error {
 
 func runServer() {
 	r := gin.Default()
-
 	r.GET("/spotify/oauth", func(c *gin.Context) {
 		code := c.Query("code")
 		//state := c.Query("state")
@@ -81,6 +80,10 @@ func runServer() {
 			pathScopes,
 			returnURL)
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	})
+
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusTemporaryRedirect, "/login")
 	})
 
 	r.Run()
