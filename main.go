@@ -76,7 +76,6 @@ func runServer() {
 	r.GET("/login", func(c *gin.Context) {
 		// TODO Add state
 		pathScopes := url.QueryEscape(strings.Join(scopes, " "))
-		returnURL := ""
 		redirectURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_typpe=code&client_id=%s&scopes=%s&redirect_uri=%s&show_dialog=false",
 			clientID,
 			pathScopes,
