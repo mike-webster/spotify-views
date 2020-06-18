@@ -27,10 +27,11 @@ var scopes = []string{
 var clientID = ""
 var clientSecret = ""
 var host = ""
-var returnURL = fmt.Sprint("https://", host, "/spotify/oauth")
+var returnURL = ""
 
 func main() {
 	err := parseEnvironmentVariables()
+	returnURL = fmt.Sprint("https://", host, "/spotify/oauth")
 	if err != nil {
 		panic(err)
 	}
