@@ -3,9 +3,15 @@ package spotify
 import "fmt"
 
 type Track struct {
+	Links map[string]string `json:"external_links"`
+	Name  string            `json:"name"`
 }
 
 type Tracks []Track
+
+func (t *Track) EmbeddedPlayer() string {
+	return fmt.Sprintf(`<iframe src="%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.Links["spotify"])
+}
 
 type spotifyResponse struct {
 	AccessToken  string `json:"access_token"`
