@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -57,6 +58,7 @@ func runServer() {
 	ctx := context.Background()
 	var err error
 	r := gin.Default()
+	r.LoadHTMLGlob("templates/*")
 	r.GET("/spotify/oauth", func(c *gin.Context) {
 		code := c.Query("code")
 		//state := c.Query("state")
@@ -67,8 +69,33 @@ func runServer() {
 		ctx, err = spotify.HandleOauth(ctx, code)
 		if err != nil {
 			c.JSON(500, gin.H{"err": err})
+			return
 		}
+		token := ctx.Value("access_token")
+		if token == nil {
+			c.JSON(500, gin.H{"err": "no access token"})
+			return
+		}
+		c.SetCookie("svauth", fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 		c.JSON(200, gin.H{"msg": "yay"})
+	})
+
+	r.GET("/tracks/top", func(c *gin.Context) {
+		token, err := c.Cookie("svauth")
+		if err != nil {
+			log.Println("no token - redirecting to login")
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
+			return
+		}
+
+		ctx = context.WithValue(c, "access_token", token)
+		tracks, err := spotify.GetTopTracks(ctx)
+		if err != nil {
+			c.JSON(500, gin.H{"err": err})
+			return
+		}
+
+		c.HTML(200, "toptracks.tmpl", *tracks)
 	})
 
 	r.GET("/login", func(c *gin.Context) {
