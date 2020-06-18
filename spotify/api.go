@@ -17,3 +17,11 @@ func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 	ctx = context.WithValue(ctx, "refresh_token", tokens[1])
 	return ctx, nil
 }
+
+func GetTopTracks(ctx context.Context) (*Tracks, error) {
+	tracks, err := getTopTracks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &tracks, nil
+}
