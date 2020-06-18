@@ -1,6 +1,9 @@
 package spotify
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Track struct {
 	Links map[string]string `json:"external_urls"`
@@ -11,7 +14,7 @@ type Track struct {
 type Tracks []Track
 
 func (t *Track) EmbeddedPlayer() string {
-	return fmt.Sprintf(`<iframe src="%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.URI)
+	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, strings.Split(t.URI, ":")[2])
 }
 
 type spotifyResponse struct {
