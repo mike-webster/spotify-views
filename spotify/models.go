@@ -3,7 +3,7 @@ package spotify
 import "fmt"
 
 type Track struct {
-	Links map[string]string `json:"external_links"`
+	Links map[string]string `json:"external_urls"`
 	Name  string            `json:"name"`
 }
 
