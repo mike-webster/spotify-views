@@ -15,13 +15,13 @@ import (
 )
 
 var scopes = []string{
-	"user-modify-playback-state",
-	"user-read-playback-state",
-	"streaming",
-	"app-remote-control",
+	// "user-modify-playback-state",
+	// "user-read-playback-state",
+	// "streaming",
+	// "app-remote-control",
 	"user-top-read",
-	"user-read-playback-position",
-	"user-read-recently-played",
+	// "user-read-playback-position",
+	// "user-read-recently-played",
 }
 var clientID = ""
 var clientSecret = ""
