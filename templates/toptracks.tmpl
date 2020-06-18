@@ -5,6 +5,11 @@
     </head>
     <body>
         <h1>Top Tracks</h1>
+        <div style="width:100%; text-align:center; display:inline-block;">
+            <a style="width:33%" href="/tracks/top?time_range=long_term">Long Term</a>
+            <a style="width:33%" href="/tracks/top?time_range=medium_term">Medium Term</a>
+            <a style="width:33%" href="/tracks/top?time_range=short_term">Short Term</a>
+        </div>
         {{ range . }}
             {{ . }}
         {{ end }}
