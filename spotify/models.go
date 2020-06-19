@@ -17,6 +17,20 @@ func (t *Track) EmbeddedPlayer() string {
 	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, strings.Split(t.URI, ":")[2])
 }
 
+type Artist struct {
+	Genres     []string `json:"genres"`
+	Name       string   `json:"name"`
+	Popularity int32    `json:"popularity"`
+	URI        string   `json:"uri"`
+	ID         string   `json:"ID"`
+}
+
+type Artists []Artist
+
+func (a *Artist) EmbeddedPlayer() string {
+	return fmt.Sprintf(`<h4 width="300" style="text-align:center">%s</h4><iframe src="https://open.spotify.com/embed/artist/%s" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, a.Name, a.ID)
+}
+
 type spotifyResponse struct {
 	AccessToken  string `json:"access_token"`
 	Type         string `json:"token_type"`

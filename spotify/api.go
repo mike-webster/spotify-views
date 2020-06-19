@@ -25,3 +25,11 @@ func GetTopTracks(ctx context.Context) (*Tracks, error) {
 	}
 	return &tracks, nil
 }
+
+func GetTopArtists(ctx context.Context) (*Artists, error) {
+	artists, err := getTopArtists(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return artists, nil
+}
