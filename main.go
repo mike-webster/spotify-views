@@ -231,5 +231,7 @@ func runServer() {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 	})
 
+	r.Static("/static/css", "./static")
+
 	r.Run()
 }
