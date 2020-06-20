@@ -1,0 +1,15 @@
+@import url("//fonts.googleapis.com/css?family=Ubuntu");
+@import url("/static/css/topnav.css");
+
+body {
+    display: inline-block;
+    font-family: Ubuntu;
+    background-color: black;
+    color: gray;
+    width: 100%;
+}
+a {
+    text-decoration: none;
+    font-family: inherit;
+    color: white;
+}

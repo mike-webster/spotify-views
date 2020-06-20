@@ -220,16 +220,10 @@ func runServer() {
 	})
 
 	r.GET("/", func(c *gin.Context) {
-		token := c.Query("tok")
-		if len(token) > 0 {
-			c.SetCookie("svauth", fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.String(200, "hello")
-			return
-		}
-
-		log.Println("no token - redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		c.HTML(200, "home.tmpl", nil)
 	})
+
+	r.Static("/static/css", "./static")
 
 	r.Run()
 }
