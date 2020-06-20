@@ -23,19 +23,14 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-	resp, err := client.Do(req)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New("non-200 response")
 	}
 
 	type tempResp struct {
@@ -43,13 +38,7 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	}
 
 	var ret tempResp
-	defer resp.Body.Close()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(b, &ret)
+	err = json.Unmarshal(*body, &ret)
 	if err != nil {
 		return nil, err
 	}
@@ -74,19 +63,27 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-	resp, err := client.Do(req)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, errors.New("non-200 response")
+	type tempResp struct {
+		Items Artists `json:"items"`
+	}
+
+	var ret tempResp
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return &ret.Items, nil
+}
 	}
 
 	type tempResp struct {
@@ -94,13 +91,10 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 
 	var ret tempResp
-	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, &ret)
 	if err != nil {
 		return nil, err
 	}
