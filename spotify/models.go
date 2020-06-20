@@ -25,6 +25,12 @@ func (t *Track) EmbeddedPlayer() string {
 	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.ID)
 }
 
+func (t *Tracks) IDs() []string {
+	ret := []string{}
+	for _, i := range *t {
+		ret = append(ret, i.ID)
+	}
+	return ret
 }
 
 type Artist struct {
@@ -39,6 +45,14 @@ type Artists []Artist
 
 func (a *Artist) EmbeddedPlayer() string {
 	return fmt.Sprintf(`<h4 width="300" style="text-align:center">%s</h4><iframe src="https://open.spotify.com/embed/artist/%s" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, a.Name, a.ID)
+}
+
+func (a *Artists) IDs() []string {
+	ret := []string{}
+	for _, i := range *a {
+		ret = append(ret, i.ID)
+	}
+	return ret
 }
 
 type spotifyResponse struct {
