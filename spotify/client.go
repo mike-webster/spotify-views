@@ -106,3 +106,25 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 	return &ret.Items, nil
 }
+
+func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
+	client := &http.Client{}
+	log.Println("requesting: ", req.URL)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		log.Println("unhappy response ", resp.StatusCode, "\n\t", string(b))
+		return nil, errors.New("non-200 response")
+	}
+
+	return &b, nil
+}
