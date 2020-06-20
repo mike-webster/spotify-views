@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", function(){
     // when page is ready
 
+    // TODO there is a bug in here somewhere.  the `substr` method is being called on nil
+    // it doesn't seem to be breaking anything so it's just noise in the console I'm ignoring.
+
     var artists = document.getElementsByTagName("p");
     for (let i = 0; i < artists.length; i++) {
         var player = document.getElementById("i"+artists[i].getAttribute('id').substr(1))
