@@ -1,5 +1,5 @@
 # spotify-views
-Exposing some functionality that is provided by the Spotify API
+Exposing some functionality that is provided by the [Spotify](https://www.spotify.com/us/) [API](https://developer.spotify.com/documentation/web-api/)
 
 # URL
 This is live [here](BQBTQZm6pl58bEIvsuPFqGbk-iCbeMwOYskdDQeGYWh-6npjpsQmo7Myh5Za018leTm_WbAgXI0fpcNTibdxDb1rkjfU-GtgR7_8CYIU-4A0hTOAES1TuXqiFzq5dsqh7XiCRGT1_CtOVEgUxKU5jj43jw)
