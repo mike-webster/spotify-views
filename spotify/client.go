@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 )
 
-func getTopTracks(ctx context.Context) (Tracks, error) {
+func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	token := ctx.Value("access_token")
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -19,23 +21,18 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	if tr != nil {
 		strRange = tr.(string)
 	}
-	url := "https://api.spotify.com/v1/me/top/tracks?limit=25"
+	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", limit)
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-	resp, err := client.Do(req)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New("non-200 response")
 	}
 
 	type tempResp struct {
@@ -43,13 +40,7 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	}
 
 	var ret tempResp
-	defer resp.Body.Close()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(b, &ret)
+	err = json.Unmarshal(*body, &ret)
 	if err != nil {
 		return nil, err
 	}
@@ -74,19 +65,14 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-	resp, err := client.Do(req)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New("non-200 response")
 	}
 
 	type tempResp struct {
@@ -94,15 +80,86 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 
 	var ret tempResp
-	defer resp.Body.Close()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(b, &ret)
+	err = json.Unmarshal(*body, &ret)
 	if err != nil {
 		return nil, err
 	}
 	return &ret.Items, nil
+}
+
+func getArtists(ctx context.Context, ids []string) (*Artists, error) {
+	token := ctx.Value("access_token")
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"artists"`
+	}
+
+	var ret tempResp
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return &ret.Items, nil
+}
+
+func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
+	token := ctx.Value("access_token")
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+	url := fmt.Sprint("https://api.spotify.com/v1/tracks?ids=", strings.Join(ids, ","))
+	log.Println("requesting: ", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	body, err := makeRequest(ctx, req)
+
+	type tempResp struct {
+		Items Tracks `json:"tracks"`
+	}
+
+	var ret tempResp
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return &ret.Items, nil
+}
+
+func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
+	client := &http.Client{}
+	log.Println("requesting: ", req.URL)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		log.Println("unhappy response ", resp.StatusCode, "\n\t", string(b))
+		return nil, errors.New("non-200 response")
+	}
+
+	return &b, nil
 }
