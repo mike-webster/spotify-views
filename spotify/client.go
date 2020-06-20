@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 )
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
@@ -84,17 +86,56 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 	return &ret.Items, nil
 }
+
+func getArtists(ctx context.Context, ids []string) (*Artists, error) {
+	token := ctx.Value("access_token")
+	if token == nil {
+		return nil, errors.New("no access token provided")
 	}
+	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"artists"`
+	}
+
+	var ret tempResp
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return &ret.Items, nil
+}
+
+func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
+	token := ctx.Value("access_token")
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+	url := fmt.Sprint("https://api.spotify.com/v1/tracks?ids=", strings.Join(ids, ","))
+	log.Println("requesting: ", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	body, err := makeRequest(ctx, req)
 
 	type tempResp struct {
 		Items Tracks `json:"tracks"`
 	}
 
 	var ret tempResp
-
-	if err != nil {
-		return nil, err
-	}
+	err = json.Unmarshal(*body, &ret)
 	if err != nil {
 		return nil, err
 	}
