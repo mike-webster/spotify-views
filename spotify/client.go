@@ -90,7 +90,7 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 
 	type tempResp struct {
-		Items Artists `json:"items"`
+		Items Tracks `json:"tracks"`
 	}
 
 	var ret tempResp
