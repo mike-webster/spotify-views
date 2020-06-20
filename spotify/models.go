@@ -22,7 +22,9 @@ type Track struct {
 type Tracks []Track
 
 func (t *Track) EmbeddedPlayer() string {
-	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, strings.Split(t.URI, ":")[2])
+	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.ID)
+}
+
 }
 
 type Artist struct {
