@@ -18,8 +18,8 @@ func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 	return ctx, nil
 }
 
-func GetTopTracks(ctx context.Context) (*Tracks, error) {
-	tracks, err := getTopTracks(ctx)
+func GetTopTracks(ctx context.Context, limit int32) (*Tracks, error) {
+	tracks, err := getTopTracks(ctx, limit)
 	if err != nil {
 		return nil, err
 	}
