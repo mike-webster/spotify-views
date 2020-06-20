@@ -1,24 +1,10 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Ubuntu" />
-        <title>Spotify Views by Webby</title>
-        <style>
-            body {
-                display: inline-block;
-                font-family: Ubuntu;
-                background-color: black;
-                color: gray;
-                width: 100%;
-            }
-            a {
-                text-decoration: none;
-                font-family: inherit;
-                color: white;
-            }
-        </style>
-    </head>
+    {{ template "header" }}
+
     <body>
+        {{ template "topnav" }}
+        
         <div style="width:100%; text-align:center;">
             <h1>Top Tracks</h1>
             <a style="width:33%" href="/tracks/top?time_range=long_term">Long Term</a><br />
@@ -31,4 +17,6 @@
             {{ end }}
         </div>
     </body>
+    
+    {{ template "footer" }}
 </html>
