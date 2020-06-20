@@ -5,10 +5,18 @@ import (
 	"strings"
 )
 
+// TODO: maybe define an interface to handle shared code?
+
 type Track struct {
-	Links map[string]string `json:"external_urls"`
-	Name  string            `json:"name"`
-	URI   string            `json:"uri"`
+	Links   map[string]string `json:"external_urls"`
+	Name    string            `json:"name"`
+	URI     string            `json:"uri"`
+	ID      string            `json:"id"`
+	Artists []struct {
+		Link string `json:"href"`
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"artists"`
 }
 
 type Tracks []Track
