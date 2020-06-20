@@ -29,6 +29,11 @@ var clientSecret = ""
 var host = ""
 var returnURL = ""
 
+type ViewBag struct {
+	Resource string
+	Results  interface{}
+}
+
 func main() {
 	err := parseEnvironmentVariables()
 	returnURL = fmt.Sprint("https://", host, "/spotify/oauth")
