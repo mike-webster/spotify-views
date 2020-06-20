@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"fmt"
-	"strings"
 )
 
 // TODO: maybe define an interface to handle shared code?
@@ -68,5 +67,30 @@ func (sr *spotifyResponse) ToString() string {
 	ret += "-- Spotify Response\n"
 	ret += fmt.Sprint("\tAccessToken: ", sr.AccessToken, "\n")
 	ret += fmt.Sprint("\tScope: ", sr.Scope, "\n")
+	return ret
+}
+
+type Pair struct {
+	Key   string
+	Value int32
+}
+type Pairs []Pair
+
+func (p Pairs) Len() int           { return len(p) }
+func (p Pairs) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p Pairs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p Pairs) Contains(key string) int {
+	for i, ii := range p {
+		if ii.Key == key {
+			return i
+		}
+	}
+	return -1
+}
+func (p Pairs) ToMap() map[string]int32 {
+	ret := map[string]int32{}
+	for _, i := range p {
+		ret[i.Key] = i.Value
+	}
 	return ret
 }
