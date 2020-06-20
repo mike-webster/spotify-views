@@ -13,3 +13,11 @@ a {
     font-family: inherit;
     color: white;
 }
+
+p { 
+    cursor: pointer;
+}
+
+a:hover {
+    background: darkgray;
+}
