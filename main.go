@@ -97,7 +97,7 @@ func runServer() {
 			ctx = context.WithValue(ctx, "time_range", tr)
 		}
 
-		tracks, err := spotify.GetTopTracks(ctx)
+		tracks, err := spotify.GetTopTracks(ctx, 25)
 		if err != nil {
 			c.JSON(500, gin.H{"err": err})
 			return

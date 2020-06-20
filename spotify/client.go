@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func getTopTracks(ctx context.Context) (Tracks, error) {
+func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	token := ctx.Value("access_token")
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -19,7 +19,7 @@ func getTopTracks(ctx context.Context) (Tracks, error) {
 	if tr != nil {
 		strRange = tr.(string)
 	}
-	url := "https://api.spotify.com/v1/me/top/tracks?limit=25"
+	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", limit)
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
