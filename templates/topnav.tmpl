@@ -1,0 +1,16 @@
+{{ define "topnav" }}
+
+    <link rel="stylesheet" type="text/css" href="/static/css/topnav.css" media="screen"/>
+    <div class="topnav responsive" id="svTopNav">
+        <a href="/artists/top">Top Artists</a>
+        <a href="/tracks/top">Top Tracks</a>
+        <div class="dropdown">
+            <button class="dropbtn">Genres<i class="fa fa-caret-down"></i></button>
+            <div class="dropdown-content">
+                <a href="/artists/genres">Artist</a>
+                <a href="/tracks/genres">Tracks</a>
+            </div>
+        </div>
+    </div>
+    
+{{ end }}
