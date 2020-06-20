@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Ubuntu" />
+        <title>Spotify Views by Webby</title>
+        <style>
+            body {
+                display: inline-block;
+                font-family: Ubuntu;
+                background-color: black;
+                color: gray;
+                width: 100%;
+            }
+            a {
+                text-decoration: none;
+                font-family: inherit;
+                color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div style="width:100%; text-align:center;">
+            <h1>Top Genres</h1>
+            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=long_term">Long Term</a><br />
+            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=medium_term">Medium Term</a><br />
+            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=short_term">Short Term</a><br /><br />
+            {{ range .Results }}
+                <div style="width:100%">
+                    <span style="width:50%">{{ .Key }}</span>
+                    <span style="width:50%">{{ .Value }}</span>
+                </div>
+            {{ end }}
+        </div>
+    </body>
+</html>
