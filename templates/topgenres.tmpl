@@ -21,9 +21,10 @@
     <body>
         <div style="width:100%; text-align:center;">
             <h1>Top Genres</h1>
-            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=long_term">Long Term</a><br />
-            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=medium_term">Medium Term</a><br />
-            <a style="width:33%" href="/{{ .Resource }}/genres?time_range=short_term">Short Term</a><br /><br />
+            <h3>by {{ .Resource }}</h3>
+            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=long_term">Long Term</a><br />
+            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=medium_term">Medium Term</a><br />
+            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=short_term">Short Term</a><br /><br />
             {{ range .Results }}
                 <div style="width:100%">
                     <span style="width:50%">{{ .Key }}</span>

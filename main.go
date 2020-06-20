@@ -172,7 +172,7 @@ func runServer() {
 		}
 		sort.Sort(sort.Reverse(genres))
 		log.Println(genres)
-		vb := ViewBag{Resource: "artists", Results: genres}
+		vb := ViewBag{Resource: "artist", Results: genres}
 		c.HTML(200, "topgenres.tmpl", vb)
 	})
 
@@ -205,7 +205,7 @@ func runServer() {
 		}
 		sort.Sort(sort.Reverse(genres))
 		log.Println(genres)
-		vb := ViewBag{Resource: "tracks", Results: genres}
+		vb := ViewBag{Resource: "track", Results: genres}
 		c.HTML(200, "topgenres.tmpl", vb)
 	})
 
