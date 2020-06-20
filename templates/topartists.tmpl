@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     {{ template "header" }}
-
+    <script src="/static/js/player.js"></script>
     <body>
         {{ template "topnav" }}
         
@@ -12,7 +12,7 @@
             <a style="width:33%" href="/artists/top?time_range=short_term">Short Term</a><br /><br />
             {{ range . }}
                 <div style="width:100%">
-                    {{ . }}
+                    {{ template "player" . }}
                 </div>
             {{ end }}
         </div>
