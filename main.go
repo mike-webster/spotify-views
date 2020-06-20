@@ -1,19 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"html/template"
-	"log"
-	"net/http"
-	"net/url"
 	"os"
-	"sort"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	spotify "github.com/mike-webster/spotify-views/spotify"
 )
 
 var scopes = []string{
@@ -62,168 +54,24 @@ func parseEnvironmentVariables() error {
 }
 
 func runServer() {
-	var err error
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
-	r.GET("/spotify/oauth", func(c *gin.Context) {
-		ctx := context.WithValue(c, "return_url", returnURL)
-		ctx = context.WithValue(ctx, "client_id", clientID)
-		ctx = context.WithValue(ctx, "client_secret", clientSecret)
-		code := c.Query("code")
-		//state := c.Query("state")
-		qErr := c.Query("error")
-		if len(qErr) > 0 {
-			// the user is a fucker and they denied access
-		}
-		ctx, err = spotify.HandleOauth(ctx, code)
-		if err != nil {
-			c.JSON(500, gin.H{"err": err})
-			return
-		}
-		token := ctx.Value("access_token")
-		if token == nil {
-			c.JSON(500, gin.H{"err": "no access token"})
-			return
-		}
-		c.SetCookie("svauth", fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-		c.Redirect(http.StatusTemporaryRedirect, "/tracks/top")
-	})
+	r.GET("/spotify/oauth", handlerOauth)
 
-	r.GET("/tracks/top", func(c *gin.Context) {
-		token, err := c.Cookie("svauth")
-		if err != nil {
-			log.Println("no token - redirecting to login")
-			c.Redirect(http.StatusTemporaryRedirect, "/login")
-			return
-		}
-		ctx := context.WithValue(c, "access_token", token)
+	r.GET("/tracks/top", handlerTopTracks)
 
-		tr := c.Query("time_range")
-		if len(tr) > 0 {
-			ctx = context.WithValue(ctx, "time_range", tr)
-		}
+	r.GET("/artists/top", handlerTopArtists)
 
-		tracks, err := spotify.GetTopTracks(ctx, 25)
-		if err != nil {
-			c.JSON(500, gin.H{"err": err})
-			return
-		}
-		markups := []template.HTML{}
-		for _, i := range *tracks {
-			markups = append(markups, template.HTML(i.EmbeddedPlayer()+"<br />"))
-		}
+	r.GET("/artists/genres", handlerTopArtistsGenres)
 
-		c.HTML(200, "toptracks.tmpl", markups)
-	})
+	r.GET("/tracks/genres", handlerTopTracksGenres)
 
-	r.GET("/artists/top", func(c *gin.Context) {
-		log.Println("getting token")
-		token, err := c.Cookie("svauth")
-		if err != nil {
-			log.Println("no token - redirecting to login")
-			c.Redirect(http.StatusTemporaryRedirect, "/login")
-			return
-		}
-		ctx := context.WithValue(c, "access_token", token)
+	r.GET("/login", handlerLogin)
 
-		tr := c.Query("time_range")
-		if len(tr) > 0 {
-			ctx = context.WithValue(ctx, "time_range", tr)
-		}
-		log.Println("getting artists")
-		artists, err := spotify.GetTopArtists(ctx)
-		if err != nil {
-			c.JSON(500, gin.H{"err": err})
-			return
-		}
-		markups := []template.HTML{}
-		for _, i := range *artists {
-			markups = append(markups, template.HTML(i.EmbeddedPlayer()+"<br />"))
-		}
-		c.HTML(200, "topartists.tmpl", markups)
-	})
-
-	r.GET("/artists/genres", func(c *gin.Context) {
-		log.Println("getting token")
-		token, err := c.Cookie("svauth")
-		if err != nil {
-			log.Println("no token - redirecting to login")
-			c.Redirect(http.StatusTemporaryRedirect, "/login")
-			return
-		}
-		ctx := context.WithValue(c, "access_token", token)
-
-		tr := c.Query("time_range")
-		if len(tr) > 0 {
-			ctx = context.WithValue(ctx, "time_range", tr)
-		}
-		log.Println("getting artists")
-		artists, err := spotify.GetTopArtists(ctx)
-		if err != nil {
-			log.Println(err.Error())
-			c.JSON(500, gin.H{"err": err})
-			return
-		}
-		log.Println("getting genres")
-		genres, err := spotify.GetGenresForArtists(ctx, artists.IDs())
-		if err != nil {
-			c.JSON(500, gin.H{"err": err.Error()})
-			return
-		}
-		sort.Sort(sort.Reverse(genres))
-		log.Println(genres)
-		vb := ViewBag{Resource: "artist", Results: genres}
-		c.HTML(200, "topgenres.tmpl", vb)
-	})
-
-	r.GET("/tracks/genres", func(c *gin.Context) {
-		log.Println("getting token")
-		token, err := c.Cookie("svauth")
-		if err != nil {
-			log.Println("no token - redirecting to login")
-			c.Redirect(http.StatusTemporaryRedirect, "/login")
-			return
-		}
-		ctx := context.WithValue(c, "access_token", token)
-
-		tr := c.Query("time_range")
-		if len(tr) > 0 {
-			ctx = context.WithValue(ctx, "time_range", tr)
-		}
-		log.Println("getting top tracks")
-		tracks, err := spotify.GetTopTracks(ctx, 50)
-		if err != nil {
-			log.Println(err)
-			c.JSON(500, gin.H{"err": err.Error()})
-			return
-		}
-		log.Println("getting genres")
-		genres, err := spotify.GetGenresForTracks(ctx, tracks.IDs())
-		if err != nil {
-			c.JSON(500, gin.H{"err": err.Error()})
-			return
-		}
-		sort.Sort(sort.Reverse(genres))
-		log.Println(genres)
-		vb := ViewBag{Resource: "track", Results: genres}
-		c.HTML(200, "topgenres.tmpl", vb)
-	})
-
-	r.GET("/login", func(c *gin.Context) {
-		// TODO Add state
-		pathScopes := url.QueryEscape(strings.Join(scopes, " "))
-		redirectURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
-			clientID,
-			pathScopes,
-			returnURL)
-		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
-	})
-
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "home.tmpl", nil)
-	})
+	r.GET("/", handlerHome)
 
 	r.Static("/static/css", "./static")
+	r.Static("/static/js", "./static")
 
 	r.Run()
 }
