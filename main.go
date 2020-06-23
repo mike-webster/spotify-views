@@ -21,6 +21,7 @@ var clientID = ""
 var clientSecret = ""
 var host = ""
 var returnURL = ""
+var lyricsKey = ""
 
 type ViewBag struct {
 	Resource string
@@ -49,6 +50,10 @@ func parseEnvironmentVariables() error {
 	host = os.Getenv("HOST")
 	if len(host) < 1 {
 		return errors.New("no host provided")
+	}
+	lyricsKey = os.Getenv("LYRICS_KEY")
+	if len(lyricsKey) < 1 {
+		return errors.New("no lyrics key provided")
 	}
 	return nil
 }
