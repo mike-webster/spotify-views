@@ -62,17 +62,11 @@ func runServer() {
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/spotify/oauth", handlerOauth)
-
 	r.GET("/tracks/top", handlerTopTracks)
-
 	r.GET("/artists/top", handlerTopArtists)
-
 	r.GET("/artists/genres", handlerTopArtistsGenres)
-
 	r.GET("/tracks/genres", handlerTopTracksGenres)
-
 	r.GET("/login", handlerLogin)
-
 	r.GET("/", handlerHome)
 
 	r.Static("/static/css", "./static")
