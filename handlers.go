@@ -1,15 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	genius "github.com/mike-webster/spotify-views/genius"
+	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
 )
 
@@ -182,6 +189,84 @@ func handlerTopTracksGenres(c *gin.Context) {
 	log.Println(genres)
 	vb := ViewBag{Resource: "track", Results: genres}
 	c.HTML(200, "topgenres.tmpl", vb)
+}
+
+func handlerWordCloud(c *gin.Context) {
+	token, err := c.Cookie("svauth")
+	if err != nil {
+		log.Println("no token - redirecting to login")
+		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		return
+	}
+	ctx := context.WithValue(c, "access_token", token)
+
+	tr := c.Query("time_range")
+	if len(tr) > 0 {
+		ctx = context.WithValue(ctx, "time_range", tr)
+	}
+
+	tracks, err := spotify.GetTopTracks(ctx, 25)
+	if err != nil {
+		c.JSON(500, gin.H{"err": err.Error()})
+		return
+	}
+	searches := []genius.LyricSearch{}
+	for _, i := range *tracks {
+		searches = append(searches, genius.LyricSearch{
+			Artist: i.Artists[0].Name,
+			Track:  i.Name,
+		})
+	}
+
+	ctx = context.WithValue(c, "lyrics_token", lyricsKey)
+
+	wordCounts, err := genius.GetLyricCountForSong(ctx, searches)
+	if err != nil {
+		log.Println("couldn't retrieve word counts: ", err.Error())
+		c.Status(500)
+		return
+	}
+
+	log.Println("\n\ncombined results:\n\n", wordCounts)
+	sm := sortablemap.GetSortableMap(wordCounts)
+	sort.Sort(sort.Reverse(sm))
+	for _, i := range sm {
+		log.Println("item: ", i.Key, " -- ", i.Value)
+	}
+
+	filename := fmt.Sprint(time.Now().Unix(), ".png")
+	err = generateWordCloud(ctx, filename, wordCounts)
+	if err != nil {
+		log.Println("couldn't generate error: ", err.Error())
+		c.Status(500)
+		return
+	}
+
+	// displaying the image
+	readBack, err := os.Open(fmt.Sprint("static/clouds/", filename))
+	if err != nil {
+		log.Println("couldn't read file back: ", err.Error())
+		c.Status(500)
+		return
+	}
+	defer readBack.Close()
+	id, _, err := image.Decode(readBack)
+	if err != nil {
+		log.Println("couldnt decode")
+		c.Status(500)
+		return
+	}
+
+	var buff bytes.Buffer
+	png.Encode(&buff, id)
+
+	type viewData struct {
+		Filename string
+		Maps     sortablemap.SortableMap
+	}
+	vb := viewData{Filename: filename, Maps: sm}
+	c.HTML(200, "wordcloud.tmpl", vb)
+	// c.Data(200, "image/png", buff.Bytes())
 }
 
 func handlerLogin(c *gin.Context) {
