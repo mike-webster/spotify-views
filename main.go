@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"image/color"
+	"image/png"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/psykhi/wordclouds"
 )
 
 var scopes = []string{
@@ -105,9 +109,11 @@ func runServer() {
 	r.GET("/tracks/genres", handlerTopTracksGenres)
 	r.GET("/login", handlerLogin)
 	r.GET("/", handlerHome)
+	r.GET("/wordcloud", handlerWordCloud)
 
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
+	r.Static("/clouds/", "./static/clouds")
 
 	r.Run()
 }
