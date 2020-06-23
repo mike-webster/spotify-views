@@ -58,6 +58,43 @@ func parseEnvironmentVariables() error {
 	return nil
 }
 
+func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
+	colors := []color.RGBA{
+		{0x17, 0xA5, 0x54, 0xff},
+	}
+
+	rgbaColors := []color.Color{}
+	for _, i := range colors {
+		rgbaColors = append(rgbaColors, i)
+	}
+
+	w := wordclouds.NewWordcloud(
+		wordCounts,
+		wordclouds.FontFile("fonts/Ubuntu-L.ttf"),
+		wordclouds.Height(2048),
+		wordclouds.Width(2048),
+		wordclouds.Debug(),
+		wordclouds.FontMaxSize(300),
+		wordclouds.FontMinSize(30),
+		wordclouds.Colors(rgbaColors),
+		wordclouds.RandomPlacement(false),
+		wordclouds.MaskBoxes([]*wordclouds.Box{}),
+	)
+
+	img := w.Draw()
+	directory := "static/clouds/"
+	of, err := os.Create(fmt.Sprint(directory, filename))
+	if err != nil {
+		return err
+	}
+
+	err = png.Encode(of, img)
+	if err != nil {
+		return err
+	}
+	return of.Close()
+}
+
 func runServer() {
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
