@@ -20,47 +20,67 @@ import (
 	spotify "github.com/mike-webster/spotify-views/spotify"
 )
 
+var (
+	queryStringCode                = "code"
+	queryStringError               = "error"
+	queryStringTimeRange           = "time_range"
+	cookieKeyToken                 = "svauth"
+	topTracksLimit           int32 = 25
+	topGenresTopTracksLimit  int32 = 50
+	wordCloudTopTracksLimit  int32 = 50
+	spotifyPlayerHeightShort int32 = 80
+	spotifyPlayerHeightTall  int32 = 380
+	spotifyPlayerWidth       int32 = 300
+)
+
 func handlerOauth(c *gin.Context) {
-	ctx := context.WithValue(c, "return_url", returnURL)
-	ctx = context.WithValue(ctx, "client_id", clientID)
-	ctx = context.WithValue(ctx, "client_secret", clientSecret)
-	code := c.Query("code")
+	ctx := context.WithValue(c, spotify.ContextReturnURL, returnURL)
+	ctx = context.WithValue(ctx, spotify.ContextClientID, clientID)
+	ctx = context.WithValue(ctx, spotify.ContextClientSecret, clientSecret)
+	code := c.Query(queryStringCode)
 	//state := c.Query("state")
-	qErr := c.Query("error")
+	qErr := c.Query(queryStringError)
 	if len(qErr) > 0 {
 		// the user is a fucker and they denied access
+		log.Println("user did not grant access: ", qErr)
+		c.Status(500)
+		return
 	}
 	ctx, err := spotify.HandleOauth(ctx, code)
 	if err != nil {
-		c.JSON(500, gin.H{"err": err})
+		log.Println("error handling spotify oauth: ", err.Error())
+		c.Status(500)
 		return
 	}
-	token := ctx.Value("access_token")
+	token := ctx.Value(spotify.ContextAccessToken)
 	if token == nil {
-		c.JSON(500, gin.H{"err": "no access token"})
+		log.Println("no token returned from spotify")
+		c.Status(500)
 		return
 	}
-	c.SetCookie("svauth", fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.Redirect(http.StatusTemporaryRedirect, "/tracks/top")
+
+	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint("/tracks/top?", queryStringTimeRange, "=short_term"))
 }
 
 func handlerTopTracks(c *gin.Context) {
-	token, err := c.Cookie("svauth")
+	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		log.Println("no token - redirecting to login")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	ctx := context.WithValue(c, "access_token", token)
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
-	tr := c.Query("time_range")
+	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, "time_range", tr)
+		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
 	}
 
-	tracks, err := spotify.GetTopTracks(ctx, 25)
+	tracks, err := spotify.GetTopTracks(ctx, topTracksLimit)
 	if err != nil {
-		c.JSON(500, gin.H{"err": err})
+		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
 
@@ -75,8 +95,8 @@ func handlerTopTracks(c *gin.Context) {
 	for _, i := range *tracks {
 		data = append(data, tempBag{
 			ID:       i.ID,
-			Height:   80,
-			Width:    300,
+			Height:   spotifyPlayerHeightShort,
+			Width:    spotifyPlayerWidth,
 			Resource: "track",
 			Name:     i.Name,
 		})
@@ -86,23 +106,23 @@ func handlerTopTracks(c *gin.Context) {
 }
 
 func handlerTopArtists(c *gin.Context) {
-	log.Println("getting token")
-	token, err := c.Cookie("svauth")
+	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		log.Println("no token - redirecting to login")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	ctx := context.WithValue(c, "access_token", token)
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
-	tr := c.Query("time_range")
+	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, "time_range", tr)
+		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
 	}
-	log.Println("getting artists")
+
 	artists, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		c.JSON(500, gin.H{"err": err})
+		log.Println("couldnt retrieve top artists from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
 	type tempBag struct {
@@ -126,90 +146,92 @@ func handlerTopArtists(c *gin.Context) {
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
-	log.Println("getting token")
-	token, err := c.Cookie("svauth")
+	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		log.Println("no token - redirecting to login")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	ctx := context.WithValue(c, "access_token", token)
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
-	tr := c.Query("time_range")
+	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, "time_range", tr)
+		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
 	}
-	log.Println("getting artists")
+
 	artists, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		log.Println(err.Error())
-		c.JSON(500, gin.H{"err": err})
+		log.Println("couldnt retrieve top artists from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
-	log.Println("getting genres")
+
 	genres, err := spotify.GetGenresForArtists(ctx, artists.IDs())
 	if err != nil {
-		c.JSON(500, gin.H{"err": err.Error()})
+		log.Println("couldnt retrieve genres for artists from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
+
 	sort.Sort(sort.Reverse(genres))
-	log.Println(genres)
 	vb := ViewBag{Resource: "artist", Results: genres}
 	c.HTML(200, "topgenres.tmpl", vb)
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
-	log.Println("getting token")
-	token, err := c.Cookie("svauth")
+	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		log.Println("no token - redirecting to login")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	ctx := context.WithValue(c, "access_token", token)
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
-	tr := c.Query("time_range")
+	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, "time_range", tr)
+		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
 	}
-	log.Println("getting top tracks")
-	tracks, err := spotify.GetTopTracks(ctx, 50)
+
+	tracks, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
 	if err != nil {
-		log.Println(err)
-		c.JSON(500, gin.H{"err": err.Error()})
+		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
-	log.Println("getting genres")
+
 	genres, err := spotify.GetGenresForTracks(ctx, tracks.IDs())
 	if err != nil {
-		c.JSON(500, gin.H{"err": err.Error()})
+		log.Println("couldnt retrieve top genres for top tracks from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
 	sort.Sort(sort.Reverse(genres))
-	log.Println(genres)
+
 	vb := ViewBag{Resource: "track", Results: genres}
 	c.HTML(200, "topgenres.tmpl", vb)
 }
 
 func handlerWordCloud(c *gin.Context) {
-	token, err := c.Cookie("svauth")
+	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		log.Println("no token - redirecting to login")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	ctx := context.WithValue(c, "access_token", token)
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
-	tr := c.Query("time_range")
+	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, "time_range", tr)
+		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
 	}
 
-	tracks, err := spotify.GetTopTracks(ctx, 25)
+	tracks, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
 	if err != nil {
-		c.JSON(500, gin.H{"err": err.Error()})
+		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		c.Status(500)
 		return
 	}
+
 	searches := []genius.LyricSearch{}
 	for _, i := range *tracks {
 		searches = append(searches, genius.LyricSearch{
@@ -218,7 +240,7 @@ func handlerWordCloud(c *gin.Context) {
 		})
 	}
 
-	ctx = context.WithValue(c, "lyrics_token", lyricsKey)
+	ctx = context.WithValue(c, genius.ContextAccessToken, lyricsKey)
 
 	wordCounts, err := genius.GetLyricCountForSong(ctx, searches)
 	if err != nil {
@@ -227,12 +249,8 @@ func handlerWordCloud(c *gin.Context) {
 		return
 	}
 
-	log.Println("\n\ncombined results:\n\n", wordCounts)
 	sm := sortablemap.GetSortableMap(wordCounts)
 	sort.Sort(sort.Reverse(sm))
-	for _, i := range sm {
-		log.Println("item: ", i.Key, " -- ", i.Value)
-	}
 
 	filename := fmt.Sprint(time.Now().Unix(), ".png")
 	err = generateWordCloud(ctx, filename, wordCounts)
@@ -266,7 +284,6 @@ func handlerWordCloud(c *gin.Context) {
 	}
 	vb := viewData{Filename: filename, Maps: sm}
 	c.HTML(200, "wordcloud.tmpl", vb)
-	// c.Data(200, "image/png", buff.Bytes())
 }
 
 func handlerLogin(c *gin.Context) {

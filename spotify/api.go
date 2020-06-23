@@ -7,6 +7,14 @@ import (
 	"log"
 )
 
+type ContextKey string
+
+var ContextReturnURL = ContextKey("return_url")
+var ContextClientID = ContextKey("client_id")
+var ContextClientSecret = ContextKey("client_secret")
+var ContextAccessToken = ContextKey("access_token")
+var ContextTimeRange = ContextKey("time_range")
+
 func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 	tokens, err := requestTokens(ctx, code)
 	if err != nil {

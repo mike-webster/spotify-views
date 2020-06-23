@@ -12,6 +12,10 @@ import (
 	lyrics "github.com/rhnvrm/lyric-api-go"
 )
 
+type ContextKey string
+
+var ContextAccessToken = ContextKey("access_token")
+
 type LyricSearch struct {
 	Artist string
 	Track  string
