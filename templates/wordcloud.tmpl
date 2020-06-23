@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    {{ template "header" }}
+    <style>
+        #cloud {
+            width: 1024px;
+            height: 1024px;
+            background-image: url("/clouds/{{.Filename}}");
+            background-size: cover;
+        }
+    </style>
+    <body>
+        {{ template "topnav" }}
+        
+        <div style="width:100%; text-align:center;">
+            <h1>Word Cloud</h1>
+            <div id="cloud"></div>
+            {{ range .Maps }}
+                <div style="width:100%">
+                    <div style="width:50%">{{.Key}}</div>
+                    <div style="width:50%">{{.Value}}</div>
+                </div>
+            {{ end }}
+        </div>
+    </body>
+    
+    {{ template "footer" }}
+</html>
