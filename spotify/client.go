@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
@@ -165,10 +166,11 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 }
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
-	log.Println("making external request: ", req.URL)
-
+	s := time.Now()
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	dur := time.Since(s)
+	log.Println("external request (", resp.StatusCode, ") to: ", req.URL, " took ", dur.String())
 	if err != nil {
 		return nil, err
 	}
