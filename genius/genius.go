@@ -98,7 +98,7 @@ func convertToMap(lyric string) map[string]int {
 		cleaned := stopwords.CleanString(lyricsString, "en", true)
 
 		for _, j := range strings.Split(cleaned, " ") {
-			if len(strings.TrimSpace(j)) < 2 {
+			if len(strings.TrimSpace(j)) < 3 {
 				continue
 			}
 			if _, ok := ret[j]; !ok {
