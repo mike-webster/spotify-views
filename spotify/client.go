@@ -12,11 +12,12 @@ import (
 )
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
-	tr := ctx.Value("time_range")
+
+	tr := ctx.Value(ContextTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
@@ -47,16 +48,13 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	return ret.Items, nil
 }
 
-// decided not to make this one method that accepted the resource
-// but went against it to simplify use and avoid passing back
-// an interface.
-
 func getTopArtists(ctx context.Context) (*Artists, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
-	tr := ctx.Value("time_range")
+
+	tr := ctx.Value(ContextTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
@@ -88,7 +86,7 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 }
 
 func getArtists(ctx context.Context, ids []string) (*Artists, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -117,7 +115,7 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 }
 
 func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 func requestTokens(ctx context.Context, code string) ([]string, error) {
-	returnURL := ctx.Value("return_url")
+	returnURL := ctx.Value(ContextReturnURL)
 	if returnURL == nil {
 		return []string{}, errors.New("no return url provided")
 	}
@@ -22,7 +22,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, errors.New("return url couldn't be parsed")
 	}
 
-	clientID := ctx.Value("client_id")
+	clientID := ctx.Value(ContextClientID)
 	if clientID == nil {
 		return []string{}, errors.New("no client id provided")
 	}
@@ -31,7 +31,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, errors.New("client id couldn't be parsed")
 	}
 
-	clientSecret := ctx.Value("client_secret")
+	clientSecret := ctx.Value(ContextClientSecret)
 	if clientSecret == nil {
 		return []string{}, errors.New("no client secret provided")
 	}

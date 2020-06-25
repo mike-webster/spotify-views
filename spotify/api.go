@@ -33,8 +33,10 @@ func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 		return ctx, err
 	}
 	log.Println(fmt.Sprint("success - tokens: \n\tAccess: ", tokens[0], "\n\tRefres: ", tokens[1]))
-	ctx = context.WithValue(ctx, "access_token", tokens[0])
-	ctx = context.WithValue(ctx, "refresh_token", tokens[1])
+
+	ctx = context.WithValue(ctx, ContextAccessToken, tokens[0])
+	ctx = context.WithValue(ctx, ContextRefreshToken, tokens[1])
+
 	return ctx, nil
 }
 
