@@ -293,7 +293,7 @@ func handlerWordCloud(c *gin.Context) {
 
 	type viewData struct {
 		Filename string
-		Maps     sortablemap.SortableMap
+		Maps     sortablemap.Map
 	}
 
 	vb := viewData{Filename: filename, Maps: sm}
