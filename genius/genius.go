@@ -12,10 +12,13 @@ import (
 	lyrics "github.com/rhnvrm/lyric-api-go"
 )
 
+// ContextKey is used to store and access information from the context
 type ContextKey string
 
+// ContextAccessToken is the key to use for the genius access token
 var ContextAccessToken = ContextKey("access_token")
 
+// LyricSearch holds the information for which a lyric search is desired
 type LyricSearch struct {
 	Artist string
 	Track  string
@@ -36,6 +39,8 @@ type tempResp struct {
 	} `json:"response"`
 }
 
+// GetLyricCountForSong will retrieve the song lyrics for all of the provided searches
+// and return a map of each word with a value of how many times it occurred.
 func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[string]int, error) {
 	token := ctx.Value("lyrics_token")
 	if token == nil {
