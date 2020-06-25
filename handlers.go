@@ -38,7 +38,7 @@ func handlerOauth(c *gin.Context) {
 	ctx = context.WithValue(ctx, spotify.ContextClientID, clientID)
 	ctx = context.WithValue(ctx, spotify.ContextClientSecret, clientSecret)
 	code := c.Query(queryStringCode)
-	//state := c.Query("state")
+	// TODO: query state verification
 	qErr := c.Query(queryStringError)
 	if len(qErr) > 0 {
 		// the user is a fucker and they denied access
@@ -46,12 +46,14 @@ func handlerOauth(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+
 	ctx, err := spotify.HandleOauth(ctx, code)
 	if err != nil {
 		log.Println("error handling spotify oauth: ", err.Error())
 		c.Status(500)
 		return
 	}
+
 	token := ctx.Value(spotify.ContextAccessToken)
 	if token == nil {
 		log.Println("no token returned from spotify")
@@ -70,6 +72,7 @@ func handlerTopTracks(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
+
 	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
@@ -91,7 +94,9 @@ func handlerTopTracks(c *gin.Context) {
 		Name     string
 		Resource string
 	}
+
 	data := []tempBag{}
+
 	for _, i := range *tracks {
 		data = append(data, tempBag{
 			ID:       i.ID,
@@ -112,6 +117,7 @@ func handlerTopArtists(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
+
 	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
@@ -125,6 +131,7 @@ func handlerTopArtists(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+
 	type tempBag struct {
 		Width    int32
 		Height   int32
@@ -132,7 +139,9 @@ func handlerTopArtists(c *gin.Context) {
 		Name     string
 		Resource string
 	}
+
 	data := []tempBag{}
+
 	for _, i := range *artists {
 		data = append(data, tempBag{
 			ID:       i.ID,
@@ -142,6 +151,7 @@ func handlerTopArtists(c *gin.Context) {
 			Name:     i.Name,
 		})
 	}
+
 	c.HTML(200, "topartists.tmpl", data)
 }
 
@@ -152,6 +162,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
+
 	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
@@ -185,6 +196,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
+
 	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
@@ -205,8 +217,8 @@ func handlerTopTracksGenres(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	sort.Sort(sort.Reverse(genres))
 
+	sort.Sort(sort.Reverse(genres))
 	vb := ViewBag{Resource: "track", Results: genres}
 	c.HTML(200, "topgenres.tmpl", vb)
 }
@@ -218,6 +230,7 @@ func handlerWordCloud(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
+
 	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
@@ -251,7 +264,6 @@ func handlerWordCloud(c *gin.Context) {
 
 	sm := sortablemap.GetSortableMap(wordCounts)
 	sort.Sort(sort.Reverse(sm))
-
 	filename := fmt.Sprint(time.Now().Unix(), ".png")
 	err = generateWordCloud(ctx, filename, wordCounts)
 	if err != nil {
@@ -267,6 +279,7 @@ func handlerWordCloud(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+
 	defer readBack.Close()
 	id, _, err := image.Decode(readBack)
 	if err != nil {
@@ -282,6 +295,7 @@ func handlerWordCloud(c *gin.Context) {
 		Filename string
 		Maps     sortablemap.SortableMap
 	}
+
 	vb := viewData{Filename: filename, Maps: sm}
 	c.HTML(200, "wordcloud.tmpl", vb)
 }

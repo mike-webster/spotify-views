@@ -17,6 +17,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	if returnURL == nil {
 		return []string{}, errors.New("no return url provided")
 	}
+
 	strReturnURL, ok := returnURL.(string)
 	if !ok {
 		return []string{}, errors.New("return url couldn't be parsed")
@@ -26,6 +27,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	if clientID == nil {
 		return []string{}, errors.New("no client id provided")
 	}
+
 	strClientID, ok := clientID.(string)
 	if !ok {
 		return []string{}, errors.New("client id couldn't be parsed")
@@ -35,6 +37,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	if clientSecret == nil {
 		return []string{}, errors.New("no client secret provided")
 	}
+
 	strClientSecret, ok := clientSecret.(string)
 	if !ok {
 		return []string{}, errors.New("client secret couldn't be parsed")
@@ -53,12 +56,14 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
+
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, err
 	}
+
 	defer resp.Body.Close()
 	b, _ := ioutil.ReadAll(resp.Body)
 
@@ -72,7 +77,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	log.Println(r.ToString())
+
 	return []string{
 		r.AccessToken, r.RefreshToken,
 	}, nil
@@ -83,5 +88,6 @@ func getPairs(m map[string]int32) Pairs {
 	for k, v := range m {
 		ret = append(ret, Pair{Key: k, Value: v})
 	}
+
 	return ret
 }

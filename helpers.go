@@ -17,18 +17,22 @@ func parseEnvironmentVariables() error {
 	if len(clientID) < 1 {
 		return errors.New("no client id provided")
 	}
+
 	clientSecret = os.Getenv("CLIENT_SECRET")
 	if len(clientSecret) < 1 {
 		return errors.New("no client secret provided")
 	}
+
 	host = os.Getenv("HOST")
 	if len(host) < 1 {
 		return errors.New("no host provided")
 	}
+
 	lyricsKey = os.Getenv("LYRICS_KEY")
 	if len(lyricsKey) < 1 {
 		return errors.New("no lyrics key provided")
 	}
+
 	return nil
 }
 

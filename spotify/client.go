@@ -22,15 +22,19 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	if tr != nil {
 		strRange = tr.(string)
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", limit)
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -45,6 +49,7 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return ret.Items, nil
 }
 
@@ -59,15 +64,21 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	if tr != nil {
 		strRange = tr.(string)
 	}
+
+	// TODO: make this limit a param
 	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
+
 	req, err := http.NewRequest("GET", url, nil)
+
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -82,6 +93,7 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
@@ -90,12 +102,16 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -111,6 +127,7 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
@@ -119,14 +136,20 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/tracks?ids=", strings.Join(ids, ","))
-	log.Println("requesting: ", url)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	type tempResp struct {
 		Items Tracks `json:"tracks"`
@@ -137,12 +160,14 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
+	log.Println("making external request: ", req.URL)
+
 	client := &http.Client{}
-	log.Println("requesting: ", req.URL)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

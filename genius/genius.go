@@ -46,15 +46,17 @@ func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[stri
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
+
 	maps := []map[string]int{}
 	l := lyrics.New(lyrics.WithoutProviders(), lyrics.WithGeniusLyrics(fmt.Sprint(token)))
+
 	for _, i := range searches {
 		lyric, err := l.Search(i.Artist, i.Track)
 		if err != nil {
 			return nil, err
 		}
-		maps = append(maps, convertToMap(lyric))
 
+		maps = append(maps, convertToMap(lyric))
 	}
 
 	return combineMaps(maps), nil
@@ -63,14 +65,13 @@ func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[stri
 func convertToMap(lyric string) map[string]int {
 	ret := map[string]int{}
 
-	log.Println("====\nuntouched:\n", lyric, "\n\n\n\n\n\n\n ")
-
 	treated := strings.TrimSpace(strings.Replace(lyric, "\n", " ", -1))
 	pattern := `.*\[{1}.*\].*`
 	match, err := regexp.Match(pattern, []byte(treated))
 	if err != nil {
 		panic(err)
 	}
+
 	for match {
 		start := strings.Index(treated, "[")
 		ending := strings.Index(treated, "]")
@@ -78,7 +79,7 @@ func convertToMap(lyric string) map[string]int {
 
 		match, err = regexp.Match(pattern, []byte(treated))
 		if err != nil {
-			fmt.Println("error: ", err.Error())
+			log.Println("Error while converting to map; string:", treated, "; error: ", err.Error())
 			match = false
 		}
 	}
@@ -92,8 +93,6 @@ func convertToMap(lyric string) map[string]int {
 		replacer := strings.NewReplacer(",", "", ".", "", ";", "", ")", "", "Intro", "", "Pre-Chorus", "", "[", "", "?", "", "]", "", "(", "", "Verse", "", "'", "", "Chorus", "")
 		lyricsString := replacer.Replace(trimmed)
 		cleaned := stopwords.CleanString(lyricsString, "en", true)
-
-		log.Println("parsing: ", ii, " ========> ", cleaned)
 
 		for _, j := range strings.Split(cleaned, " ") {
 			if len(strings.TrimSpace(j)) < 2 {

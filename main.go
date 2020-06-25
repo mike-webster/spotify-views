@@ -19,6 +19,8 @@ var host = ""
 var returnURL = ""
 var lyricsKey = ""
 
+// ViewBag is a basic struct to use to pass information to the views
+// TODO move this into handlers.go
 type ViewBag struct {
 	Resource string
 	Results  interface{}

@@ -13,6 +13,7 @@ func (p SortableMap) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p SortableMap) Contains(key string) int {
 	for i, ii := range p {
 // Map is a sortable map
+
 		if ii.Key == key {
 			return i
 		}
@@ -20,6 +21,7 @@ func (p SortableMap) Contains(key string) int {
 	return -1
 }
 func (p SortableMap) ToMap() map[string]int32 {
+
 // ToMap will return a basic map version of the SortableMap
 	ret := map[string]int32{}
 	for _, i := range p {
@@ -28,13 +30,6 @@ func (p SortableMap) ToMap() map[string]int32 {
 	return ret
 }
 
-func GetSortableMap32(m map[string]int32) SortableMap {
-	ret := SortableMap{}
-	for k, v := range m {
-		ret = append(ret, SortableMapItem{Key: k, Value: v})
-	}
-	return ret
-}
 
 func GetSortableMap(m map[string]int) SortableMap {
 	ret := SortableMap{}
