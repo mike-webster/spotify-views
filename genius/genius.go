@@ -66,6 +66,7 @@ func convertToMap(lyric string) map[string]int {
 	ret := map[string]int{}
 
 	treated := strings.TrimSpace(strings.Replace(lyric, "\n", " ", -1))
+	// This is attempting to strip the dumb "[Intro: Mark Hoppus]" lines
 	pattern := `.*\[{1}.*\].*`
 	match, err := regexp.Match(pattern, []byte(treated))
 	if err != nil {
@@ -90,8 +91,10 @@ func convertToMap(lyric string) map[string]int {
 			continue
 		}
 
+		// Strip out common things we don't want.
 		replacer := strings.NewReplacer(",", "", ".", "", ";", "", ")", "", "Intro", "", "Pre-Chorus", "", "[", "", "?", "", "]", "", "(", "", "Verse", "", "'", "", "Chorus", "")
 		lyricsString := replacer.Replace(trimmed)
+		// This actually gets rid of a LOT of words...
 		cleaned := stopwords.CleanString(lyricsString, "en", true)
 
 		for _, j := range strings.Split(cleaned, " ") {
