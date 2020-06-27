@@ -73,18 +73,29 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 	return of.Close()
 }
 
+var (
+	PathSpotifyOauth    = "/spotify/oauth"
+	PathTopTracks       = "/tracks/top"
+	PathTopArtists      = "/artists/top"
+	PathTopArtistGenres = "/artists/genres"
+	PathTopTracksGenres = "/tracks/genres"
+	PathLogin           = "/login"
+	PathHome            = "/"
+	PathWordCloud       = "/wordcloud"
+)
+
 func runServer() {
 	r := gin.Default()
 	r.Use(LoadContextValues())
 	r.LoadHTMLGlob("templates/*")
-	r.GET("/spotify/oauth", handlerOauth)
-	r.GET("/tracks/top", handlerTopTracks)
-	r.GET("/artists/top", handlerTopArtists)
-	r.GET("/artists/genres", handlerTopArtistsGenres)
-	r.GET("/tracks/genres", handlerTopTracksGenres)
-	r.GET("/login", handlerLogin)
-	r.GET("/", handlerHome)
-	r.GET("/wordcloud", handlerWordCloud)
+	r.GET(PathSpotifyOauth, handlerOauth)
+	r.GET(PathTopTracks, handlerTopTracks)
+	r.GET(PathTopArtists, handlerTopArtists)
+	r.GET(PathTopArtistGenres, handlerTopArtistsGenres)
+	r.GET(PathTopTracksGenres, handlerTopTracksGenres)
+	r.GET(PathLogin, handlerLogin)
+	r.GET(PathHome, handlerHome)
+	r.GET(PathWordCloud, handlerWordCloud)
 
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
