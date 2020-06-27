@@ -1,23 +1,30 @@
 package main
 
-import (
-	"fmt"
-)
+import data "github.com/mike-webster/spotify-views/data"
 
-var scopes = []string{
-	// "user-modify-playback-state",
-	// "user-read-playback-state",
-	// "streaming",
-	// "app-remote-control",
-	"user-top-read",
-	// "user-read-playback-position",
-	// "user-read-recently-played",
-}
-var clientID = ""
-var clientSecret = ""
-var host = ""
-var returnURL = ""
-var lyricsKey = ""
+import "context"
+
+var (
+	scopes = []string{
+		// "user-modify-playback-state",
+		// "user-read-playback-state",
+		// "streaming",
+		// "app-remote-control",
+		"user-top-read",
+		// "user-read-playback-position",
+		// "user-read-recently-played",
+	}
+	clientID     = ""
+	clientSecret = ""
+	host         = ""
+	returnURL    = ""
+	lyricsKey    = ""
+	dbHost       = ""
+	dbUser       = ""
+	dbPass       = ""
+	dbName       = ""
+	secKey       = ""
+)
 
 // ViewBag is a basic struct to use to pass information to the views
 // TODO move this into handlers.go
@@ -27,10 +34,14 @@ type ViewBag struct {
 }
 
 func main() {
-	err := parseEnvironmentVariables()
-	returnURL = fmt.Sprint("https://", host, "/spotify/oauth")
+	ctx, err := parseEnvironmentVariables(context.Background())
 	if err != nil {
 		panic(err)
+	}
+
+	ok := data.Ping(ctx)
+	if !ok {
+		panic("couldnt connect to database")
 	}
 
 	runServer()
