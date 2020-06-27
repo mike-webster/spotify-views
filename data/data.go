@@ -35,11 +35,13 @@ type ContextKey string
 func Ping(ctx context.Context) bool {
 	ok, err := loadDB(ctx)
 	if err != nil || !ok {
+		log.Println("couldnt load db; ", err.Error())
 		return false
 	}
 
 	err = _db.Ping()
 	if err != nil {
+		log.Println("error pinging db: ", err.Error())
 		return false
 	}
 
