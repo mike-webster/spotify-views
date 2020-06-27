@@ -1,26 +1,181 @@
 <!DOCTYPE html>
 <html>
     {{ template "header" }}
+    <link rel="stylesheet" href="/static/css/sortable-theme-dark.css" />
+    <script src="/static/css/sortable.min.js"></script>
     <style>
         #cloud {
-            width: 1024px;
-            height: 1024px;
+            width: 512px;
+            height: 512px;
             background-image: url("/clouds/{{.Filename}}");
             background-size: cover;
+            display:inline-block;
+        }
+        body {
+            text-align: center;
+        }
+        table {
+            display: inline-block;
+        }
+        .left {
+            width: 49%;
+            text-align: right;
+            display:inline-block;
+        }
+        .right {
+            width: 50%;
+            text-align:left;
+            display:inline-block;
         }
     </style>
+    <script>
+        function paginate(curPage, perPage, dir, rows) {
+            // can't go past the end
+            var goingUp = dir == "next";
+            var pageLimit = parseInt(rows.length / perPage);
+            if (curPage >= pageLimit) {
+                return;
+            }
+
+            var nextPage = 0;
+            if (goingUp) {
+                nextPage = curPage + 1;
+            } else {
+                nextPage = curPage - 1;
+            }
+            var headerOffset = 2;
+
+            // hide all
+            for (let i = headerOffset; i < rows.length; i++) {
+                rows[i].style.display = "none";
+            }
+
+            // edge cases
+            if (goingUp) {
+                if (nextPage == pageLimit) {
+                    for (let i = nextPage; i < rows.length % perPage; i++) {
+                        rows[i].style.display = "";
+                    }
+                } else if (curPage == pageLimit) {
+                    for (let i = curPage; i < rows.length % perPage; i++) {
+                        rows[i].style.display = "";
+                    }
+                }
+            } else {
+                if (curPage <= 1) {
+                    for (let i = headerOffset; i < headerOffset + perPage; i++) {
+                        rows[i].style.display = "";
+                    }
+                } else {
+                    for (let i = nextPage; i < curPage; i++) {
+                        rows[i].style.display = "";
+                    }
+                }
+            }
+            
+            // increment the page counter
+            document.getElementById("page").setAttribute('value', nextPage);
+        }
+
+        function hideAll() {
+            document.querySelectorAll('[data-item]').forEach(function(item){
+                item.style.display = "none";
+                item.removeAttribute("data-item-visible");
+            });
+        }
+
+        function displaySome(start, num) {
+            var rows = document.querySelectorAll('[data-item]');
+            for(let i = start; i < start + num; i++) {
+                try {
+                    rows[i].style.display = "";
+                    item.setAttribute("data-item-visible", "");
+                    console.log("showing: ", i);
+                } catch(ex) {
+                    console.log("couldn't display item");
+                    console.log(ex);
+                }
+            }
+        }
+ //mysql -u spotifyviews -p -h mysql.mikewebster.tech spotify_views
+ // mysql -u spotifyviews -p -h  spotify_views_dev
+        document.addEventListener("DOMContentLoaded", function(){
+            var rows = document.querySelectorAll('[data-item]');
+            var prev = document.getElementById("prev");
+            var nxt = document.getElementById("next");
+            var page = parseInt(document.getElementById("page").getAttribute('value'));
+            var perPage = 10;
+            var pageLimit = parseInt(rows.length / perPage);
+
+            if ((rows.length - 1) % perPage != 0) {
+                pageLimit++;
+            } 
+            nxt.addEventListener("click", function(){
+                hideAll();
+                var page = parseInt(document.getElementById("page").getAttribute('value'));
+                var perPage = 10;
+
+                var starting = perPage * (page + 1);
+
+                var rows = document.querySelectorAll("[data-item]");
+                if (starting + perPage > rows.length) {
+                    // next page will run out of room
+                    displaySome(starting, rows.length - starting);
+                } else {
+                    displaySome(starting, perPage);
+                }
+            });
+            prev.addEventListener("click", function(){
+                var visibleRows = document.querySelectorAll('[data-item-visible]').forEach(function(item){
+                    item.style.display = "none";
+                    item.removeAttribute("data-item-visible");
+                });
+                var page = parseInt(document.getElementById("page").getAttribute('value'));
+                var perPage = 10;
+
+                var starting = perPage * (page - 1);
+
+                var rows = document.querySelectorAll("[data-item]");
+                if (starting <= 0) {
+                    // next page will run out of room
+                    for (let i = 0; i < perPage; i++)  {
+                        rows[i].style.display = "";
+                        rows[i].setAttribute("data-item-visible", nil);
+                    }
+                } else {
+                    for (let i = starting; i < starting + perPage; i++) {
+                        rows[i].style.display = "";
+                        rows[i].setAttribute("data-item-visible", nil);
+                    }
+                }
+            });
+
+            next.click();
+        });
+    </script>
     <body>
         {{ template "topnav" }}
         
         <div style="width:100%; text-align:center;">
             <h1>Word Cloud</h1>
             <div id="cloud"></div>
-            {{ range .Maps }}
-                <div style="width:100%">
-                    <div style="width:50%">{{.Key}}</div>
-                    <div style="width:50%">{{.Value}}</div>
-                </div>
-            {{ end }}
+            <table class="sortable-theme-dark" data-sortable>
+                <input type="hidden" id="page" value="0"></input>
+                <tr>
+                    <th>Word</th>
+                    <th>Count</th>
+                <tr>
+                {{ range .Maps }}
+                    <tr data-item>
+                        <td>{{ .Key }}</td>
+                        <td>{{ .Value }}</td>
+                    </tr>
+                {{ end }}
+                <tr>
+                    <td id="prev"><<</td>
+                    <td id="next">>></td>
+                </tr>
+            </table>
         </div>
     </body>
     
