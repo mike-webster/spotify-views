@@ -9,31 +9,70 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/spotify"
 	"github.com/psykhi/wordclouds"
 )
 
-func parseEnvironmentVariables() error {
+func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
 	clientID = os.Getenv("CLIENT_ID")
 	if len(clientID) < 1 {
-		return errors.New("no client id provided")
+		return nil, errors.New("no client id provided")
 	}
+	ctx = context.WithValue(ctx, spotify.ContextClientID, clientID)
 
 	clientSecret = os.Getenv("CLIENT_SECRET")
 	if len(clientSecret) < 1 {
-		return errors.New("no client secret provided")
+		return nil, errors.New("no client secret provided")
 	}
+	ctx = context.WithValue(ctx, spotify.ContextClientSecret, clientSecret)
 
 	host = os.Getenv("HOST")
 	if len(host) < 1 {
-		return errors.New("no host provided")
+		return nil, errors.New("no host provided")
 	}
+	// TODO: Do we need this in the context? or just set for the main package?
+	// consider: the main goal here is to be able to verify everything is working
+	// on app start using the context returned from this method.
 
 	lyricsKey = os.Getenv("LYRICS_KEY")
 	if len(lyricsKey) < 1 {
-		return errors.New("no lyrics key provided")
+		return nil, errors.New("no lyrics key provided")
 	}
+	ctx = context.WithValue(ctx, genius.ContextAccessToken, lyricsKey)
 
-	return nil
+	dbHost = os.Getenv("DB_HOST")
+	if len(dbHost) < 1 {
+		return nil, errors.New("no db host provided")
+	}
+	ctx = context.WithValue(ctx, data.ContextHost, dbHost)
+
+	dbUser = os.Getenv("DB_USER")
+	if len(dbUser) < 1 {
+		return nil, errors.New("no db user provided")
+	}
+	ctx = context.WithValue(ctx, data.ContextUser, dbUser)
+
+	dbPass = os.Getenv("DB_PASS")
+	if len(dbPass) < 1 {
+		return nil, errors.New("no db pass provided")
+	}
+	ctx = context.WithValue(ctx, data.ContextPass, dbPass)
+
+	dbName = os.Getenv("DB_NAME")
+	if len(dbName) < 1 {
+		return nil, errors.New("no db name provided")
+	}
+	ctx = context.WithValue(ctx, data.ContextDatabase, dbName)
+
+	secKey = os.Getenv("SEC_KEY")
+	if len(secKey) < 1 {
+		return nil, errors.New("no sec key provided")
+	}
+	ctx = context.WithValue(ctx, data.ContextSecurityKey, secKey)
+
+	return ctx, nil
 }
 
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
