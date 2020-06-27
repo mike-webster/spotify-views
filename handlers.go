@@ -34,9 +34,6 @@ var (
 )
 
 func handlerOauth(c *gin.Context) {
-	ctx := context.WithValue(c, spotify.ContextReturnURL, returnURL)
-	ctx = context.WithValue(ctx, spotify.ContextClientID, clientID)
-	ctx = context.WithValue(ctx, spotify.ContextClientSecret, clientSecret)
 	code := c.Query(queryStringCode)
 	// TODO: query state verification
 	qErr := c.Query(queryStringError)
@@ -47,7 +44,7 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	ctx, err := spotify.HandleOauth(ctx, code)
+	ctx, err := spotify.HandleOauth(c, code)
 	if err != nil {
 		log.Println("error handling spotify oauth: ", err.Error())
 		c.Status(500)

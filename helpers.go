@@ -75,6 +75,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 
 func runServer() {
 	r := gin.Default()
+	r.Use(LoadContextValues())
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/spotify/oauth", handlerOauth)
 	r.GET("/tracks/top", handlerTopTracks)
