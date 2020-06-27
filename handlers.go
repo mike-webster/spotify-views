@@ -558,10 +558,11 @@ func handlerWordCloud(c *gin.Context) {
 func handlerLogin(c *gin.Context) {
 	// TODO Add state
 	pathScopes := url.QueryEscape(strings.Join(scopes, " "))
+	retURL := c.Value(spotify.ContextReturnURL)
 	redirectURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
 		clientID,
 		pathScopes,
-		returnURL)
+		retURL)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
