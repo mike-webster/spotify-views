@@ -11,6 +11,7 @@ import (
 
 func LoadContextValues() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		parseEnvironmentVariables(c)
 		c.Set(string(spotify.ContextClientID), clientID)
 		c.Set(string(spotify.ContextClientSecret), clientSecret)
 		c.Set(string(genius.ContextAccessToken), lyricsKey)
