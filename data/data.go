@@ -32,21 +32,20 @@ type Database struct {
 type ContextKey string
 
 // Ping returns true if we can successfully ping the db
-func Ping(ctx context.Context) bool {
+func Ping(ctx context.Context) error {
 	ok, err := loadDB(ctx)
 	if err != nil || !ok {
-		log.Println("couldnt load db; ", err.Error())
-		return false
+		return err
 	}
 
 	err = _db.Ping()
 	if err != nil {
 		log.Println("error pinging db: ", err.Error())
-		return false
+		return err
 	}
 
 	log.Println("successful db ping")
-	return true
+	return nil
 }
 
 func GetRefreshTokenForUser(ctx context.Context, id string) (string, error) {

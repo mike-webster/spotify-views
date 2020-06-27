@@ -1,8 +1,11 @@
 package main
 
-import data "github.com/mike-webster/spotify-views/data"
+import (
+	"context"
+	"fmt"
 
-import "context"
+	data "github.com/mike-webster/spotify-views/data"
+)
 
 var (
 	scopes = []string{
@@ -39,9 +42,9 @@ func main() {
 		panic(err)
 	}
 
-	ok := data.Ping(ctx)
-	if !ok {
-		panic("couldnt connect to database")
+	err = data.Ping(ctx)
+	if err != nil {
+		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
 	}
 
 	runServer()
