@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
@@ -17,6 +19,7 @@ func LoadContextValues() gin.HandlerFunc {
 		c.Set(string(data.ContextPass), dbPass)
 		c.Set(string(data.ContextDatabase), dbName)
 		c.Set(string(data.ContextSecurityKey), secKey)
+		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("https://", host, "/spotify/oauth"))
 		c.Next()
 	}
 }
