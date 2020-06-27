@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
 	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
@@ -58,8 +59,39 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	reqCtx, err := spotify.GetUserID(ctx)
+	if err != nil {
+		log.Println("couldnt retrieve userid from spotify; err: ", err.Error())
+		c.Status(500)
+		return
+	}
+
+	id := reqCtx.Value(spotify.ContextResults)
+	if id == nil {
+		log.Println("no id returned from query")
+		c.Status(500)
+		return
+	}
+
+	refresh := ctx.Value(spotify.ContextRefreshToken)
+	if refresh == nil {
+		log.Println("no refresh returned from spotify")
+	} else {
+		success, err := data.SaveRefreshTokenForUser(ctx, fmt.Sprint(refresh), fmt.Sprint(id))
+		if err != nil {
+			log.Println("couldnt save refresh token for user; err: ", err.Error())
+			c.Status(500)
+			return
+		}
+		if !success {
+			log.Println("couldn't save refresh token - unknown")
+			c.Status(500)
+			return
+		}
+	}
+
 	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint("/tracks/top?", queryStringTimeRange, "=short_term"))
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }
 
 func handlerTopTracks(c *gin.Context) {
