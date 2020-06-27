@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,6 +82,48 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 	return []string{
 		r.AccessToken, r.RefreshToken,
 	}, nil
+}
+
+func refreshToken(ctx context.Context) (string, error) {
+	refTok := ctx.Value(ContextRefreshToken)
+	if refTok == nil {
+		return "", errors.New("no refresh token provided")
+	}
+	clientID := ctx.Value(ContextClientID)
+	if clientID == nil {
+		return "", errors.New("no client id provided")
+	}
+	clientSecret := ctx.Value(ContextClientSecret)
+	if clientSecret == nil {
+		return "", errors.New("no client secret is provided")
+	}
+
+	body := url.Values{}
+	body.Set("grant_type", "refresh_token")
+	body.Set("refresh_token", fmt.Sprint(refTok))
+	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(body.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", clientID, clientSecret))))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := makeRequest(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	type tempResp struct {
+		AccessToken string `json:"access_token"`
+	}
+
+	var b tempResp
+	err = json.Unmarshal(*resp, &b)
+	if err != nil {
+		return "", err
+	}
+	return b.AccessToken, nil
 }
 
 func getPairs(m map[string]int32) Pairs {

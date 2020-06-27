@@ -8,6 +8,11 @@ import (
 
 // ContextKey is used to store and access information from the context
 type ContextKey string
+type ErrTokenExpired string
+
+func (e ErrTokenExpired) Error() string {
+	return string(e)
+}
 
 var (
 	// ContextReturnURL is the key to use for the ouath return url
@@ -22,6 +27,8 @@ var (
 	ContextRefreshToken = ContextKey("refresh_token")
 	// ContextTimeRange is the key to use for the spotify search
 	ContextTimeRange = ContextKey("time_range")
+	// ContextResults is the key to use to retrieve the results
+	ContextResults = ContextKey("results")
 )
 
 // HandleOauth is the handler to use for oauth returns from spotify
@@ -39,29 +46,31 @@ func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 
 // GetTopTracks will perform a search for the user's top tracks with the
 // provided limit.
-func GetTopTracks(ctx context.Context, limit int32) (*Tracks, error) {
+func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
 	tracks, err := getTopTracks(ctx, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return &tracks, nil
+	c := context.WithValue(ctx, ContextResults, tracks)
+	return c, nil
 }
 
 // GetTopArtists will perform a search for the user's top artists
-func GetTopArtists(ctx context.Context) (*Artists, error) {
+func GetTopArtists(ctx context.Context) (context.Context, error) {
 	artists, err := getTopArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return artists, nil
+	c := context.WithValue(ctx, ContextResults, artists)
+	return c, nil
 }
 
 // GetGenresForArtists will perform a search for the provided artists IDs
 // and then researches the genres assosciated with each one. A mapping
 // of genres to occurrences is returned.
-func GetGenresForArtists(ctx context.Context, ids []string) (*Pairs, error) {
+func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, error) {
 	ret := map[string]int32{}
 	artists, err := getArtists(ctx, ids)
 	if err != nil {
@@ -78,14 +87,14 @@ func GetGenresForArtists(ctx context.Context, ids []string) (*Pairs, error) {
 		}
 	}
 
-	p := getPairs(ret)
-	return &p, nil
+	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	return c, nil
 }
 
 // GetGenresForTracks will perform a search for the provided track IDs
 // and then researches the genres associated with each one. A mapping
 // of genres to occurrences is returned.
-func GetGenresForTracks(ctx context.Context, ids []string) (*Pairs, error) {
+func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, error) {
 	as := map[string]int32{}
 	aids := []string{}
 	tracks, err := getTracks(ctx, ids)
@@ -122,6 +131,28 @@ func GetGenresForTracks(ctx context.Context, ids []string) (*Pairs, error) {
 		}
 	}
 
-	p := getPairs(ret)
-	return &p, nil
+	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	return c, nil
+}
+
+// GetUserID will perform a request to retrieve the user's ID.
+func GetUserID(ctx context.Context) (context.Context, error) {
+	id, err := getUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, id)
+	return c, nil
+}
+
+// RefreshToken attempts to get a new access token for the user
+func RefreshToken(ctx context.Context) (context.Context, error) {
+	tok, err := refreshToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, tok)
+	return c, nil
 }
