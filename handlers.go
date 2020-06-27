@@ -558,12 +558,11 @@ func handlerWordCloud(c *gin.Context) {
 func handlerLogin(c *gin.Context) {
 	// TODO Add state
 	pathScopes := url.QueryEscape(strings.Join(scopes, " "))
-	retURL := c.Value(spotify.ContextReturnURL)
-	redirectURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
+	spotifyURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
 		clientID,
 		pathScopes,
-		retURL)
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		c.Value(spotify.ContextReturnURL))
+	c.Redirect(http.StatusTemporaryRedirect, spotifyURL)
 }
 
 func handlerHome(c *gin.Context) {
