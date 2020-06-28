@@ -77,15 +77,30 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	requestCtx = context.WithValue(requestCtx, data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
+	requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
+	requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
+	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
+	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
+
+	success, err := data.SaveUser(requestCtx, fmt.Sprint(id))
+	if err != nil {
+		log.Println("couldnt save user: ", id, "; ", err.Error())
+		c.Status(500)
+		return
+	}
+
+	if !success {
+		log.Println("couldnt save user - unknown")
+		c.Status(500)
+		return
+	}
+
 	refresh := oauthResultCtx.Value(spotify.ContextRefreshToken)
 	if refresh == nil {
 		log.Println("no refresh returned from spotify")
 	} else {
-		requestCtx = context.WithValue(requestCtx, data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
-		requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
-		requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
-		requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
-		requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
+		log.Println("refresh: ", refresh)
 		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), fmt.Sprint(id))
 		if err != nil {
 			log.Println("couldnt save refresh token for user; err: ", err.Error())

@@ -104,6 +104,26 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	return rows > 0, nil
 }
 
+func SaveUser(ctx context.Context, id string) (bool, error) {
+	ok, err := loadDB(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if !ok {
+		return false, errors.New("weird - couldnt connect to databse")
+	}
+
+	query := `INSERT INTO users	(spotify_id) VALUES (?)`
+	res := _db.MustExec(query, id)
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
+}
+
 func loadDB(ctx context.Context) (bool, error) {
 	if _db != nil {
 		return true, nil
