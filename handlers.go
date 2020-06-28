@@ -91,8 +91,7 @@ func handlerOauth(c *gin.Context) {
 	}
 
 	if !success {
-		log.Println("couldnt save user - unknown")
-		c.Status(500)
+		log.Println("couldnt create user - may have already existed")
 		return
 	}
 
@@ -107,8 +106,7 @@ func handlerOauth(c *gin.Context) {
 			return
 		}
 		if !success {
-			log.Println("couldn't save refresh token - unknown")
-			c.Status(500)
+			log.Println("token not inserted - may have already existed")
 			return
 		}
 	}
