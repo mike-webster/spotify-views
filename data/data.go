@@ -94,7 +94,7 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	}
 
 	// write query
-	query := `INSERT INTO tokens (spotify_id, refresh) VALUES (?,?)`
+	query := `INSERT IGNORE INTO tokens (spotify_id, refresh) VALUES (?,?)`
 	res := _db.MustExec(query, id, enc)
 	rows, err := res.RowsAffected()
 	if err != nil {
@@ -114,7 +114,7 @@ func SaveUser(ctx context.Context, id string) (bool, error) {
 		return false, errors.New("weird - couldnt connect to databse")
 	}
 
-	query := `INSERT INTO users	(spotify_id) VALUES (?)`
+	query := `INSERT IGNORE INTO users	(spotify_id) VALUES (?)`
 	res := _db.MustExec(query, id)
 	rows, err := res.RowsAffected()
 	if err != nil {
