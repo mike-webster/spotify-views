@@ -494,7 +494,7 @@ func handlerLogin(c *gin.Context) {
 	spotifyURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
 		clientID,
 		pathScopes,
-		c.Value(spotify.ContextReturnURL))
+		c.MustGet(string(spotify.ContextReturnURL)))
 	c.Redirect(http.StatusTemporaryRedirect, spotifyURL)
 }
 
