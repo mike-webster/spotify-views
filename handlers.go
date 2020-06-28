@@ -63,19 +63,21 @@ func handlerOauth(c *gin.Context) {
 	}
 
 	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, token)
-	userResultCtx, err := spotify.GetUserID(requestCtx)
+	userResultCtx, err := spotify.GetUserInfo(requestCtx)
 	if err != nil {
 		log.Println("couldnt retrieve userid from spotify; err: ", err.Error())
 		c.Status(500)
 		return
 	}
 
-	id := userResultCtx.Value(spotify.ContextResults)
-	if id == nil {
+	ctxInfo := userResultCtx.Value(spotify.ContextResults)
+	if ctxInfo == nil {
 		log.Println("no id returned from query")
 		c.Status(500)
 		return
 	}
+
+	info := ctxInfo.(map[string]string)
 
 	requestCtx = context.WithValue(requestCtx, data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
 	requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
@@ -83,9 +85,9 @@ func handlerOauth(c *gin.Context) {
 	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
 	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
 
-	success, err := data.SaveUser(requestCtx, fmt.Sprint(id))
+	success, err := data.SaveUser(requestCtx, info["id"], info["email"])
 	if err != nil {
-		log.Println("couldnt save user: ", id, "; ", err.Error())
+		log.Println("couldnt save user: ", info, "; ", err.Error())
 		c.Status(500)
 		return
 	}
@@ -98,7 +100,7 @@ func handlerOauth(c *gin.Context) {
 	if refresh == nil {
 		log.Println("no refresh returned from spotify")
 	} else {
-		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), fmt.Sprint(id))
+		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), info["id"])
 		if err != nil {
 			log.Println("couldnt save refresh token for user; err: ", err.Error())
 			c.Status(500)
@@ -109,7 +111,7 @@ func handlerOauth(c *gin.Context) {
 		}
 	}
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(id), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }

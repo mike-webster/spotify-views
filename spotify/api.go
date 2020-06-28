@@ -135,14 +135,14 @@ func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, err
 	return c, nil
 }
 
-// GetUserID will perform a request to retrieve the user's ID.
-func GetUserID(ctx context.Context) (context.Context, error) {
-	id, err := getUserID(ctx)
+// GetUserInfo will perform a request to retrieve the user's ID and email.
+func GetUserInfo(ctx context.Context) (context.Context, error) {
+	info, err := getUserInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, id)
+	c := context.WithValue(ctx, ContextResults, info)
 	return c, nil
 }
 

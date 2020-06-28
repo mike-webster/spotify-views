@@ -14,6 +14,7 @@ var (
 		// "streaming",
 		// "app-remote-control",
 		"user-top-read",
+		"user-read-email",
 		// "user-read-playback-position",
 		// "user-read-recently-played",
 	}

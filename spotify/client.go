@@ -165,33 +165,37 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	return &ret.Items, nil
 }
 
-func getUserID(ctx context.Context) (string, error) {
+func getUserInfo(ctx context.Context) (map[string]string, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
-		return "", errors.New("no access token provided")
+		return map[string]string{}, errors.New("no access token provided")
 	}
 
 	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
 	if err != nil {
-		return "", err
+		return map[string]string{}, err
 	}
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
 	body, err := makeRequest(ctx, req)
 	if err != nil {
-		return "", err
+		return map[string]string{}, err
 	}
 
 	type userResponse struct {
-		ID string `json:"id"`
+		ID    string `json:"id"`
+		Email string `json:"email"`
 	}
 	ret := userResponse{}
 	err = json.Unmarshal(*body, &ret)
 	if err != nil {
-		return "", err
+		return map[string]string{}, err
 	}
-	return ret.ID, nil
+	return map[string]string{
+		"id":    ret.ID,
+		"email": ret.Email,
+	}, nil
 }
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
