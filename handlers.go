@@ -192,14 +192,13 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
-
+	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
+		requestCtx = context.WithValue(requestCtx, spotify.ContextTimeRange, tr)
 	}
 
-	reqCtx, err := spotify.GetTopArtists(ctx)
+	artistResponseCtx, err := spotify.GetTopArtists(requestCtx)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
@@ -218,7 +217,7 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	reqArtists := reqCtx.Value(spotify.ContextResults)
+	reqArtists := artistResponseCtx.Value(spotify.ContextResults)
 	if reqArtists == nil {
 		log.Println("received no artists")
 		c.Status(500)
