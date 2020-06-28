@@ -4,14 +4,14 @@
 body {
     display: inline-block;
     font-family: Ubuntu;
-    background-color: black;
-    color: gray;
+    background-color: #FFFFFF;
+    color: #000000;
     width: 100%;
 }
 a {
     text-decoration: none;
     font-family: inherit;
-    color: white;
+    color: #1DB954;
 }
 
 p { 

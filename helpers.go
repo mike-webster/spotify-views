@@ -81,7 +81,8 @@ func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
 
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
 	colors := []color.RGBA{
-		{0x17, 0xA5, 0x54, 0xff},
+		//{0x17, 0xA5, 0x54, 0xff},
+		{0x1E, 0xD7, 0x60, 0xFF},
 	}
 
 	rgbaColors := []color.Color{}
