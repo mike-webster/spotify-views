@@ -91,7 +91,7 @@ func requestLogger() gin.HandlerFunc {
 				"client_ip":    ctx.ClientIP(),
 				"event":        "http.in",
 				"method":       ctx.Request.Method,
-				"path":         ctx.GetString("originalPath"),
+				"path":         ctx.Request.URL.Path,
 				"query":        ctx.Request.URL.RawQuery,
 				"referer":      ctx.Request.Referer(),
 				"status":       ctx.Writer.Status(),
