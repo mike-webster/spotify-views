@@ -23,6 +23,7 @@ var (
 	queryStringError               = "error"
 	queryStringTimeRange           = "time_range"
 	cookieKeyToken                 = "svauth"
+	cookieKeyID                    = "svid"
 	topTracksLimit           int32 = 25
 	topGenresTopTracksLimit  int32 = 50
 	wordCloudTopTracksLimit  int32 = 50
@@ -42,39 +43,49 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	ctx, err := spotify.HandleOauth(c, code)
+	requestCtx := context.Background()
+	requestCtx = context.WithValue(requestCtx, spotify.ContextClientID, c.MustGet(string(spotify.ContextClientID)))
+	requestCtx = context.WithValue(requestCtx, spotify.ContextClientSecret, c.MustGet(string(spotify.ContextClientSecret)))
+	requestCtx = context.WithValue(requestCtx, spotify.ContextReturnURL, c.MustGet(string(spotify.ContextReturnURL)))
+
+	oauthResultCtx, err := spotify.HandleOauth(requestCtx, code)
 	if err != nil {
 		log.Println("error handling spotify oauth: ", err.Error())
 		c.Status(500)
 		return
 	}
 
-	token := ctx.Value(spotify.ContextAccessToken)
+	token := oauthResultCtx.Value(spotify.ContextAccessToken)
 	if token == nil {
 		log.Println("no token returned from spotify")
 		c.Status(500)
 		return
 	}
 
-	reqCtx, err := spotify.GetUserID(ctx)
+	userResultCtx, err := spotify.GetUserID(requestCtx)
 	if err != nil {
 		log.Println("couldnt retrieve userid from spotify; err: ", err.Error())
 		c.Status(500)
 		return
 	}
 
-	id := reqCtx.Value(spotify.ContextResults)
+	id := userResultCtx.Value(spotify.ContextResults)
 	if id == nil {
 		log.Println("no id returned from query")
 		c.Status(500)
 		return
 	}
 
-	refresh := ctx.Value(spotify.ContextRefreshToken)
+	refresh := userResultCtx.Value(spotify.ContextRefreshToken)
 	if refresh == nil {
 		log.Println("no refresh returned from spotify")
 	} else {
-		success, err := data.SaveRefreshTokenForUser(ctx, fmt.Sprint(refresh), fmt.Sprint(id))
+		requestCtx = context.WithValue(requestCtx, data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
+		requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
+		requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
+		requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
+		requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
+		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), fmt.Sprint(id))
 		if err != nil {
 			log.Println("couldnt save refresh token for user; err: ", err.Error())
 			c.Status(500)
@@ -87,6 +98,7 @@ func handlerOauth(c *gin.Context) {
 		}
 	}
 
+	c.SetCookie(cookieKeyID, fmt.Sprint(id), 3600, "/", strings.Replace("host", "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }
@@ -99,34 +111,24 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
+		requestCtx = context.WithValue(requestCtx, spotify.ContextTimeRange, tr)
 	}
 
-	reqCtx, err := spotify.GetTopTracks(ctx, topTracksLimit)
+	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
@@ -134,7 +136,7 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	reqTracks := reqCtx.Value(spotify.ContextResults)
+	reqTracks := tracksResultsCtx.Value(spotify.ContextResults)
 	if reqTracks == nil {
 		log.Println("no tracks returned")
 		c.Status(500)
@@ -189,25 +191,15 @@ func handlerTopArtists(c *gin.Context) {
 	reqCtx, err := spotify.GetTopArtists(ctx)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathTopArtists)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve top artists from spotify: ", err.Error())
@@ -291,25 +283,15 @@ func handlerTopArtistsGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForArtists(ctx, artists.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathTopArtistGenres)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve genres for artists from spotify: ", err.Error())
@@ -354,25 +336,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
@@ -397,25 +369,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForTracks(ctx, tracks.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve top genres for top tracks from spotify: ", err.Error())
@@ -460,25 +422,15 @@ func handlerWordCloud(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// need to refresh tokens and try again
-			// TODO: we'll probably need a way to stop infinite redirects
-			reqCtx, err := spotify.RefreshToken(ctx)
+			success, err := refreshToken(c)
 			if err != nil {
-				log.Println("couldnt refresh token: ", err.Error())
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 				return
 			}
-
-			reqTok := reqCtx.Value(spotify.ContextResults)
-			if reqTok == nil {
-				log.Println("no token returned")
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+			if success {
+				c.Redirect(http.StatusTemporaryRedirect, PathWordCloud)
 				return
 			}
-
-			c.SetCookie(cookieKeyToken, fmt.Sprint(reqTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-			c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-			return
 		}
 
 		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
@@ -526,25 +478,6 @@ func handlerWordCloud(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-
-	// displaying the image
-	// readBack, err := os.Open(fmt.Sprint("static/clouds/", filename))
-	// if err != nil {
-	// 	log.Println("couldn't read file back: ", err.Error())
-	// 	c.Status(500)
-	// 	return
-	// }
-
-	// defer readBack.Close()
-	// id, _, err := image.Decode(readBack)
-	// if err != nil {
-	// 	log.Println("couldnt decode")
-	// 	c.Status(500)
-	// 	return
-	// }
-
-	// var buff bytes.Buffer
-	// png.Encode(&buff, id)
 
 	type viewData struct {
 		Filename string

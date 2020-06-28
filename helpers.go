@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"log"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mike-webster/spotify-views/data"
@@ -142,4 +145,43 @@ func runServer() {
 	r.Static("/clouds/", "./static/clouds")
 
 	r.Run()
+}
+
+func refreshToken(c *gin.Context) (bool, error) {
+	// need to refresh tokens and try again
+	// TODO: we'll probably need a way to stop infinite redirects
+	requestCtx := context.WithValue(context.Background(), data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
+	requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
+	requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
+	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
+	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
+
+	spotifyID, err := c.Cookie(cookieKeyID)
+	if err != nil {
+		log.Println("no userid stored; ", err.Error())
+		return false, err
+	}
+
+	refreshToken, err := data.GetRefreshTokenForUser(requestCtx, spotifyID)
+	if err != nil {
+		log.Println("no refresh token stored; ", err.Error())
+		return false, err
+	}
+
+	requestCtx = context.WithValue(requestCtx, spotify.ContextRefreshToken, refreshToken)
+	refrshResponseCtx, err := spotify.RefreshToken(requestCtx)
+	if err != nil {
+		log.Println("couldnt refresh token: ", err.Error())
+		return false, err
+	}
+
+	refTok := refrshResponseCtx.Value(spotify.ContextResults)
+	if refTok == nil {
+		log.Println("no token returned")
+		return false, err
+	}
+
+	c.SetCookie(cookieKeyToken, fmt.Sprint(refTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
+	return true, nil
 }
