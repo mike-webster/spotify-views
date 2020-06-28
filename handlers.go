@@ -107,7 +107,6 @@ func handlerOauth(c *gin.Context) {
 		}
 		if !success {
 			log.Println("token not inserted - may have already existed")
-			return
 		}
 	}
 
