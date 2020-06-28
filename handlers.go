@@ -155,7 +155,7 @@ func handlerTopTracks(c *gin.Context) {
 	}
 
 	tracks, ok := reqTracks.(spotify.Tracks)
-	if ok {
+	if !ok {
 		log.Println("couldnt parse tracks returned from spotify; ", reflect.TypeOf(reqTracks))
 		c.Status(500)
 		return
