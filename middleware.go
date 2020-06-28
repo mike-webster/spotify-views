@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"runtime/debug"
@@ -108,7 +107,7 @@ func requestLogger() gin.HandlerFunc {
 			reqID, _ := uuid.NewV4()
 			ctx.Set("logger", defaultLogger(ctx).WithFields(logrus.Fields{
 				"request_id": reqID,
-				"body": strBody,
+				"body":       strBody,
 			}))
 
 			return logger
