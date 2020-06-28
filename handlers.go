@@ -92,7 +92,6 @@ func handlerOauth(c *gin.Context) {
 
 	if !success {
 		log.Println("couldnt create user - may have already existed")
-		return
 	}
 
 	refresh := oauthResultCtx.Value(spotify.ContextRefreshToken)
