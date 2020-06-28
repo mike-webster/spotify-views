@@ -105,20 +105,10 @@ func requestLogger() gin.HandlerFunc {
 				logger.Info()
 			}
 
-			sBody := struct {
-				Repository struct {
-					Name string `json:"name"`
-				} `json:"repository"`
-			}{}
-
-			err = json.Unmarshal([]byte(strBody), &sBody)
-			if err != nil {
-				logger.WithField("error", err).Error("couldn't unmarshall body to get repo name")
-			}
-
 			reqID, _ := uuid.NewV4()
 			ctx.Set("logger", defaultLogger(ctx).WithFields(logrus.Fields{
 				"request_id": reqID,
+				"body": strBody,
 			}))
 
 			return logger
