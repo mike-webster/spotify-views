@@ -449,6 +449,7 @@ func handlerWordCloud(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+	log.Println("got top tracks")
 
 	reqTracks := reqCtx.Value(spotify.ContextResults)
 	if reqTracks == nil {
@@ -480,11 +481,17 @@ func handlerWordCloud(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+	log.Println("got word counts")
 
 	sm := sortablemap.GetSortableMap(wordCounts)
 	sort.Sort(sort.Reverse(sm))
+
+	log.Println("map sorted")
+
 	filename := fmt.Sprint(time.Now().Unix(), ".png")
 	err = generateWordCloud(ctx, filename, wordCounts)
+
+	log.Println("word cloud generated")
 	if err != nil {
 		log.Println("couldn't generate error: ", err.Error())
 		c.Status(500)
