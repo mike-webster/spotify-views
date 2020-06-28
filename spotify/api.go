@@ -63,7 +63,7 @@ func GetTopArtists(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, artists)
+	c := context.WithValue(ctx, ContextResults, *artists)
 	return c, nil
 }
 
