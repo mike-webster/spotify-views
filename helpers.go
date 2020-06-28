@@ -128,8 +128,10 @@ var (
 )
 
 func runServer() {
-	r := gin.Default()
-	r.Use(LoadContextValues())
+	r := gin.New()
+	r.Use(requestLogger())
+	r.Use(recovery())
+	r.Use(loadContextValues())
 	r.LoadHTMLGlob("templates/*")
 	r.GET(PathSpotifyOauth, handlerOauth)
 	r.GET(PathTopTracks, handlerTopTracks)
