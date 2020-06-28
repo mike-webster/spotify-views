@@ -99,7 +99,7 @@ func handlerOauth(c *gin.Context) {
 		}
 	}
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(id), 3600, "/", strings.Replace("host", "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyID, fmt.Sprint(id), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }
