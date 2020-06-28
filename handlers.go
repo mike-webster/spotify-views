@@ -62,6 +62,7 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, token)
 	userResultCtx, err := spotify.GetUserID(requestCtx)
 	if err != nil {
 		log.Println("couldnt retrieve userid from spotify; err: ", err.Error())
