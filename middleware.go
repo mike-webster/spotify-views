@@ -116,8 +116,9 @@ func requestLogger() gin.HandlerFunc {
 				logger.WithField("error", err).Error("couldn't unmarshall body to get repo name")
 			}
 
+			reqID, _ := uuid.NewV4()
 			ctx.Set("logger", defaultLogger(ctx).WithFields(logrus.Fields{
-				"request_id": uuid.NewV4(),
+				"request_id": reqID,
 			}))
 
 			return logger
