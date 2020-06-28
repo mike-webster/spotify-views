@@ -100,7 +100,6 @@ func handlerOauth(c *gin.Context) {
 	if refresh == nil {
 		log.Println("no refresh returned from spotify")
 	} else {
-		log.Println("refresh: ", refresh)
 		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), fmt.Sprint(id))
 		if err != nil {
 			log.Println("couldnt save refresh token for user; err: ", err.Error())
@@ -161,7 +160,7 @@ func handlerTopTracks(c *gin.Context) {
 
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if ok {
-		log.Println("couldnt parse tracks returned from spotify")
+		log.Println("couldnt parse tracks returned from spotify; ", reflect.TypeOf(reqTracks))
 		c.Status(500)
 		return
 	}
