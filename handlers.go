@@ -71,6 +71,7 @@ func handlerOauth(c *gin.Context) {
 	}
 
 	id := userResultCtx.Value(spotify.ContextResults)
+	log.Println("userid: ", id)
 	if id == nil {
 		log.Println("no id returned from query")
 		c.Status(500)
