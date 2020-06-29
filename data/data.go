@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/jmoiron/sqlx"
+	"github.com/mike-webster/spotify-views/logging"
 )
 
 var (
@@ -38,13 +38,15 @@ func Ping(ctx context.Context) error {
 		return err
 	}
 
+	logger := logging.GetLogger(&ctx)
 	err = _db.Ping()
 	if err != nil {
-		log.Println("error pinging db: ", err.Error())
+		logger.WithField("event", "ping_fail").Error(err)
+
 		return err
 	}
 
-	log.Println("successful db ping")
+	logger.WithField("event", "ping_success").Info()
 	return nil
 }
 

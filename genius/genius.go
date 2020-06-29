@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
 	"github.com/bbalet/stopwords"
+	"github.com/mike-webster/spotify-views/logging"
 	lyrics "github.com/rhnvrm/lyric-api-go"
+	"github.com/sirupsen/logrus"
 )
 
 // ContextKey is used to store and access information from the context
@@ -56,21 +57,21 @@ func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[stri
 			return nil, err
 		}
 
-		maps = append(maps, convertToMap(lyric))
+		maps = append(maps, convertToMap(ctx, lyric))
 	}
 
 	return combineMaps(maps), nil
 }
 
-func convertToMap(lyric string) map[string]int {
+func convertToMap(ctx context.Context, lyric string) map[string]int {
 	ret := map[string]int{}
-
+	logger := logging.GetLogger(&ctx)
 	treated := strings.TrimSpace(strings.Replace(lyric, "\n", " ", -1))
 	// This is attempting to strip the dumb "[Intro: Mark Hoppus]" lines
 	pattern := `.*\[{1}.*\].*`
 	match, err := regexp.Match(pattern, []byte(treated))
 	if err != nil {
-		panic(err)
+
 	}
 
 	for match {
@@ -80,7 +81,11 @@ func convertToMap(lyric string) map[string]int {
 
 		match, err = regexp.Match(pattern, []byte(treated))
 		if err != nil {
-			log.Println("Error while converting to map; string:", treated, "; error: ", err.Error())
+			logger.WithFields(logrus.Fields{
+				"event":    "conversion_error",
+				"treated":  treated,
+				"original": lyric,
+			}).Error(err)
 			match = false
 		}
 	}

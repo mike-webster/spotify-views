@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/logging"
 	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
 )
@@ -33,12 +34,13 @@ var (
 )
 
 func handlerOauth(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	code := c.Query(queryStringCode)
 	// TODO: query state verification
 	qErr := c.Query(queryStringError)
 	if len(qErr) > 0 {
 		// the user is a fucker and they denied access
-		log.Println("user did not grant access: ", qErr)
+		logger.WithError(errors.New(qErr)).Error("user did not grant access")
 		c.Status(500)
 		return
 	}
@@ -50,14 +52,14 @@ func handlerOauth(c *gin.Context) {
 
 	oauthResultCtx, err := spotify.HandleOauth(requestCtx, code)
 	if err != nil {
-		log.Println("error handling spotify oauth: ", err.Error())
+		logger.WithError(err).Error("error handling spotify oauth")
 		c.Status(500)
 		return
 	}
 
 	token := oauthResultCtx.Value(spotify.ContextAccessToken)
 	if token == nil {
-		log.Println("no token returned from spotify")
+		logger.WithError(err).Error("no access token returned from spotify")
 		c.Status(500)
 		return
 	}
@@ -65,14 +67,14 @@ func handlerOauth(c *gin.Context) {
 	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, token)
 	userResultCtx, err := spotify.GetUserInfo(requestCtx)
 	if err != nil {
-		log.Println("couldnt retrieve userid from spotify; err: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve userid from spotify")
 		c.Status(500)
 		return
 	}
 
 	ctxInfo := userResultCtx.Value(spotify.ContextResults)
 	if ctxInfo == nil {
-		log.Println("no id returned from query")
+		logger.Error("no id returned from query")
 		c.Status(500)
 		return
 	}
@@ -87,27 +89,27 @@ func handlerOauth(c *gin.Context) {
 
 	success, err := data.SaveUser(requestCtx, info["id"], info["email"])
 	if err != nil {
-		log.Println("couldnt save user: ", info, "; ", err.Error())
+		logger.WithField("info", info).WithError(err).Error("couldnt save user")
 		c.Status(500)
 		return
 	}
 
 	if !success {
-		log.Println("couldnt create user - may have already existed")
+		logger.WithField("info", info).Warn("couldnt create user - may have already existed")
 	}
 
 	refresh := oauthResultCtx.Value(spotify.ContextRefreshToken)
 	if refresh == nil {
-		log.Println("no refresh returned from spotify")
+		logger.Error("no refresh token returned from spotify")
 	} else {
 		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), info["id"])
 		if err != nil {
-			log.Println("couldnt save refresh token for user; err: ", err.Error())
+			logger.WithField("info", info).WithError(err).Error("couldnt save refresh token for user")
 			c.Status(500)
 			return
 		}
 		if !success {
-			log.Println("token not inserted - may have already existed")
+			logger.WithField("info", info).Warn("refresh token not inserted - may have already existed")
 		}
 	}
 
@@ -117,9 +119,10 @@ func handlerOauth(c *gin.Context) {
 }
 
 func handlerTopTracks(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		log.Println("no token - redirecting to login")
+		logger.Debug("no token, redirecting")
 		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 		return
 	}
@@ -144,21 +147,21 @@ func handlerTopTracks(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqTracks := tracksResultsCtx.Value(spotify.ContextResults)
 	if reqTracks == nil {
-		log.Println("no tracks returned")
+		logger.Error("no tracks returned from spotify")
 		c.Status(500)
 		return
 	}
 
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if !ok {
-		log.Println("couldnt parse tracks returned from spotify; ", reflect.TypeOf(reqTracks))
+		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks returned from spotify")
 		c.Status(500)
 		return
 	}
@@ -187,9 +190,10 @@ func handlerTopTracks(c *gin.Context) {
 }
 
 func handlerTopArtists(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		log.Println("no token - redirecting to login")
+		logger.Debug("no token, redirecting")
 		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 		return
 	}
@@ -214,21 +218,21 @@ func handlerTopArtists(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve top artists from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve top artists from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqArtists := artistResponseCtx.Value(spotify.ContextResults)
 	if reqArtists == nil {
-		log.Println("received no artists")
+		logger.Error("received no artists")
 		c.Status(500)
 		return
 	}
 
 	artists, ok := reqArtists.(spotify.Artists)
 	if !ok {
-		log.Println("couldnt parse artists")
+		logger.WithField("type", reflect.TypeOf(reqArtists)).Error("couldnt parse artists returned from spotify")
 		c.Status(500)
 		return
 	}
@@ -257,10 +261,11 @@ func handlerTopArtists(c *gin.Context) {
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		log.Println("no token - redirecting to login")
-		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		logger.Debug("no token, redirecting")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 		return
 	}
 
@@ -273,21 +278,15 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 	reqCtx, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		log.Println("couldnt retrieve top artists from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve top artists from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqArtists := reqCtx.Value(spotify.ContextResults)
-	if reqArtists == nil {
-		log.Println("received no artists")
-		c.Status(500)
-		return
-	}
-
 	artists, ok := reqArtists.(spotify.Artists)
 	if !ok {
-		log.Println("couldnt parse artists")
+		logger.WithField("type", reflect.TypeOf(reqArtists)).Error("couldnt parse artists from spotify")
 		c.Status(500)
 		return
 	}
@@ -306,21 +305,15 @@ func handlerTopArtistsGenres(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve genres for artists from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve genres for artists from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqGenres := reqCtx.Value(spotify.ContextResults)
-	if reqGenres == nil {
-		log.Println("received no genres")
-		c.Status(500)
-		return
-	}
-
 	genres, ok := reqGenres.(spotify.Pairs)
 	if !ok {
-		log.Println("couldnt parse genres")
+		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
 		c.Status(500)
 		return
 	}
@@ -331,9 +324,10 @@ func handlerTopArtistsGenres(c *gin.Context) {
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		log.Println("no token - redirecting to login")
+		logger.Debug("no token, redirecting")
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
@@ -359,21 +353,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqTracks := reqCtx.Value(spotify.ContextResults)
-	if reqTracks == nil {
-		log.Println("received no tracks")
-		c.Status(500)
-		return
-	}
-
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if !ok {
-		log.Println("couldnt parse tracks")
+		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
 		c.Status(500)
 		return
 	}
@@ -392,21 +380,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve top genres for top tracks from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retreive top genres for top tracks from spotify")
 		c.Status(500)
 		return
 	}
 
 	reqGenres := reqCtx.Value(spotify.ContextResults)
-	if reqGenres == nil {
-		log.Println("receive no genres")
-		c.Status(500)
-		return
-	}
-
 	genres, ok := reqGenres.(spotify.Pairs)
 	if !ok {
-		log.Println("couldnt parse genres")
+		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
 		c.Status(500)
 		return
 	}
@@ -417,10 +399,11 @@ func handlerTopTracksGenres(c *gin.Context) {
 }
 
 func handlerWordCloud(c *gin.Context) {
+	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		log.Println("no token - redirecting to login")
-		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		logger.Debug("no token, redirecting")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
 		return
 	}
 
@@ -445,22 +428,16 @@ func handlerWordCloud(c *gin.Context) {
 			}
 		}
 
-		log.Println("couldnt retrieve top tracks from spotify: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
-	log.Println("got top tracks")
+	logger.Debug("got top tracks")
 
 	reqTracks := reqCtx.Value(spotify.ContextResults)
-	if reqTracks == nil {
-		log.Println("received no tracks")
-		c.Status(500)
-		return
-	}
-
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if !ok {
-		log.Println("couldnt parse tracks")
+		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
 		c.Status(500)
 		return
 	}
@@ -477,23 +454,23 @@ func handlerWordCloud(c *gin.Context) {
 
 	wordCounts, err := genius.GetLyricCountForSong(ctx, searches)
 	if err != nil {
-		log.Println("couldn't retrieve word counts: ", err.Error())
+		logger.WithError(err).Error("couldnt retrieve word counts")
 		c.Status(500)
 		return
 	}
-	log.Println("got word counts")
+	logger.Debug("got word counts")
 
 	sm := sortablemap.GetSortableMap(wordCounts)
 	sort.Sort(sort.Reverse(sm))
 
-	log.Println("map sorted")
+	logger.Debug("map sorted")
 
 	filename := fmt.Sprint(time.Now().Unix(), ".png")
 	err = generateWordCloud(ctx, filename, wordCounts)
 
-	log.Println("word cloud generated")
+	logger.Debug("word cloud generated")
 	if err != nil {
-		log.Println("couldn't generate error: ", err.Error())
+		logger.WithError(err).Error("couldnt generate word cloud")
 		c.Status(500)
 		return
 	}

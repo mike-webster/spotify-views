@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
 	"github.com/psykhi/wordclouds"
 )
@@ -75,7 +75,7 @@ func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
 		return nil, errors.New("no sec key provided")
 	}
 	ctx = context.WithValue(ctx, data.ContextSecurityKey, secKey)
-
+	ctx = context.WithValue(ctx, logging.ContextLogger, logging.GetLogger(nil))
 	return ctx, nil
 }
 
@@ -158,29 +158,30 @@ func refreshToken(c *gin.Context) (bool, error) {
 	requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
 	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
 	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
+	logger := logging.GetLogger(nil)
 
 	spotifyID, err := c.Cookie(cookieKeyID)
 	if err != nil {
-		log.Println("no userid stored; ", err.Error())
+		logger.WithError(err).Error("no userid stored")
 		return false, err
 	}
 
 	refreshToken, err := data.GetRefreshTokenForUser(requestCtx, spotifyID)
 	if err != nil {
-		log.Println("no refresh token stored; ", err.Error())
+		logger.WithError(err).Error("no refresh token stored")
 		return false, err
 	}
 
 	requestCtx = context.WithValue(requestCtx, spotify.ContextRefreshToken, refreshToken)
 	refrshResponseCtx, err := spotify.RefreshToken(requestCtx)
 	if err != nil {
-		log.Println("couldnt refresh token: ", err.Error())
+		logger.WithError(err).Error("refresh token attempt failed")
 		return false, err
 	}
 
 	refTok := refrshResponseCtx.Value(spotify.ContextResults)
 	if refTok == nil {
-		log.Println("no token returned")
+		logger.WithError(err).Error("no token returned from refresh attempt")
 		return false, err
 	}
 
