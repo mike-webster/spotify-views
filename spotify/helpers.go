@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -44,7 +42,6 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, errors.New("client secret couldn't be parsed")
 	}
 
-	client := &http.Client{}
 	tokenURL := "https://accounts.spotify.com/api/token"
 	body := url.Values{}
 	body.Set("grant_type", "authorization_code")
@@ -60,21 +57,13 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := client.Do(req)
+	respBody, err := makeRequest(ctx, req)
 	if err != nil {
 		return []string{}, err
 	}
 
-	defer resp.Body.Close()
-	b, _ := ioutil.ReadAll(resp.Body)
-
-	if resp.StatusCode != 200 {
-		log.Println(fmt.Sprintf("error -- non 200 response -- Body: %s", b))
-		return []string{}, errors.New(fmt.Sprint("non 200 response from spotify: ", resp.Status))
-	}
-
 	var r spotifyResponse
-	err = json.Unmarshal(b, &r)
+	err = json.Unmarshal(*respBody, &r)
 	if err != nil {
 		return []string{}, err
 	}
