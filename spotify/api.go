@@ -29,6 +29,14 @@ var (
 	ContextTimeRange = ContextKey("time_range")
 	// ContextResults is the key to use to retrieve the results
 	ContextResults = ContextKey("results")
+	// ContextLogger is the key to use to retrieve the logger
+	ContextLogger = "logger"
+	// EventNeedsRefreshToken holds the key to log when a user needs a to
+	// refresh their session
+	EventNeedsRefreshToken = "token_needs_refresh"
+	// EventNon200Response holds the key to log when an external request
+	// comes back with a non-200 response
+	EventNon200Response = "non_200_response"
 )
 
 // HandleOauth is the handler to use for oauth returns from spotify

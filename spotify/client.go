@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
@@ -200,10 +202,23 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
+	iLogger := ctx.Value(ContextLogger)
+	logger, ok := iLogger.(logrus.Logger)
+	if !ok {
+		return nil, errors.New(fmt.Sprint("couldnt parse logger; ", reflect.TypeOf(iLogger)))
+	}
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	dur := time.Since(s)
-	log.Println("external request (", resp.StatusCode, ") to: ", req.URL, " took ", dur.String())
+
+	logger.WithFields(logrus.Fields{
+		"status":   resp.StatusCode,
+		"url":      req.URL,
+		"event":    "external_request",
+		"duration": dur.String(),
+	}).Info()
+
 	if err != nil {
 		return nil, err
 	}
@@ -216,10 +231,15 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 401 {
-			log.Println("stale token - refresh attempt")
+			logger.WithField("event", EventNeedsRefreshToken).Info()
 			return nil, ErrTokenExpired("")
 		}
-		log.Println("unhappy response ", resp.StatusCode, "\n\t", string(b))
+
+		logger.WithFields(logrus.Fields{
+			"event":  EventNon200Response,
+			"status": resp.StatusCode,
+			"body":   string(b),
+		}).Error()
 		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
 	}
 
