@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
+	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
 
@@ -202,11 +202,7 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
-	iLogger := ctx.Value(ContextLogger)
-	logger, ok := iLogger.(logrus.Logger)
-	if !ok {
-		return nil, errors.New(fmt.Sprint("couldnt parse logger; ", reflect.TypeOf(iLogger)))
-	}
+	logger := logging.GetLogger(&ctx)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
