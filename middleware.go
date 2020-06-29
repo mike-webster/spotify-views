@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"runtime/debug"
@@ -11,6 +12,7 @@ import (
 	"github.com/gofrs/uuid"
 	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/logging"
 	spotify "github.com/mike-webster/spotify-views/spotify"
 	"github.com/sirupsen/logrus"
 )
@@ -27,6 +29,8 @@ func loadContextValues() gin.HandlerFunc {
 		c.Set(string(data.ContextDatabase), dbName)
 		c.Set(string(data.ContextSecurityKey), secKey)
 		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("https://", host, "/spotify/oauth"))
+		ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
+		c.Set("logger", logging.GetLogger(&ctx))
 		c.Next()
 	}
 }
@@ -38,7 +42,8 @@ func recovery() gin.HandlerFunc {
 			if r := recover(); r != nil {
 				b, _ := ioutil.ReadAll(c.Request.Body)
 
-				defaultLogger(c).WithFields(logrus.Fields{
+				ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
+				logging.GetLogger(&ctx).WithFields(logrus.Fields{
 					"event":    "ErrPanicked",
 					"error":    r,
 					"stack":    string(debug.Stack()),
@@ -76,7 +81,7 @@ func requestLogger() gin.HandlerFunc {
 			strBody := ""
 			body, err := ioutil.ReadAll(ctx.Request.Body)
 			if err != nil {
-				defaultLogger(ctx).WithField("error", err).Error("cant read request body")
+				logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
 			} else {
 				// write the body back into the request
 				ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -86,7 +91,8 @@ func requestLogger() gin.HandlerFunc {
 				strBody = strings.Replace(strBody, "\t", "", -1)
 			}
 
-			logger := defaultLogger(ctx).WithFields(logrus.Fields{
+			reqID, _ := uuid.NewV4()
+			logger := logging.GetLogger(nil).WithFields(logrus.Fields{
 				"client_ip":    ctx.ClientIP(),
 				"event":        "http.in",
 				"method":       ctx.Request.Method,
@@ -96,6 +102,7 @@ func requestLogger() gin.HandlerFunc {
 				"status":       ctx.Writer.Status(),
 				"user_agent":   ctx.Request.UserAgent(),
 				"request_body": strBody,
+				"request_id":   reqID,
 			})
 
 			if len(ctx.Errors) > 0 {
@@ -104,11 +111,7 @@ func requestLogger() gin.HandlerFunc {
 				logger.Info()
 			}
 
-			reqID, _ := uuid.NewV4()
-			ctx.Set("logger", defaultLogger(ctx).WithFields(logrus.Fields{
-				"request_id": reqID,
-				"body":       strBody,
-			}))
+			ctx.Set(string(logging.ContextLogger), logger)
 
 			return logger
 		}(ctx)
