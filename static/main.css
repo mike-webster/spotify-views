@@ -1,17 +1,43 @@
 @import url("//fonts.googleapis.com/css?family=Ubuntu");
 @import url("/static/css/topnav.css");
 
-body {
-    display: inline-block;
-    font-family: Ubuntu;
-    background-color: black;
-    color: gray;
-    width: 100%;
+html {
+    height: 100%;
 }
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: Ubuntu;
+    background-color: #FFFFFF;
+    color: #000000;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.content {
+    flex: 1 0 auto;
+}
+
+.footer {
+    flex-shrink: 0;
+    background-color: #000;
+    color: #FFF;
+    width: 100%;
+    text-align: center;
+    z-index: 99;
+}
+
+footer p {
+    margin: 0;
+    padding: 20px 0;
+}
+
 a {
     text-decoration: none;
     font-family: inherit;
-    color: white;
+    color: #1DB954;
 }
 
 p { 

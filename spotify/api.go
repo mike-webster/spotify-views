@@ -4,46 +4,87 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 )
 
+// ContextKey is used to store and access information from the context
+type ContextKey string
+type ErrTokenExpired string
+
+func (e ErrTokenExpired) Error() string {
+	return string(e)
+}
+
+var (
+	// ContextReturnURL is the key to use for the ouath return url
+	ContextReturnURL = ContextKey("return_url")
+	// ContextClientID is the key to use for the spotify client id
+	ContextClientID = ContextKey("client_id")
+	// ContextClientSecret is the key to use for the spotify client secret
+	ContextClientSecret = ContextKey("client_secret")
+	// ContextAccessToken is the key to use for the spotify access token
+	ContextAccessToken = ContextKey("access_token")
+	// ContextRefreshToken TODO
+	ContextRefreshToken = ContextKey("refresh_token")
+	// ContextTimeRange is the key to use for the spotify search
+	ContextTimeRange = ContextKey("time_range")
+	// ContextResults is the key to use to retrieve the results
+	ContextResults = ContextKey("results")
+	// ContextLogger is the key to use to retrieve the logger
+	ContextLogger = "logger"
+	// EventNeedsRefreshToken holds the key to log when a user needs a to
+	// refresh their session
+	EventNeedsRefreshToken = "token_needs_refresh"
+	// EventNon200Response holds the key to log when an external request
+	// comes back with a non-200 response
+	EventNon200Response = "non_200_response"
+)
+
+// HandleOauth is the handler to use for oauth returns from spotify
 func HandleOauth(ctx context.Context, code string) (context.Context, error) {
 	tokens, err := requestTokens(ctx, code)
 	if err != nil {
-		log.Println("could not retrieve tokens for user; error: ", err)
 		return ctx, err
 	}
-	log.Println(fmt.Sprint("success - tokens: \n\tAccess: ", tokens[0], "\n\tRefres: ", tokens[1]))
-	ctx = context.WithValue(ctx, "access_token", tokens[0])
-	ctx = context.WithValue(ctx, "refresh_token", tokens[1])
+
+	ctx = context.WithValue(ctx, ContextAccessToken, tokens[0])
+	ctx = context.WithValue(ctx, ContextRefreshToken, tokens[1])
+
 	return ctx, nil
 }
 
-func GetTopTracks(ctx context.Context, limit int32) (*Tracks, error) {
+// GetTopTracks will perform a search for the user's top tracks with the
+// provided limit.
+func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
 	tracks, err := getTopTracks(ctx, limit)
 	if err != nil {
 		return nil, err
 	}
-	return &tracks, nil
+
+	c := context.WithValue(ctx, ContextResults, tracks)
+	return c, nil
 }
 
-func GetTopArtists(ctx context.Context) (*Artists, error) {
+// GetTopArtists will perform a search for the user's top artists
+func GetTopArtists(ctx context.Context) (context.Context, error) {
 	artists, err := getTopArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return artists, nil
+
+	c := context.WithValue(ctx, ContextResults, *artists)
+	return c, nil
 }
 
-func GetGenresForArtists(ctx context.Context, ids []string) (*Pairs, error) {
-	log.Println("getting ", len(ids), " artists for genres")
+// GetGenresForArtists will perform a search for the provided artists IDs
+// and then researches the genres assosciated with each one. A mapping
+// of genres to occurrences is returned.
+func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, error) {
+	ret := map[string]int32{}
 	artists, err := getArtists(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("checking genres for ", len(*artists), " artists")
 
-	ret := map[string]int32{}
 	for _, i := range *artists {
 		for _, ii := range i.Genres {
 			if _, ok := ret[ii]; ok {
@@ -54,31 +95,26 @@ func GetGenresForArtists(ctx context.Context, ids []string) (*Pairs, error) {
 		}
 	}
 
-	p := getPairs(ret)
-	log.Println("\n\npairs\n", p)
-	return &p, nil
+	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	return c, nil
 }
 
-func GetGenresForTracks(ctx context.Context, ids []string) (*Pairs, error) {
-	log.Println("getting ", len(ids), " tracks for genres; ", ids)
+// GetGenresForTracks will perform a search for the provided track IDs
+// and then researches the genres associated with each one. A mapping
+// of genres to occurrences is returned.
+func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, error) {
+	as := map[string]int32{}
+	aids := []string{}
 	tracks, err := getTracks(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
 
-	as := map[string]int32{}
-	aids := []string{}
-
-	log.Println("searching ", len(*tracks), "tracks for distinct artists")
-
 	for _, i := range *tracks {
-		log.Println("track: ", i.Name)
 		for _, ii := range i.Artists {
-			log.Println("artist: ", ii.Name)
 			if _, ok := as[ii.Name]; !ok {
 				as[ii.Name] = 1
 				aids = append(aids, ii.ID)
-				fmt.Println("adding ", ii.Name)
 			}
 		}
 	}
@@ -87,14 +123,10 @@ func GetGenresForTracks(ctx context.Context, ids []string) (*Pairs, error) {
 		return nil, errors.New(fmt.Sprint("no artists found for ", len(ids), "tracks"))
 	}
 
-	log.Println(len(aids), " distinct artists found from top tracks")
-
 	artists, err := getArtists(ctx, aids)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("checking genres for ", len(*artists), " tracks")
 
 	ret := map[string]int32{}
 	for _, i := range *artists {
@@ -107,7 +139,28 @@ func GetGenresForTracks(ctx context.Context, ids []string) (*Pairs, error) {
 		}
 	}
 
-	p := getPairs(ret)
-	log.Println("\n\npairs\n", p)
-	return &p, nil
+	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	return c, nil
+}
+
+// GetUserInfo will perform a request to retrieve the user's ID and email.
+func GetUserInfo(ctx context.Context) (context.Context, error) {
+	info, err := getUserInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, info)
+	return c, nil
+}
+
+// RefreshToken attempts to get a new access token for the user
+func RefreshToken(ctx context.Context) (context.Context, error) {
+	tok, err := refreshToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, tok)
+	return c, nil
 }

@@ -1,77 +1,52 @@
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"os"
 
-	"github.com/gin-gonic/gin"
+	data "github.com/mike-webster/spotify-views/data"
 )
 
-var scopes = []string{
-	// "user-modify-playback-state",
-	// "user-read-playback-state",
-	// "streaming",
-	// "app-remote-control",
-	"user-top-read",
-	// "user-read-playback-position",
-	// "user-read-recently-played",
-}
-var clientID = ""
-var clientSecret = ""
-var host = ""
-var returnURL = ""
+var (
+	scopes = []string{
+		// "user-modify-playback-state",
+		// "user-read-playback-state",
+		// "streaming",
+		// "app-remote-control",
+		"user-top-read",
+		"user-read-email",
+		// "user-read-playback-position",
+		// "user-read-recently-played",
+	}
+	clientID     = ""
+	clientSecret = ""
+	host         = ""
+	returnURL    = ""
+	lyricsKey    = ""
+	dbHost       = ""
+	dbUser       = ""
+	dbPass       = ""
+	dbName       = ""
+	secKey       = ""
+)
 
+// ViewBag is a basic struct to use to pass information to the views
+// TODO move this into handlers.go
 type ViewBag struct {
 	Resource string
 	Results  interface{}
 }
 
 func main() {
-	err := parseEnvironmentVariables()
-	returnURL = fmt.Sprint("https://", host, "/spotify/oauth")
+	ctx, err := parseEnvironmentVariables(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
+	err = data.Ping(ctx)
+	if err != nil {
+		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
+	}
+
 	runServer()
-}
-
-func parseEnvironmentVariables() error {
-	clientID = os.Getenv("CLIENT_ID")
-	if len(clientID) < 1 {
-		return errors.New("no client id provided")
-	}
-	clientSecret = os.Getenv("CLIENT_SECRET")
-	if len(clientSecret) < 1 {
-		return errors.New("no client secret provided")
-	}
-	host = os.Getenv("HOST")
-	if len(host) < 1 {
-		return errors.New("no host provided")
-	}
-	return nil
-}
-
-func runServer() {
-	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
-	r.GET("/spotify/oauth", handlerOauth)
-
-	r.GET("/tracks/top", handlerTopTracks)
-
-	r.GET("/artists/top", handlerTopArtists)
-
-	r.GET("/artists/genres", handlerTopArtistsGenres)
-
-	r.GET("/tracks/genres", handlerTopTracksGenres)
-
-	r.GET("/login", handlerLogin)
-
-	r.GET("/", handlerHome)
-
-	r.Static("/static/css", "./static")
-	r.Static("/static/js", "./static")
-
-	r.Run()
 }

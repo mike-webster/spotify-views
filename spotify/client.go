@@ -6,30 +6,38 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/mike-webster/spotify-views/logging"
+	"github.com/sirupsen/logrus"
 )
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
-	tr := ctx.Value("time_range")
+
+	tr := ctx.Value(ContextTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", limit)
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -44,32 +52,36 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return ret.Items, nil
 }
 
-// decided not to make this one method that accepted the resource
-// but went against it to simplify use and avoid passing back
-// an interface.
-
 func getTopArtists(ctx context.Context) (*Artists, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
-	tr := ctx.Value("time_range")
+
+	tr := ctx.Value(ContextTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
 	}
+
+	// TODO: make this limit a param
 	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
 	if len(strRange) > 0 {
 		url += fmt.Sprint("&time_range=", strRange)
 	}
+
 	req, err := http.NewRequest("GET", url, nil)
+
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -84,20 +96,25 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
 func getArtists(ctx context.Context, ids []string) (*Artists, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -113,22 +130,29 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
 func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
-	token := ctx.Value("access_token")
+	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
+
 	url := fmt.Sprint("https://api.spotify.com/v1/tracks?ids=", strings.Join(ids, ","))
-	log.Println("requesting: ", url)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
 	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	type tempResp struct {
 		Items Tracks `json:"tracks"`
@@ -139,13 +163,58 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ret.Items, nil
 }
 
+func getUserInfo(ctx context.Context) (map[string]string, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return map[string]string{}, errors.New("no access token provided")
+	}
+
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
+	if err != nil {
+		return map[string]string{}, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return map[string]string{}, err
+	}
+
+	type userResponse struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+	}
+	ret := userResponse{}
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return map[string]string{}, err
+	}
+	return map[string]string{
+		"id":    ret.ID,
+		"email": ret.Email,
+	}, nil
+}
+
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
+	s := time.Now()
+	logger := logging.GetLogger(&ctx)
+
 	client := &http.Client{}
-	log.Println("requesting: ", req.URL)
 	resp, err := client.Do(req)
+	dur := time.Since(s)
+
+	logger.WithFields(logrus.Fields{
+		"status":   resp.StatusCode,
+		"url":      req.URL,
+		"event":    "external_request",
+		"duration": dur.String(),
+	}).Info()
+
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +226,17 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Println("unhappy response ", resp.StatusCode, "\n\t", string(b))
-		return nil, errors.New("non-200 response")
+		if resp.StatusCode == 401 {
+			logger.WithField("event", EventNeedsRefreshToken).Info()
+			return nil, ErrTokenExpired("")
+		}
+
+		logger.WithFields(logrus.Fields{
+			"event":  EventNon200Response,
+			"status": resp.StatusCode,
+			"body":   string(b),
+		}).Error()
+		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
 	}
 
 	return &b, nil

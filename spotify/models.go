@@ -6,6 +6,7 @@ import (
 
 // TODO: maybe define an interface to handle shared code?
 
+// Track represents a spotify track
 type Track struct {
 	Links   map[string]string `json:"external_urls"`
 	Name    string            `json:"name"`
@@ -18,12 +19,16 @@ type Track struct {
 	} `json:"artists"`
 }
 
+// Tracks is a collection of spotify Tracks
 type Tracks []Track
 
+// EmbeddedPlayer will return the html to use for rendering the embedded spotify
+// player iframe
 func (t *Track) EmbeddedPlayer() string {
 	return fmt.Sprintf(`<iframe src="https://open.spotify.com/embed/track/%s" width="300" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, t.ID)
 }
 
+// IDs returns the ID for each of the tracks in the collection of Tracks
 func (t *Tracks) IDs() []string {
 	ret := []string{}
 	for _, i := range *t {
@@ -32,6 +37,7 @@ func (t *Tracks) IDs() []string {
 	return ret
 }
 
+// Artist represents a spotify Artist
 type Artist struct {
 	Genres     []string `json:"genres"`
 	Name       string   `json:"name"`
@@ -40,12 +46,16 @@ type Artist struct {
 	ID         string   `json:"ID"`
 }
 
+// Artists is a collection of spotify Artist
 type Artists []Artist
 
+// EmbeddedPlayer  will return the html to use for rendering the embedded spotify
+// player iframe
 func (a *Artist) EmbeddedPlayer() string {
 	return fmt.Sprintf(`<h4 width="300" style="text-align:center">%s</h4><iframe src="https://open.spotify.com/embed/artist/%s" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`, a.Name, a.ID)
 }
 
+// IDs returns the ID for each of the artists in the collection of Artists
 func (a *Artists) IDs() []string {
 	ret := []string{}
 	for _, i := range *a {
@@ -70,15 +80,22 @@ func (sr *spotifyResponse) ToString() string {
 	return ret
 }
 
+// TODO replace this with using the sortable map. it's the same thing.
+
+// Pair is an outdated way to sort a map
 type Pair struct {
 	Key   string
 	Value int32
 }
+
+// Pairs is a collection of Pair
 type Pairs []Pair
 
 func (p Pairs) Len() int           { return len(p) }
 func (p Pairs) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p Pairs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+// Contains returns the index of the element in the collection, if it exists.
 func (p Pairs) Contains(key string) int {
 	for i, ii := range p {
 		if ii.Key == key {
@@ -87,6 +104,8 @@ func (p Pairs) Contains(key string) int {
 	}
 	return -1
 }
+
+// ToMap returns a map representation of the Pairs
 func (p Pairs) ToMap() map[string]int32 {
 	ret := map[string]int32{}
 	for _, i := range p {
