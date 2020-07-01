@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <html>
-    {{ template "header" }}
-
+    <head>
+        {{ template "header" }}
+    </head>
     <body>
-        {{ template "topnav" }}
-        
-        <div style="text-align:center;min-height: 480px;">
-            <h1>Spotify Views</h1>
-            <p>Are you curious what your listening tendencies are?</p>
-            <p>Are you trying to find new music?</p>
+        <div class="content">
+            {{ template "topnav" }}
+            
+            <div style="text-align:center;min-height: 480px;">
+                <h1>Spotify Views</h1>
+                <p>Are you curious what your listening tendencies are?</p>
+                <p>Are you trying to find new music?</p>
 
-            <p>Can I <a href="/login">help?</a></p>
+                <p>Can I <a href="/login">help?</a></p>
+            </div>
+        </div>
+        <div class="footer">
+            {{ template "footer" }}
         </div>
     </body>
-
-    {{ template "footer" }}
 </html>

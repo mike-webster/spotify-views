@@ -1,95 +1,102 @@
 <!DOCTYPE html>
 <html>
     {{ template "header" }}
-    <link rel="stylesheet" href="/static/css/sortable-theme-dark.css" />
     <script src="/static/css/sortable.min.js"></script>
     <style>
         #cloud {
-            width: 512px;
-            height: 512px;
+            width: 800px;
+            height: 800px;
             background-image: url("/clouds/{{.Filename}}");
             background-size: cover;
             display:inline-block;
         }
         body {
             text-align: center;
+            margin: 0;
         }
-        table {
-            display: inline-block;
+
+        .row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            width: 100%;
         }
-        .left {
-            width: 49%;
-            text-align: right;
-            display:inline-block;
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            flex-basis: 100%;
+            flex: 50%;
         }
-        .right {
-            width: 50%;
-            text-align:left;
-            display:inline-block;
+
+        .col p {
+
+            padding: 2px 0px;
+        }
+
+        .flex-table p:nth-child(even) {
+            padding-right: 10px;
+        }
+
+        .flex-table p:nth-child(odd) {
+            padding-left: 10px;
+        }
+
+        .flex-table p {
+            margin: 0;
+        }
+
+        .row.header, .row.footer {
+            background-color: #1DB954;
+            margin: 0;
+            padding: 5px 0px;
+            color: #FFF;
+        }
+
+        .flex-table .col:nth-child(odd) {
+            text-align:right;
+        }
+
+        .flex-table .col:nth-child(even) {
+            text-align: left;
+        }
+
+        .flex-table input {
+            text-align: left;
+            color: inherit;
+            background-color: inherit;
+            border: none;
+            padding-left: 10px;
+            font-family: Ubuntu;
+        }
+
+        [data-item] {
+            display: flex;
+        }
+
+        [data-item-invisible] {
+            display: none !important;
+        }
+
+        [data-item-visible] {
+            display: flex;
         }
     </style>
     <script>
-        function paginate(curPage, perPage, dir, rows) {
-            // can't go past the end
-            var goingUp = dir == "next";
-            var pageLimit = parseInt(rows.length / perPage);
-            if (curPage >= pageLimit) {
-                return;
-            }
-
-            var nextPage = 0;
-            if (goingUp) {
-                nextPage = curPage + 1;
-            } else {
-                nextPage = curPage - 1;
-            }
-            var headerOffset = 2;
-
-            // hide all
-            for (let i = headerOffset; i < rows.length; i++) {
-                rows[i].style.display = "none";
-            }
-
-            // edge cases
-            if (goingUp) {
-                if (nextPage == pageLimit) {
-                    for (let i = nextPage; i < rows.length % perPage; i++) {
-                        rows[i].style.display = "";
-                    }
-                } else if (curPage == pageLimit) {
-                    for (let i = curPage; i < rows.length % perPage; i++) {
-                        rows[i].style.display = "";
-                    }
-                }
-            } else {
-                if (curPage <= 1) {
-                    for (let i = headerOffset; i < headerOffset + perPage; i++) {
-                        rows[i].style.display = "";
-                    }
-                } else {
-                    for (let i = nextPage; i < curPage; i++) {
-                        rows[i].style.display = "";
-                    }
-                }
-            }
-            
-            // increment the page counter
-            document.getElementById("page").setAttribute('value', nextPage);
-        }
-
         function hideAll() {
             document.querySelectorAll('[data-item]').forEach(function(item){
-                item.style.display = "none";
                 item.removeAttribute("data-item-visible");
+                item.setAttribute("data-item-invisible", "");
             });
         }
 
         function displaySome(start, num) {
+            console.log("displaying some: " + start + " - " + num);
             var rows = document.querySelectorAll('[data-item]');
             for(let i = start; i < start + num; i++) {
                 try {
-                    rows[i].style.display = "";
-                    item.setAttribute("data-item-visible", "");
+                    rows[i].setAttribute("data-item-visible", "");
+                    rows[i].removeAttribute("data-item-invisible");
                     console.log("showing: ", i);
                 } catch(ex) {
                     console.log("couldn't display item");
@@ -114,7 +121,7 @@
                 var page = parseInt(document.getElementById("page").getAttribute('value'));
                 var perPage = 10;
 
-                var starting = perPage * (page + 1);
+                var starting = perPage * (1 + page);
 
                 var rows = document.querySelectorAll("[data-item]");
                 if (starting + perPage > rows.length) {
@@ -123,60 +130,66 @@
                 } else {
                     displaySome(starting, perPage);
                 }
+
+                document.getElementById("page").setAttribute("value", page + 1);
             });
             prev.addEventListener("click", function(){
-                var visibleRows = document.querySelectorAll('[data-item-visible]').forEach(function(item){
-                    item.style.display = "none";
-                    item.removeAttribute("data-item-visible");
-                });
+                hideAll();
                 var page = parseInt(document.getElementById("page").getAttribute('value'));
                 var perPage = 10;
 
-                var starting = perPage * (page - 1);
+                var starting = perPage * (page-1);
 
                 var rows = document.querySelectorAll("[data-item]");
-                if (starting <= 0) {
+                if (page == 0) {
                     // next page will run out of room
-                    for (let i = 0; i < perPage; i++)  {
-                        rows[i].style.display = "";
-                        rows[i].setAttribute("data-item-visible", nil);
-                    }
+                    displaySome(0, perPage);
+                    document.getElementById("page").setAttribute("value", page);
+                    return;
                 } else {
-                    for (let i = starting; i < starting + perPage; i++) {
-                        rows[i].style.display = "";
-                        rows[i].setAttribute("data-item-visible", nil);
-                    }
+                    displaySome(starting, perPage);
                 }
+
+                document.getElementById("page").setAttribute("value", page - 1);
             });
 
-            next.click();
+            hideAll();
+            displaySome(0,10);
         });
     </script>
     <body>
-        {{ template "topnav" }}
-        
-        <div style="width:100%; text-align:center;">
-            <h1>Word Cloud</h1>
-            <div id="cloud"></div>
-            <table class="sortable-theme-dark" data-sortable>
-                <input type="hidden" id="page" value="0"></input>
-                <tr>
-                    <th>Word</th>
-                    <th>Count</th>
-                <tr>
-                {{ range .Maps }}
-                    <tr data-item>
-                        <td>{{ .Key }}</td>
-                        <td>{{ .Value }}</td>
-                    </tr>
-                {{ end }}
-                <tr>
-                    <td id="prev"><<</td>
-                    <td id="next">>></td>
-                </tr>
-            </table>
+        <div class="content">
+            {{ template "topnav" }}
+            <div style="width:100%; text-align:center;">
+                <h1>Word Cloud</h1>
+                <p>We use the lyrics from your most popular songs to generate this visualization</p>
+                <br />
+                <div class="flex-table">
+                    <div class="row header">
+                        <div class="col"><p>Word</p></div>
+                        <div class="col"><p>Count</p></div>
+                    </div>
+                    {{ range .Maps }}
+                        <div class="row" data-item>
+                            <div class="col"><p>{{ .Key }}</p></div>
+                            <div class="col"><p>{{ .Value }}</p></div>
+                        </div>
+                    {{ end }}
+                    <div class="row footer">
+                        <div class="col" id="prev"><p><<</p></div>
+                        <div class="col" id="next"><p>>></p></div>
+                    </div>
+                    <div class="row footer">
+                        <div class="col"><p>Page:</p></div>
+                        <div class="col"><input id="page" type="text" size="3" readonly value="0"></input></div>
+                    </div>
+                </div>
+                <div id="cloud"></div>
+            </div>
+        </div> 
+        <div class="footer">
+            {{ template "footer" }}
         </div>
     </body>
     
-    {{ template "footer" }}
 </html>

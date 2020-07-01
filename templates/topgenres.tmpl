@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html>
-    {{ template "header" }}
-
+    <head>
+        {{ template "header" }}
+    </head>
     <body>
-        {{ template "topnav" }}
-        
-        <div style="width:100%; text-align:center;">
-            <h1>Top Genres</h1>
-            <h3>by {{ .Resource }}</h3>
-            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=long_term">Long Term</a><br />
-            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=medium_term">Medium Term</a><br />
-            <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=short_term">Short Term</a><br /><br />
-            {{ range .Results }}
-                <div style="width:100%">
-                    <span style="width:50%">{{ .Key }}</span>
-                    <span style="width:50%">{{ .Value }}</span>
-                </div>
-            {{ end }}
+        <div class="content">
+            {{ template "topnav" }}
+            
+            <div style="width:100%; text-align:center;">
+                <h1>Top Genres</h1>
+                <h3>by {{ .Resource }}</h3>
+                <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=long_term">Long Term</a><br />
+                <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=medium_term">Medium Term</a><br />
+                <a style="width:33%" href="/{{ .Resource }}s/genres?time_range=short_term">Short Term</a><br /><br />
+                {{ range .Results }}
+                    <div style="width:100%">
+                        <span style="width:50%">{{ .Key }}</span>
+                        <span style="width:50%">{{ .Value }}</span>
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+        <div class="footer">
+            {{ template "footer" }}
         </div>
     </body>
-
-    
-    {{ template "footer" }}
 </html>
