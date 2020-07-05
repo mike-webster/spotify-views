@@ -27,11 +27,23 @@ body {
     width: 100%;
     text-align: center;
     z-index: 99;
+    min-height: 50px;
+    display: table;
 }
 
-footer p {
-    margin: 0;
-    padding: 20px 0;
+.footer-cell {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.footer-item-left {
+    float: left;
+    margin-left: 10px;
+}
+
+.footer-item-right {
+    float: right;
+    margin-right: 10px;
 }
 
 a {
