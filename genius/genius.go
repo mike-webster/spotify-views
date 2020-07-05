@@ -42,7 +42,11 @@ type tempResp struct {
 
 // GetLyricCountForSong will retrieve the song lyrics for all of the provided searches
 // and return a map of each word with a value of how many times it occurred.
+//
+// When single songs are not found, we just log the error and move on.  If we can't
+// do the search at all, the error encountered is returned.
 func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[string]int, error) {
+	logger := logging.GetLogger(&ctx)
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -54,7 +58,12 @@ func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[stri
 	for _, i := range searches {
 		lyric, err := l.Search(i.Artist, i.Track)
 		if err != nil {
-			return nil, err
+			logger.WithFields(logrus.Fields{
+				"event":  "genius_error",
+				"artist": i.Artist,
+				"track":  i.Track,
+			}).WithError(err).Warn("song not found")
+			continue
 		}
 
 		maps = append(maps, convertToMap(ctx, lyric))
