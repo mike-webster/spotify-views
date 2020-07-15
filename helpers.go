@@ -145,9 +145,9 @@ func runServer() {
 	r.GET(PathWordCloud, handlerWordCloud)
 	r.GET(PathWordCloudData, handlerWordCloudData)
 
+	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
-	r.Static("/sitemap.xml", "./sitemap.xml")
 
 	r.Run()
 }
