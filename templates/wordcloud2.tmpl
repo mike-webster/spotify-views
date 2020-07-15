@@ -140,7 +140,7 @@
         }
 
         function getData() {
-            return fetch('http://localhost:8080/test/wordclouddata', {
+            return fetch('/wordcloud/data', {
                 method: "GET",
                 credentials: "include"
             }).then(response => response.json())
