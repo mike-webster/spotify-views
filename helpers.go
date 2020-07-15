@@ -147,7 +147,7 @@ func runServer() {
 
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
-	r.Static("/clouds/", "./static/clouds")
+	r.Static("/sitemap.xml", "./sitemap.xml")
 
 	r.Run()
 }
