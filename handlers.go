@@ -9,11 +9,10 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	data "github.com/mike-webster/spotify-views/data"
-	genius "github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/genius"
 	"github.com/mike-webster/spotify-views/logging"
 	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
@@ -399,6 +398,10 @@ func handlerTopTracksGenres(c *gin.Context) {
 }
 
 func handlerWordCloud(c *gin.Context) {
+	c.HTML(200, "wordcloud2.tmpl", nil)
+}
+
+func handlerWordCloudData(c *gin.Context) {
 	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
@@ -463,25 +466,17 @@ func handlerWordCloud(c *gin.Context) {
 	sm := sortablemap.GetSortableMap(wordCounts)
 	sort.Sort(sort.Reverse(sm))
 
+	retMap := sm.Take(50)
+
 	logger.Debug("map sorted")
 
-	filename := fmt.Sprint(time.Now().Unix(), ".png")
-	err = generateWordCloud(ctx, filename, wordCounts)
-
-	logger.Debug("word cloud generated")
-	if err != nil {
-		logger.WithError(err).Error("couldnt generate word cloud")
-		c.Status(500)
-		return
-	}
-
 	type viewData struct {
-		Filename string
-		Maps     sortablemap.Map
+		Filename string          `json:"filename"`
+		Maps     sortablemap.Map `json:"maps"`
 	}
+	vb := viewData{Maps: retMap}
 
-	vb := viewData{Filename: filename, Maps: sm}
-	c.HTML(200, "wordcloud.tmpl", vb)
+	c.JSON(200, vb)
 }
 
 func handlerLogin(c *gin.Context) {
