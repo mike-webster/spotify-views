@@ -132,7 +132,7 @@ var (
 func runServer() {
 	r := gin.New()
 	r.Use(requestLogger())
-	r.Use(recovery())
+	r.Use(recovery)
 	r.Use(loadContextValues())
 	r.LoadHTMLGlob("templates/*")
 	r.GET(PathSpotifyOauth, handlerOauth)

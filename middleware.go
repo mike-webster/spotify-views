@@ -36,26 +36,22 @@ func loadContextValues() gin.HandlerFunc {
 }
 
 // consolidate stack on crahes
-func recovery() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		defer func() {
-			if r := recover(); r != nil {
-				b, _ := ioutil.ReadAll(c.Request.Body)
+func recovery(c *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			b, _ := ioutil.ReadAll(c.Request.Body)
+			logging.GetLogger(nil).WithFields(logrus.Fields{
+				"event":    "ErrPanicked",
+				"error":    r,
+				"stack":    string(debug.Stack()),
+				"path":     c.Request.RequestURI,
+				"formbody": string(b),
+			}).Error("panic recovered")
 
-				ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
-				logging.GetLogger(&ctx).WithFields(logrus.Fields{
-					"event":    "ErrPanicked",
-					"error":    r,
-					"stack":    string(debug.Stack()),
-					"path":     c.Request.RequestURI,
-					"formbody": string(b),
-				}).Error("panic recovered")
-
-				c.AbortWithStatus(500)
-			}
-		}()
-		c.Next() // execute all the handlers
-	}
+			c.HTML(500, "error.tmpl", nil)
+		}
+	}()
+	c.Next() // execute all the handlers
 }
 
 func requestLogger() gin.HandlerFunc {
