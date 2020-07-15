@@ -42,3 +42,16 @@ func GetSortableMap(m map[string]int) Map {
 	}
 	return ret
 }
+
+// Take will return a subset of the Map, with the top elements of
+// the given number
+func (m Map) Take(limit int) Map {
+	ret := Map{}
+	for i, ii := range m {
+		if i >= limit {
+			break
+		}
+		ret = append(ret, Item{Key: ii.Key, Value: ii.Value})
+	}
+	return ret
+}
