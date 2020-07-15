@@ -114,6 +114,10 @@ func handlerOauth(c *gin.Context) {
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	val, err := c.Cookie("redirect_url")
+	if err == nil && len(val) > 0 {
+		c.Redirect(http.StatusTemporaryRedirect, val)
+	}
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }
 
@@ -122,7 +126,7 @@ func handlerTopTracks(c *gin.Context) {
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
 		return
 	}
 
@@ -137,7 +141,7 @@ func handlerTopTracks(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
 				return
 			}
 			if success {
@@ -193,7 +197,7 @@ func handlerTopArtists(c *gin.Context) {
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
 		return
 	}
 
@@ -208,7 +212,7 @@ func handlerTopArtists(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
 				return
 			}
 			if success {
@@ -264,7 +268,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
 		return
 	}
 
@@ -295,7 +299,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
 				return
 			}
 			if success {
@@ -327,7 +331,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
 		return
 	}
 
@@ -343,7 +347,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
 				return
 			}
 			if success {
@@ -370,7 +374,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
 				return
 			}
 			if success {
@@ -406,7 +410,7 @@ func handlerWordCloudData(c *gin.Context) {
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
 		return
 	}
 
@@ -422,7 +426,7 @@ func handlerWordCloudData(c *gin.Context) {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			success, err := refreshToken(c)
 			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin)
+				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
 				return
 			}
 			if success {
@@ -486,6 +490,10 @@ func handlerLogin(c *gin.Context) {
 		clientID,
 		pathScopes,
 		c.MustGet(string(spotify.ContextReturnURL)))
+
+	if len(c.Query("redirectUrl")) > 0 {
+		c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	}
 	c.Redirect(http.StatusTemporaryRedirect, spotifyURL)
 }
 
