@@ -126,6 +126,7 @@ var (
 	PathLogin           = "/login"
 	PathHome            = "/"
 	PathWordCloud       = "/wordcloud"
+	PathWordCloudData   = "/wordcloud/data"
 )
 
 func runServer() {
@@ -142,6 +143,7 @@ func runServer() {
 	r.GET(PathLogin, handlerLogin)
 	r.GET(PathHome, handlerHome)
 	r.GET(PathWordCloud, handlerWordCloud)
+	r.GET(PathWordCloudData, handlerWordCloudData)
 
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
