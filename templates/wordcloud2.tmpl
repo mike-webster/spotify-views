@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+    {{ template "header" }}
+    <script src="/static/css/sortable.min.js"></script>
+    <script src="/static/css/wordcloud2.js"></script>
+    <style>
+        #cloud {
+            width: 800px;
+            height: 800px;
+            background-image: url("/clouds/{{.Filename}}");
+            background-size: cover;
+            display:inline-block;
+        }
+        body {
+            text-align: center;
+            margin: 0;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            flex-basis: 100%;
+            flex: 50%;
+        }
+
+        .col p {
+
+            padding: 2px 0px;
+        }
+
+        .flex-table p:nth-child(even) {
+            padding-right: 10px;
+        }
+
+        .flex-table p:nth-child(odd) {
+            padding-left: 10px;
+        }
+
+        .flex-table p {
+            margin: 0;
+        }
+
+        .row.header, .row.footer {
+            background-color: #1DB954;
+            margin: 0;
+            padding: 3px 0px;
+            color: #FFF;
+            min-height: 25px;
+        }
+
+        .flex-table .col:nth-child(odd) {
+            text-align:right;
+        }
+
+        .flex-table .col:nth-child(even) {
+            text-align: left;
+        }
+
+        .flex-table input {
+            text-align: left;
+            color: inherit;
+            background-color: inherit;
+            border: none;
+            padding-left: 10px;
+            font-family: Ubuntu;
+        }
+
+        [data-item] {
+            display: flex;
+        }
+
+        [data-item-invisible] {
+            display: none !important;
+        }
+
+        [data-item-visible] {
+            display: flex;
+        }
+
+        .loader {
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        function hideAll() {
+            document.querySelectorAll('[data-item]').forEach(function(item){
+                item.removeAttribute("data-item-visible");
+                item.setAttribute("data-item-invisible", "");
+            });
+        }
+
+        function displaySome(start, num) {
+            console.log("displaying some: " + start + " - " + num);
+            var rows = document.querySelectorAll('[data-item]');
+            for(let i = start; i < start + num; i++) {
+                try {
+                    rows[i].setAttribute("data-item-visible", "");
+                    rows[i].removeAttribute("data-item-invisible");
+                    console.log("showing: ", i);
+                } catch(ex) {
+                    console.log("couldn't display item");
+                    console.log(ex);
+                }
+            }
+        }
+
+        var words = [];
+
+        function loadCloud(data) {
+            words = [];
+            data.maps.forEach(addWord);
+            WordCloud(document.getElementById("newcloud"), { 
+                list: words,
+                gridSize: Math.round(16 * document.getElementById('newcloud').offsetWidth / 1024),
+            });
+            document.getElementById("loader").style.display = "none";
+        }
+
+        function addWord(value) {
+            words.push([value.Key, value.Value])
+        }
+
+        function getData() {
+            return fetch('http://localhost:8080/test/wordclouddata', {
+                method: "GET",
+                credentials: "include"
+            }).then(response => response.json())
+            .then(data => loadCloud(data))
+            .catch(err => console.log(err));
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            var wordData = getData();
+        });
+    </script>
+    <body>
+        <div class="content">
+            {{ template "topnav" }}
+            <div style="width:100%; text-align:center;">
+                <h1>Word Cloud</h1>
+                <p>We use the lyrics from your most popular songs and find the 50 most common words to generate this for you.</p>
+                <div id="loader" class="loader"></div>
+                <br />
+                <div id="newcloud" style="width: 500px; height: 500px; display: inline-block;"></div>
+            </div>
+        </div> 
+        {{ template "footer" }}
+    </body>
+    
+</html>
