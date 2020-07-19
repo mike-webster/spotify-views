@@ -15,7 +15,7 @@ var (
 		// "app-remote-control",
 		"user-top-read",
 		"user-read-email",
-		"user-library-read,
+		"user-library-read",
 		// "user-read-playback-position",
 		// "user-read-recently-played",
 	}
