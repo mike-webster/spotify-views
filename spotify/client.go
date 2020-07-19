@@ -167,7 +167,7 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	return &ret.Items, nil
 }
 
-func getTrackFeatures(ctx context.Context, ids []string) (AudioFeatures, error) {
+func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	logger := logging.GetLogger(&ctx)
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
@@ -198,7 +198,7 @@ func getTrackFeatures(ctx context.Context, ids []string) (AudioFeatures, error) 
 		return nil, err
 	}
 
-	return &ret.Items, nil
+	return &ret, nil
 }
 
 func getUserInfo(ctx context.Context) (map[string]string, error) {

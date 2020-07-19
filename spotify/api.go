@@ -154,10 +154,10 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
-func GetAudioFeatures(ctx context.Context, ids []string) (AudioFeatures, error) {
+func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	af, err := getAudioFeatures(ctx, ids)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return af, nil

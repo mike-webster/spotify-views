@@ -1,6 +1,7 @@
 package spotify
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -81,6 +82,14 @@ type AudioFeature struct {
 }
 
 type AudioFeatures []AudioFeature
+
+func (af AudioFeature) String() string {
+	str, err := json.Marshal(af)
+	if err != nil {
+		return ""
+	}
+	return string(str)
+}
 
 type spotifyResponse struct {
 	AccessToken  string `json:"access_token"`
