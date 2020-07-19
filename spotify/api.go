@@ -154,6 +154,15 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
+func GetAudioFeatures(ctx context.Context, ids []string) (AudioFeatures, error) {
+	af, err := getAudioFeatures(ctx, ids)
+	if err != nil {
+		return err
+	}
+
+	return af, nil
+}
+
 // RefreshToken attempts to get a new access token for the user
 func RefreshToken(ctx context.Context) (context.Context, error) {
 	tok, err := refreshToken(ctx)
