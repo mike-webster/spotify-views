@@ -66,6 +66,8 @@ func (a *Artists) IDs() []string {
 }
 
 type AudioFeature struct {
+	ID               string  `json:"id"`
+	URI              string  `json:"uri"`
 	Danceability     float32 `json:"danceability"`
 	Energy           float32 `json:"energy"`
 	Key              int     `json:"key"`

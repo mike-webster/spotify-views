@@ -167,6 +167,77 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	return &ret.Items, nil
 }
 
+func getUserLibraryTracks(ctx context.Context) (Tracks, error) {
+	logger := logging.GetLogger(nil)
+	url := "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
+	more := true
+	ret := []Track{}
+	for more {
+		t, newUrl, tot, err := getChunkOfUserLibraryTracks(ctx, url)
+		if err != nil {
+			logger.Warn(err.Error())
+			more = false
+		}
+		url = newUrl
+
+		ret = append(ret, t...)
+		if tot == len(ret) {
+			more = false
+		}
+	}
+	return ret, nil
+}
+
+type item struct {
+	DateSaved time.Time `json:"added_at"`
+	Track     Track     `json:"track"`
+}
+
+type items []item
+
+func (i items) Tracks() Tracks {
+	ret := Tracks{}
+	for _, j := range i {
+		ret = append(ret, j.Track)
+	}
+	return ret
+}
+func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, string, int, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, "", 0, errors.New("no access token provided")
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, "", 0, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, "", 0, err
+	}
+
+	type tempResp struct {
+		Link   string `json:"href"`
+		Items  items  `json:"items"`
+		Limit  int    `json:"limit"`
+		Next   string `json:"next"`
+		Offset int    `json:"offset"`
+		Total  int    `json:"total"`
+	}
+
+	var ret tempResp
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, "", 0, err
+	}
+
+	return ret.Items.Tracks(), ret.Next, ret.Total, nil
+}
+
 func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	logger := logging.GetLogger(&ctx)
 	token := ctx.Value(ContextAccessToken)
