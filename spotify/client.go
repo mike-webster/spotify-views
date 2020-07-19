@@ -179,7 +179,7 @@ func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 		ids = ids[:100]
 	}
 
-	url := fmt.Sprint("https://api.spotify.com/v1/audio-features/ids=", strings.Join(ids, ","))
+	url := fmt.Sprint("https://api.spotify.com/v1/audio-features?ids=", strings.Join(ids, ","))
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -192,13 +192,18 @@ func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 		return nil, err
 	}
 
-	ret := AudioFeatures{}
+	type tempResp struct {
+		Items AudioFeatures `json:"audio_features"`
+	}
+
+	ret := tempResp{}
 	err = json.Unmarshal(*body, &ret)
 	if err != nil {
+		logger.WithField("body", string(*body)).Error(err.Error())
 		return nil, err
 	}
 
-	return &ret, nil
+	return &ret.Items, nil
 }
 
 func getUserInfo(ctx context.Context) (map[string]string, error) {

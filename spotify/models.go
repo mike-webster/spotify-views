@@ -91,6 +91,14 @@ func (af AudioFeature) String() string {
 	return string(str)
 }
 
+func (af *AudioFeatures) String() []string {
+	ret := []string{}
+	for _, i := range *af {
+		ret = append(ret, i.String())
+	}
+	return ret
+}
+
 type spotifyResponse struct {
 	AccessToken  string `json:"access_token"`
 	Type         string `json:"token_type"`
