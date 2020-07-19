@@ -155,6 +155,25 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 }
 
 func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
+	if len(ids) > 100 {
+		// we need pagination
+		ret := AudioFeatures{}
+		for i := 0; i < len(ids); i += 100 {
+			b := i
+			e := i + 100
+			if e > len(ids) {
+				e = len(ids)
+			}
+			cids := ids[b:e]
+			af, err := getAudioFeatures(ctx, cids)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, *af...)
+		}
+		return &ret, nil
+	}
+
 	af, err := getAudioFeatures(ctx, ids)
 	if err != nil {
 		return nil, err
