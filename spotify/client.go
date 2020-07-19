@@ -167,6 +167,40 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	return &ret.Items, nil
 }
 
+func getTrackFeatures(ctx context.Context, ids []string) (AudioFeatures, error) {
+	logger := logging.GetLogger(&ctx)
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	if len(ids) > 100 {
+		logger.WithField("count", len(ids)).Warn("too many tracks passed, reducing to the first 100")
+		ids = ids[:100]
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/audio-features/ids=", strings.Join(ids, ","))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := AudioFeatures{}
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
+}
+
 func getUserInfo(ctx context.Context) (map[string]string, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {

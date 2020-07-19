@@ -64,6 +64,24 @@ func (a *Artists) IDs() []string {
 	return ret
 }
 
+type AudioFeature struct {
+	Danceability     float32 `json:"danceability"`
+	Energy           float32 `json:"energy"`
+	Key              int     `json:"key"`
+	Loudness         float32 `json:"loudness"`
+	Mode             int     `json:"mode"`
+	Speechiness      float32 `json:"speechiness"`
+	Acousticness     float32 `json:"acousticness"`
+	Instrumentalness float32 `json:"instrumentalness"`
+	Liveness         float32 `json:"liveness"`
+	Valence          float32 `json:"valence"`
+	Tempo            float32 `json:"tempo"`
+	Duration         int64   `json:"duration_ms"`
+	TimeSignature    int     `json:"time_signature"`
+}
+
+type AudioFeatures []AudioFeature
+
 type spotifyResponse struct {
 	AccessToken  string `json:"access_token"`
 	Type         string `json:"token_type"`
