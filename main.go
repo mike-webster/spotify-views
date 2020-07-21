@@ -29,6 +29,9 @@ var (
 	dbPass       = ""
 	dbName       = ""
 	secKey       = ""
+	redisHost    = ""
+	redisPort    = ""
+	redisPass    = ""
 )
 
 // ViewBag is a basic struct to use to pass information to the views
