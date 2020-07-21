@@ -75,6 +75,14 @@ func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
 		return nil, errors.New("no sec key provided")
 	}
 	ctx = context.WithValue(ctx, data.ContextSecurityKey, secKey)
+
+	redisHost = os.Getenv("REDIS_HOST")
+	ctx = context.WithValue(ctx, "redis-host", redisHost)
+	redisPort = os.Getenv("REDIS_PORT")
+	ctx = context.WithValue(ctx, "redis-port", redisPort)
+	redisPass = os.Getenv("REDIS_PASS")
+	ctx = context.WithValue(ctx, "redis-pass", redisPass)
+
 	ctx = context.WithValue(ctx, logging.ContextLogger, logging.GetLogger(nil))
 	return ctx, nil
 }
@@ -134,6 +142,7 @@ func runServer() {
 	r := gin.New()
 	r.Use(requestLogger())
 	r.Use(recovery)
+	r.Use(redisClient)
 	r.Use(loadContextValues())
 	r.LoadHTMLGlob("templates/*")
 	r.GET(PathSpotifyOauth, handlerOauth)
