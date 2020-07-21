@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
+	redis "github.com/go-redis/redis/v8"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -310,9 +312,76 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 	}, nil
 }
 
+func checkCache(ctx context.Context, key string) (*[]byte, error) {
+	irdb := ctx.Value("Redis")
+	if irdb == nil {
+		panic("no redis")
+	}
+
+	rdb, ok := irdb.(*redis.Client)
+	if !ok {
+		logging.GetLogger(nil).WithField("event", "redis-cast-error").Error(fmt.Sprint(reflect.TypeOf(irdb)))
+	}
+
+	val, err := rdb.Get(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			logging.GetLogger(nil).WithField("event", "cache-miss").Debug()
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if len(val) > 0 {
+		logging.GetLogger(nil).WithField("event", "cache-hit").Debug()
+	}
+
+	bytes := []byte(val)
+	return &bytes, nil
+}
+
+func addToCache(ctx context.Context, key string, body *[]byte) error {
+	irdb := ctx.Value("Redis")
+	if irdb == nil {
+		panic("no redis")
+	}
+
+	rdb, ok := irdb.(*redis.Client)
+	if !ok {
+		logging.GetLogger(nil).WithField("event", "redis-cast-error").Error(fmt.Sprint(reflect.TypeOf(irdb)))
+	}
+
+	err := rdb.Set(ctx, key, string(*body), 0).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func calculateRedisKey(ctx context.Context, req *http.Request) (string, error) {
+	uid := ctx.Value(string(ContextUserID))
+	if len(fmt.Sprint(uid)) < 1 {
+		return "", errors.New("no user id in context")
+	}
+	return fmt.Sprint(uid, "-", req.URL), nil
+}
+
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(&ctx)
+	cacheKey, err := calculateRedisKey(ctx, req)
+	if err != nil {
+		logger.WithField("event", "redis-key-error").Error(err.Error())
+	}
+
+	val, err := checkCache(ctx, cacheKey)
+	if err != nil {
+		logger.WithField("event", "redis-error").Error(err.Error())
+	}
+	if val != nil {
+		return val, nil
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -347,6 +416,11 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 			"body":   string(b),
 		}).Error()
 		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
+	}
+
+	err = addToCache(ctx, cacheKey, &b)
+	if err != nil {
+		logger.WithField("event", "redis-add-error").Error(err.Error())
 	}
 
 	return &b, nil
