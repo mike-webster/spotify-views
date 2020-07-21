@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"strings"
 
@@ -56,11 +57,12 @@ func recovery(c *gin.Context) {
 }
 
 func redisClient(c *gin.Context) {
-	host := c.Value("redis-host")
-	password := c.Value("redis-pass")
-	port := c.Value("redis-port")
+	host := os.Getenv("REDIS_HOST")
+	port := os.Getenv("REDIS_PORT")
+	password := os.Getenv("REDIS_PASS")
+	addr := fmt.Sprintf("%v:%v", host, port)
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%v:%v", host, port),
+		Addr:     addr,
 		Password: fmt.Sprint(password),
 		DB:       0,
 	})
@@ -69,6 +71,14 @@ func redisClient(c *gin.Context) {
 		logging.GetLogger(nil).WithField("event", "redis_crash").Error(err.Error())
 	} else {
 		c.Set("Redis", rdb)
+	}
+	c.Next()
+}
+
+func parseUserID(c *gin.Context) {
+	uid, err := c.Cookie("svid")
+	if err == nil {
+		c.Set(string(spotify.ContextUserID), uid)
 	}
 	c.Next()
 }
