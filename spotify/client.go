@@ -343,7 +343,7 @@ func checkCache(ctx context.Context, key string) (*[]byte, error) {
 func addToCache(ctx context.Context, key string, body *[]byte) error {
 	irdb := ctx.Value("Redis")
 	if irdb == nil {
-		return nil, errors.New("no redis")
+		return errors.New("no redis")
 	}
 
 	rdb, ok := irdb.(*redis.Client)
