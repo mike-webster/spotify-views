@@ -154,6 +154,43 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
+func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
+	if len(ids) > 100 {
+		// we need pagination
+		ret := AudioFeatures{}
+		for i := 0; i < len(ids); i += 100 {
+			b := i
+			e := i + 100
+			if e > len(ids) {
+				e = len(ids)
+			}
+			cids := ids[b:e]
+			af, err := getAudioFeatures(ctx, cids)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, *af...)
+		}
+		return &ret, nil
+	}
+
+	af, err := getAudioFeatures(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return af, nil
+}
+
+func GetUserLibraryTracks(ctx context.Context) (Tracks, error) {
+	t, err := getUserLibraryTracks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
 // RefreshToken attempts to get a new access token for the user
 func RefreshToken(ctx context.Context) (context.Context, error) {
 	tok, err := refreshToken(ctx)

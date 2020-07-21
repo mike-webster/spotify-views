@@ -118,15 +118,16 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 }
 
 var (
-	PathSpotifyOauth    = "/spotify/oauth"
-	PathTopTracks       = "/tracks/top"
-	PathTopArtists      = "/artists/top"
-	PathTopArtistGenres = "/artists/genres"
-	PathTopTracksGenres = "/tracks/genres"
-	PathLogin           = "/login"
-	PathHome            = "/"
-	PathWordCloud       = "/wordcloud"
-	PathWordCloudData   = "/wordcloud/data"
+	PathSpotifyOauth     = "/spotify/oauth"
+	PathTopTracks        = "/tracks/top"
+	PathTopArtists       = "/artists/top"
+	PathTopArtistGenres  = "/artists/genres"
+	PathTopTracksGenres  = "/tracks/genres"
+	PathLogin            = "/login"
+	PathHome             = "/"
+	PathWordCloud        = "/wordcloud"
+	PathWordCloudData    = "/wordcloud/data"
+	PathUserLibraryTempo = "/library/tempo"
 )
 
 func runServer() {
@@ -144,6 +145,7 @@ func runServer() {
 	r.GET(PathHome, handlerHome)
 	r.GET(PathWordCloud, handlerWordCloud)
 	r.GET(PathWordCloudData, handlerWordCloudData)
+	r.GET(PathUserLibraryTempo, handlerUserLibraryTempo)
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")

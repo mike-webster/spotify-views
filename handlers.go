@@ -263,6 +263,65 @@ func handlerTopArtists(c *gin.Context) {
 	c.HTML(200, "topartists.tmpl", data)
 }
 
+func handlerUserLibraryTempo(c *gin.Context) {
+	logger := logging.GetLogger(nil)
+	token, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		logger.Debug("no token, redirecting")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
+		return
+	}
+
+	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
+	t, err := spotify.GetUserLibraryTracks(requestCtx)
+	if err != nil {
+		panic(err)
+	}
+	af, err := spotify.GetAudioFeatures(requestCtx, t.IDs())
+	if err != nil {
+		panic(err)
+	}
+	laf := *af
+
+	type item struct {
+		Artist string
+		Title  string
+		Tempo  float32
+	}
+
+	type viewBag struct {
+		Items []item
+	}
+
+	m := map[string]float32{}
+	for i := 0; i < len(t); i++ {
+		tr := t[i]
+		for j := 0; j < len(*af); j++ {
+			ta := laf[j]
+			if tr.ID == ta.ID {
+				m[fmt.Sprint(tr.Artists[0].Name, ":", tr.Name)] = ta.Tempo
+				break
+			}
+		}
+	}
+	sm := sortablemap.GetSortableFloatMap(m)
+	dir := c.Query("sort")
+	if dir != "asc" {
+		sort.Sort(sort.Reverse(sm))
+	} else {
+		sort.Sort(sm)
+	}
+
+	vb := viewBag{}
+	for _, i := range sm {
+		artist := strings.Split(i.Key, ":")[0]
+		title := strings.Split(i.Key, ":")[1]
+		vb.Items = append(vb.Items, item{Artist: artist, Title: title, Tempo: i.Value})
+	}
+
+	c.HTML(200, "library.tmpl", vb)
+}
+
 func handlerTopArtistsGenres(c *gin.Context) {
 	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)
