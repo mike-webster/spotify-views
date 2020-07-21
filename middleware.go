@@ -57,6 +57,15 @@ func recovery(c *gin.Context) {
 }
 
 func redisClient(c *gin.Context) {
+	if _redisDB != nil {
+		_, err := _redisDB.Ping(c).Result()
+		if err == nil {
+			c.Set("Redis", _redisDB)
+			c.Next()
+			return
+		}
+	}
+
 	host := os.Getenv("REDIS_HOST")
 	port := os.Getenv("REDIS_PORT")
 	password := os.Getenv("REDIS_PASS")
@@ -66,11 +75,13 @@ func redisClient(c *gin.Context) {
 		Password: fmt.Sprint(password),
 		DB:       0,
 	})
+
 	_, err := rdb.Ping(c).Result()
 	if err != nil {
 		logging.GetLogger(nil).WithField("event", "redis_crash").Error(err.Error())
 	} else {
 		c.Set("Redis", rdb)
+		rdb = _redisDB
 	}
 	c.Next()
 }
