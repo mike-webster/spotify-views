@@ -142,6 +142,7 @@ func runServer() {
 	r := gin.New()
 	r.Use(requestLogger())
 	r.Use(recovery)
+	r.Use(parseUserID)
 	r.Use(redisClient)
 	r.Use(loadContextValues())
 	r.LoadHTMLGlob("templates/*")
