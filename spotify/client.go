@@ -40,7 +40,7 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, strin
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, "", 0, err
 	}
@@ -260,7 +260,7 @@ func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req)
+	body, err := makeRequest(ctx, req, true)
 	if err != nil {
 		return map[string]string{}, err
 	}
@@ -367,7 +367,7 @@ func calculateRedisKey(ctx context.Context, req *http.Request) (string, error) {
 	return fmt.Sprint(uid, "-", req.URL), nil
 }
 
-func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
+func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(&ctx)
 	cacheKey, err := calculateRedisKey(ctx, req)
@@ -375,12 +375,14 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 		logger.WithField("event", "redis-key-error").Error(err.Error())
 	}
 
-	val, err := checkCache(ctx, cacheKey)
-	if err != nil {
-		logger.WithField("event", "redis-error").Error(err.Error())
-	}
-	if val != nil {
-		return val, nil
+	if useCache {
+		val, err := checkCache(ctx, cacheKey)
+		if err != nil {
+			logger.WithField("event", "redis-error").Error(err.Error())
+		}
+		if val != nil {
+			return val, nil
+		}
 	}
 
 	client := &http.Client{}
@@ -418,9 +420,11 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
 	}
 
-	err = addToCache(ctx, cacheKey, &b)
-	if err != nil {
-		logger.WithField("event", "redis-add-error").Error(err.Error())
+	if useCache {
+		err = addToCache(ctx, cacheKey, &b)
+		if err != nil {
+			logger.WithField("event", "redis-add-error").Error(err.Error())
+		}
 	}
 
 	return &b, nil

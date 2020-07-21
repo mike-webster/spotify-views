@@ -57,7 +57,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	respBody, err := makeRequest(ctx, req)
+	respBody, err := makeRequest(ctx, req, false)
 	if err != nil {
 		return []string{}, err
 	}
@@ -98,7 +98,7 @@ func refreshToken(ctx context.Context) (string, error) {
 	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", clientID, clientSecret))))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := makeRequest(ctx, req)
+	resp, err := makeRequest(ctx, req, false)
 	if err != nil {
 		return "", err
 	}
