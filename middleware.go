@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
@@ -52,6 +53,24 @@ func recovery(c *gin.Context) {
 		}
 	}()
 	c.Next() // execute all the handlers
+}
+
+func redisClient(c *gin.Context) {
+	host := c.Value("redis-host")
+	password := c.Value("redis-pass")
+	port := c.Value("redis-port")
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%v:%v", host, port),
+		Password: fmt.Sprint(password),
+		DB:       0,
+	})
+	_, err := rdb.Ping(c).Result()
+	if err != nil {
+		logging.GetLogger(nil).WithField("event", "redis_crash").Error(err.Error())
+	} else {
+		c.Set("Redis", rdb)
+	}
+	c.Next()
 }
 
 func requestLogger() gin.HandlerFunc {
