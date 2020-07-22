@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	data "github.com/mike-webster/spotify-views/data"
 	genius "github.com/mike-webster/spotify-views/genius"
@@ -52,6 +54,44 @@ func recovery(c *gin.Context) {
 		}
 	}()
 	c.Next() // execute all the handlers
+}
+
+func redisClient(c *gin.Context) {
+	if _redisDB != nil {
+		_, err := _redisDB.Ping(c).Result()
+		if err == nil {
+			c.Set("Redis", _redisDB)
+			c.Next()
+			return
+		}
+	}
+
+	host := os.Getenv("REDIS_HOST")
+	port := os.Getenv("REDIS_PORT")
+	password := os.Getenv("REDIS_PASS")
+	addr := fmt.Sprintf("%v:%v", host, port)
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: fmt.Sprint(password),
+		DB:       0,
+	})
+
+	_, err := rdb.Ping(c).Result()
+	if err != nil {
+		logging.GetLogger(nil).WithField("event", "redis_crash").Error(err.Error())
+	} else {
+		c.Set("Redis", rdb)
+		rdb = _redisDB
+	}
+	c.Next()
+}
+
+func parseUserID(c *gin.Context) {
+	uid, err := c.Cookie("svid")
+	if err == nil {
+		c.Set(string(spotify.ContextUserID), uid)
+	}
+	c.Next()
 }
 
 func requestLogger() gin.HandlerFunc {

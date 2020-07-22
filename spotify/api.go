@@ -31,6 +31,7 @@ var (
 	ContextResults = ContextKey("results")
 	// ContextLogger is the key to use to retrieve the logger
 	ContextLogger = "logger"
+	ContextUserID = ContextKey("s_user_id")
 	// EventNeedsRefreshToken holds the key to log when a user needs a to
 	// refresh their session
 	EventNeedsRefreshToken = "token_needs_refresh"

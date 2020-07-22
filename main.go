@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
 )
 
@@ -29,6 +30,10 @@ var (
 	dbPass       = ""
 	dbName       = ""
 	secKey       = ""
+	redisHost    = ""
+	redisPort    = ""
+	redisPass    = ""
+	_redisDB     *redis.Client
 )
 
 // ViewBag is a basic struct to use to pass information to the views
