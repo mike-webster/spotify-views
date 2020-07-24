@@ -559,3 +559,7 @@ func handlerLogin(c *gin.Context) {
 func handlerHome(c *gin.Context) {
 	c.HTML(200, "home.tmpl", nil)
 }
+
+func handlerTestError(c *gin.Context) {
+	panic("induced error")
+}
