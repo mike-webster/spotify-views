@@ -35,7 +35,8 @@ func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
 	if len(host) < 1 {
 		return nil, errors.New("no host provided")
 	}
-	ctx = context.WithValue(ctx, spotify.ContextReturnURL, fmt.Sprint("https://", host, "/spotify/oauth"))
+	// TODO: get an SSL certificate and make this secure
+	ctx = context.WithValue(ctx, spotify.ContextReturnURL, fmt.Sprint("http://", host, "/spotify/oauth"))
 	// TODO: Do we need this in the context? or just set for the main package?
 	// consider: the main goal here is to be able to verify everything is working
 	// on app start using the context returned from this method.
