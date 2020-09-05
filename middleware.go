@@ -31,7 +31,7 @@ func loadContextValues() gin.HandlerFunc {
 		c.Set(string(data.ContextDatabase), dbName)
 		c.Set(string(data.ContextSecurityKey), secKey)
 		// TODO: get an SSL certificate and make this secure
-		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("http://", host, "/spotify/oauth"))
+		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("http://www.", host, "/spotify/oauth"))
 		ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
 		c.Set("logger", logging.GetLogger(&ctx))
 		c.Next()
