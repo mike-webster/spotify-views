@@ -76,6 +76,10 @@ func GetTopArtists(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
+func GetArtistsByIds(ctx context.Context, ids []string) (*Artists, error) {
+	return getArtists(ids)
+}
+
 // GetGenresForArtists will perform a search for the provided artists IDs
 // and then researches the genres assosciated with each one. A mapping
 // of genres to occurrences is returned.
@@ -102,7 +106,8 @@ func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, er
 
 // GetGenresForTracks will perform a search for the provided track IDs
 // and then researches the genres associated with each one. A mapping
-// of genres to occurrences is returned.
+// of genres to track is returned.
+// A mapping of genres to occurrences is returned.
 func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, error) {
 	as := map[string]int32{}
 	aids := []string{}

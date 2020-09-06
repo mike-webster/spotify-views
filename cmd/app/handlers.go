@@ -263,6 +263,95 @@ func handlerTopArtists(c *gin.Context) {
 	c.HTML(200, "topartists.tmpl", data)
 }
 
+func handlerUserLibrary(c *gin.Context) {
+	logger := logging.GetLogger(nil)
+	token, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		logger.Debug("no token, redirecting")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
+		return
+	}
+
+	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
+	t, err := spotify.GetUserLibraryTracks(requestCtx)
+	if err != nil {
+		panic(err)
+	}
+
+	aids := []string{}
+	for _, i := range *t{
+		aids = append(aids, i.Genre)
+	}
+
+
+	af, err := spotify.GetAudioFeatures(requestCtx, t.IDs())
+	if err != nil {
+		panic(err)
+	}
+	laf := *af
+
+	// leaving off:
+	// I think I wired this wrong, the API hadnler probably needs to repackage
+	// the results before returning them, right?
+	// What I still need to do is figure out how to gracefully tie all this together.
+	// I have to look up artists because tracks don't have genre
+	// I have to look up the audio features for tempo
+
+	type item struct {
+		Artist string
+		Title  string
+		Tempo  float32
+		Genre string
+	}
+
+	type viewBag struct {
+		Items []item
+	}
+
+	vb := viewBag{}
+	for i := 0; i < len(t); i ++ {
+		tr := t[i]
+		for j := 0; j < len(*af); j++ {
+			if tr.ID == ta.ID {
+				vb.Items = append(vb.Items, item{
+					Artist: tr.Artists[0].Name,
+					Title: tr.Name,
+					Tempo: ta.Tempo,
+					Genre: ,
+				})
+			}
+		}
+	}
+
+	// m := map[string]float32{}
+	// for i := 0; i < len(t); i++ {
+	// 	tr := t[i]
+	// 	for j := 0; j < len(*af); j++ {
+	// 		ta := laf[j]
+	// 		if tr.ID == ta.ID {
+	// 			m[fmt.Sprint(tr.Artists[0].Name, ":", tr.Name)] = ta.Tempo
+	// 			break
+	// 		}
+	// 	}
+	// }
+	// sm := sortablemap.GetSortableFloatMap(m)
+	// dir := c.Query("sort")
+	// if dir != "asc" {
+	// 	sort.Sort(sort.Reverse(sm))
+	// } else {
+	// 	sort.Sort(sm)
+	// }
+
+	// vb := viewBag{}
+	// for _, i := range sm {
+	// 	artist := strings.Split(i.Key, ":")[0]
+	// 	title := strings.Split(i.Key, ":")[1]
+	// 	vb.Items = append(vb.Items, item{Artist: artist, Title: title, Tempo: i.Value})
+	// }
+
+	c.HTML(200, "library.tmpl", vb)
+}
+
 func handlerUserLibraryTempo(c *gin.Context) {
 	logger := logging.GetLogger(nil)
 	token, err := c.Cookie(cookieKeyToken)

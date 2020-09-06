@@ -137,6 +137,7 @@ var (
 	PathWordCloud        = "/wordcloud"
 	PathWordCloudData    = "/wordcloud/data"
 	PathUserLibraryTempo = "/library/tempo"
+	PathUserLibrary      = "/library"
 )
 
 func runServer() {
