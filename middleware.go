@@ -62,9 +62,12 @@ func redisClient(c *gin.Context) {
 		_, err := _redisDB.Ping(c).Result()
 		if err == nil {
 			c.Set("Redis", _redisDB)
+			logging.GetLogger(nil).WithField("event", "found_redis_client").Info()
 			c.Next()
 			return
 		}
+
+		logging.GetLogger(nil).WithField("event", "existing_redis_ping_error").Error(err.Error())
 	}
 
 	host := os.Getenv("REDIS_HOST")
@@ -79,10 +82,11 @@ func redisClient(c *gin.Context) {
 
 	_, err := rdb.Ping(c).Result()
 	if err != nil {
-		logging.GetLogger(nil).WithField("event", "redis_crash").Error(err.Error())
+		logging.GetLogger(nil).WithField("event", "new_redis_ping_error").Error(err.Error())
 	} else {
 		c.Set("Redis", rdb)
-		rdb = _redisDB
+		_redisDB = rdb
+		logging.GetLogger(nil).WithField("event", "new_redis_client").Info()
 	}
 	c.Next()
 }
