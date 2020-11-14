@@ -62,7 +62,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, err
 	}
 
-	var r spotifyResponse
+	var r tokenResponse
 	err = json.Unmarshal(*respBody, &r)
 	if err != nil {
 		return []string{}, err
