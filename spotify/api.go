@@ -147,6 +147,11 @@ func GetTopArtists(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
+// GetRecommendations will perform a request to  retrieve spotify's recommendations for the user
+func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
+	return getRecommendations(ctx, seeds)
+}
+
 // GetTopTracks will perform a search for the user's top tracks with the
 // provided limit.
 func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
