@@ -40,40 +40,32 @@ var (
 	EventNon200Response = "non_200_response"
 )
 
-// HandleOauth is the handler to use for oauth returns from spotify
-func HandleOauth(ctx context.Context, code string) (context.Context, error) {
-	tokens, err := requestTokens(ctx, code)
-	if err != nil {
-		return ctx, err
+func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
+	if len(ids) > 100 {
+		// we need pagination
+		ret := AudioFeatures{}
+		for i := 0; i < len(ids); i += 100 {
+			b := i
+			e := i + 100
+			if e > len(ids) {
+				e = len(ids)
+			}
+			cids := ids[b:e]
+			af, err := getAudioFeatures(ctx, cids)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, *af...)
+		}
+		return &ret, nil
 	}
 
-	ctx = context.WithValue(ctx, ContextAccessToken, tokens[0])
-	ctx = context.WithValue(ctx, ContextRefreshToken, tokens[1])
-
-	return ctx, nil
-}
-
-// GetTopTracks will perform a search for the user's top tracks with the
-// provided limit.
-func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
-	tracks, err := getTopTracks(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	c := context.WithValue(ctx, ContextResults, tracks)
-	return c, nil
-}
-
-// GetTopArtists will perform a search for the user's top artists
-func GetTopArtists(ctx context.Context) (context.Context, error) {
-	artists, err := getTopArtists(ctx)
+	af, err := getAudioFeatures(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, *artists)
-	return c, nil
+	return af, nil
 }
 
 // GetGenresForArtists will perform a search for the provided artists IDs
@@ -144,6 +136,29 @@ func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, err
 	return c, nil
 }
 
+// GetTopArtists will perform a search for the user's top artists
+func GetTopArtists(ctx context.Context) (context.Context, error) {
+	artists, err := getTopArtists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, *artists)
+	return c, nil
+}
+
+// GetTopTracks will perform a search for the user's top tracks with the
+// provided limit.
+func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
+	tracks, err := getTopTracks(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.WithValue(ctx, ContextResults, tracks)
+	return c, nil
+}
+
 // GetUserInfo will perform a request to retrieve the user's ID and email.
 func GetUserInfo(ctx context.Context) (context.Context, error) {
 	info, err := getUserInfo(ctx)
@@ -155,34 +170,6 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 	return c, nil
 }
 
-func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
-	if len(ids) > 100 {
-		// we need pagination
-		ret := AudioFeatures{}
-		for i := 0; i < len(ids); i += 100 {
-			b := i
-			e := i + 100
-			if e > len(ids) {
-				e = len(ids)
-			}
-			cids := ids[b:e]
-			af, err := getAudioFeatures(ctx, cids)
-			if err != nil {
-				return nil, err
-			}
-			ret = append(ret, *af...)
-		}
-		return &ret, nil
-	}
-
-	af, err := getAudioFeatures(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	return af, nil
-}
-
 func GetUserLibraryTracks(ctx context.Context) (Tracks, error) {
 	t, err := getUserLibraryTracks(ctx)
 	if err != nil {
@@ -190,6 +177,19 @@ func GetUserLibraryTracks(ctx context.Context) (Tracks, error) {
 	}
 
 	return t, nil
+}
+
+// HandleOauth is the handler to use for oauth returns from spotify
+func HandleOauth(ctx context.Context, code string) (context.Context, error) {
+	tokens, err := requestTokens(ctx, code)
+	if err != nil {
+		return ctx, err
+	}
+
+	ctx = context.WithValue(ctx, ContextAccessToken, tokens[0])
+	ctx = context.WithValue(ctx, ContextRefreshToken, tokens[1])
+
+	return ctx, nil
 }
 
 // RefreshToken attempts to get a new access token for the user
