@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/spotify"
 )
 
 var (
@@ -49,10 +51,24 @@ func main() {
 		panic(err)
 	}
 
+	if os.Getenv("GO_ENV") == "test" {
+		testMethod(ctx)
+		return
+	}
+
 	err = data.Ping(ctx)
 	if err != nil {
 		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
 	}
 
 	runServer()
+}
+
+func testMethod(ctx context.Context) {
+	ctx = context.WithValue(ctx, spotify.ContextAccessToken, os.Getenv("SPOT_TOK"))
+	genres, err := spotify.GetGenres(ctx)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(genres)
 }
