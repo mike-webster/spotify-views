@@ -186,6 +186,39 @@ func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, strin
 	return ret.Items.Tracks(), ret.Next, ret.Total, nil
 }
 
+func getGenres(ctx context.Context) ([]string, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := "https://api.spotify.com/v1/recommendations/available-genre-seeds"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	type tRes struct {
+		Genres []string `json:"genres"`
+	}
+
+	rsp := tRes{}
+	err = json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Genres, nil
+}
+
 func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
 	// holy shit, this is actually _really_ configurable.  Come back to this
 	// and explore the possibilities a little more after v1 is out.

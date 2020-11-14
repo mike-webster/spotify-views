@@ -68,6 +68,11 @@ func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 	return af, nil
 }
 
+// GetGenres will retrieve a list of recognized genres from spotify
+func GetGenres(ctx context.Context) (interface{}, error) {
+	return getGenres(ctx)
+}
+
 // GetGenresForArtists will perform a search for the provided artists IDs
 // and then researches the genres assosciated with each one. A mapping
 // of genres to occurrences is returned.
