@@ -157,6 +157,12 @@ func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return getRecommendations(ctx, seeds)
 }
 
+// GetRelatedArtists will  perform a request for artists  that spotify believes to be similar
+// to the  artist with  the provided ID
+func GetRelatedArtists(ctx context.Context, id string) (interface{}, error) {
+	return getRelatedArtists(ctx, id)
+}
+
 // GetTopTracks will perform a search for the user's top tracks with the
 // provided limit.
 func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {

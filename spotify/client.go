@@ -327,6 +327,62 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return &ret, nil
 }
 
+func getRelatedArtists(ctx context.Context, id string) (*[]RelatedArtist, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := "https://api.spotify.com/v1/artists/%v/related-artists"
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(url, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	type tRes struct {
+		Artists []struct {
+			Followers struct {
+				Total int64 `json:"total"`
+			} `json:"followers"`
+			Genres     []string `json:"genres"`
+			Link       string   `json:"href"`
+			ID         string   `json:"id"`
+			Name       string   `json:"name"`
+			Popularity int64    `json:"popularity"`
+			Type       string   `json:"type"`
+		} `json:"artists"`
+	}
+
+	rsp := tRes{}
+	err = json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []RelatedArtist{}
+	for _, i := range rsp.Artists {
+		ret = append(ret, RelatedArtist{
+			Followers:  i.Followers.Total,
+			Genres:     i.Genres,
+			Link:       i.Link,
+			ID:         i.ID,
+			Name:       i.Name,
+			Popularity: i.Popularity,
+			Type:       i.Type,
+		})
+	}
+
+	return &ret, nil
+}
+
 func getTopArtists(ctx context.Context) (*Artists, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
