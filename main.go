@@ -66,9 +66,17 @@ func main() {
 
 func testMethod(ctx context.Context) {
 	ctx = context.WithValue(ctx, spotify.ContextAccessToken, os.Getenv("SPOT_TOK"))
-	genres, err := spotify.GetGenres(ctx)
+
+	// ctx, err := spotify.GetTopArtists(ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Println(ctx.Value(spotify.ContextResults))
+
+	artists, err := spotify.GetRelatedArtists(ctx, "6FBDaR13swtiWwGhX1WQsP")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(genres)
+	fmt.Println(artists)
 }
