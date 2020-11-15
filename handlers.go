@@ -562,3 +562,7 @@ func handlerLogin(c *gin.Context) {
 func handlerHome(c *gin.Context) {
 	c.HTML(200, "home.tmpl", nil)
 }
+
+func handlerRecommendations(c *gin.Context) {
+
+}

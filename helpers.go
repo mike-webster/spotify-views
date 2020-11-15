@@ -137,6 +137,7 @@ var (
 	PathWordCloud        = "/wordcloud"
 	PathWordCloudData    = "/wordcloud/data"
 	PathUserLibraryTempo = "/library/tempo"
+	PathRecommendations  = "/tracks/recommendations"
 )
 
 func runServer() {
@@ -157,6 +158,7 @@ func runServer() {
 	r.GET(PathWordCloud, handlerWordCloud)
 	r.GET(PathWordCloudData, handlerWordCloudData)
 	r.GET(PathUserLibraryTempo, handlerUserLibraryTempo)
+	r.GET(PathRecommendations, handlerRecommendations)
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")
