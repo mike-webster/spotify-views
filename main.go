@@ -74,9 +74,16 @@ func testMethod(ctx context.Context) {
 
 	// fmt.Println(ctx.Value(spotify.ContextResults))
 
-	artists, err := spotify.GetRelatedArtists(ctx, "6FBDaR13swtiWwGhX1WQsP")
+	// artists, err := spotify.GetRelatedArtists(ctx, "6FBDaR13swtiWwGhX1WQsP")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(artists)
+
+	tt, err := spotify.GetTopTracksForArtist(ctx, "6FBDaR13swtiWwGhX1WQsP")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(artists)
+
+	fmt.Println(*tt)
 }
