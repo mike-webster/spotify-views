@@ -469,6 +469,61 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	return ret.Items, nil
 }
 
+func getTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/artists/%v/top-tracks?country=us", id)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tRes struct {
+		Tracks []struct {
+			ID         string `json:"id"`
+			Name       string `json:"name"`
+			Popularity int64  `json:"popularity"`
+			Artists    []struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+				Link string `json:"href"`
+			} `json:"artists"`
+		} `json:"tracks"`
+	}
+
+	rsp := tRes{}
+	err = json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []TopTracks{}
+	for _, i := range rsp.Tracks {
+		artists := []string{}
+		for _, j := range i.Artists {
+			artists = append(artists, j.Name)
+		}
+		ret = append(ret, TopTracks{
+			ID:         i.ID,
+			Name:       i.Name,
+			Popularity: i.Popularity,
+			Artists:    artists,
+		})
+	}
+
+	return &ret, nil
+}
+
 func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
