@@ -1,6 +1,13 @@
 package spotify
 
-import "fmt"
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+)
 
 // Artist represents a spotify Artist
 type Artist struct {
@@ -27,4 +34,68 @@ func (a *Artists) IDs() []string {
 		ret = append(ret, i.ID)
 	}
 	return ret
+}
+
+func getArtist(ctx context.Context, id string) (*Artist, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/artists/", id)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret Artist
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
+}
+
+func getArtists(ctx context.Context, ids []string) (*Artists, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"artists"`
+	}
+
+	var ret tempResp
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
 }

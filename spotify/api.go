@@ -40,6 +40,10 @@ var (
 	EventNon200Response = "non_200_response"
 )
 
+func GetArtist(ctx context.Context, id string) (*Artist, error) {
+	return getArtist(ctx, id)
+}
+
 func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	if len(ids) > 100 {
 		// we need pagination
