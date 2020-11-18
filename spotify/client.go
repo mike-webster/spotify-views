@@ -327,6 +327,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return &ret, nil
 }
 
+func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
