@@ -327,7 +327,6 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return &ret, nil
 }
 
-func getRelatedArtists(ctx context.Context, id string) (*[]RelatedArtist, error) {
 	token := ctx.Value(ContextAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -356,7 +355,7 @@ func getRelatedArtists(ctx context.Context, id string) (*[]RelatedArtist, error)
 			Link       string   `json:"href"`
 			ID         string   `json:"id"`
 			Name       string   `json:"name"`
-			Popularity int64    `json:"popularity"`
+			Popularity int32    `json:"popularity"`
 			Type       string   `json:"type"`
 		} `json:"artists"`
 	}
@@ -367,16 +366,13 @@ func getRelatedArtists(ctx context.Context, id string) (*[]RelatedArtist, error)
 		return nil, err
 	}
 
-	ret := []RelatedArtist{}
+	ret := []Artist{}
 	for _, i := range rsp.Artists {
-		ret = append(ret, RelatedArtist{
-			Followers:  i.Followers.Total,
+		ret = append(ret, Artist{
 			Genres:     i.Genres,
-			Link:       i.Link,
 			ID:         i.ID,
 			Name:       i.Name,
 			Popularity: i.Popularity,
-			Type:       i.Type,
 		})
 	}
 
