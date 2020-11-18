@@ -99,3 +99,100 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 
 	return &ret.Items, nil
 }
+
+func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := "https://api.spotify.com/v1/artists/%v/related-artists"
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(url, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	type tRes struct {
+		Artists []struct {
+			Followers struct {
+				Total int64 `json:"total"`
+			} `json:"followers"`
+			Genres     []string `json:"genres"`
+			Link       string   `json:"href"`
+			ID         string   `json:"id"`
+			Name       string   `json:"name"`
+			Popularity int32    `json:"popularity"`
+			Type       string   `json:"type"`
+		} `json:"artists"`
+	}
+
+	rsp := tRes{}
+	err = json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []Artist{}
+	for _, i := range rsp.Artists {
+		ret = append(ret, Artist{
+			Genres:     i.Genres,
+			ID:         i.ID,
+			Name:       i.Name,
+			Popularity: i.Popularity,
+		})
+	}
+
+	return &ret, nil
+}
+
+func getTopArtists(ctx context.Context) (*Artists, error) {
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	tr := ctx.Value(ContextTimeRange)
+	strRange := ""
+	if tr != nil {
+		strRange = tr.(string)
+	}
+
+	// TODO: make this limit a param
+	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
+	if len(strRange) > 0 {
+		url += fmt.Sprint("&time_range=", strRange)
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"items"`
+	}
+
+	var ret tempResp
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
+}

@@ -1,6 +1,15 @@
 package spotify
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/mike-webster/spotify-views/logging"
+)
 
 type AudioFeature struct {
 	ID               string  `json:"id"`
@@ -36,4 +45,43 @@ func (af *AudioFeatures) String() []string {
 		ret = append(ret, i.String())
 	}
 	return ret
+}
+
+func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
+	logger := logging.GetLogger(&ctx)
+	token := ctx.Value(ContextAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	if len(ids) > 100 {
+		logger.WithField("count", len(ids)).Warn("too many tracks passed, reducing to the first 100")
+		ids = ids[:100]
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/audio-features?ids=", strings.Join(ids, ","))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items AudioFeatures `json:"audio_features"`
+	}
+
+	ret := tempResp{}
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		logger.WithField("body", string(*body)).Error(err.Error())
+		return nil, err
+	}
+
+	return &ret.Items, nil
 }
