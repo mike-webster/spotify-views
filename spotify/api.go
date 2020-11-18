@@ -159,7 +159,7 @@ func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 
 // GetRelatedArtists will  perform a request for artists  that spotify believes to be similar
 // to the  artist with  the provided ID
-func GetRelatedArtists(ctx context.Context, id string) (*[]RelatedArtist, error) {
+func GetRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	return getRelatedArtists(ctx, id)
 }
 
