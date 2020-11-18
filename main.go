@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
@@ -80,10 +81,11 @@ func testMethod(ctx context.Context) {
 	// }
 	// fmt.Println(artists)
 
-	tt, err := spotify.GetTopTracksForArtist(ctx, "6FBDaR13swtiWwGhX1WQsP")
-	if err != nil {
-		panic(err)
-	}
+	//tt, err := spotify.GetTopTracksForArtist(ctx, "6FBDaR13swtiWwGhX1WQsP")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	fmt.Println(*tt)
+	//fmt.Println(getData(ctx))
+	fmt.Println(strings.Join(*getData(ctx), ","))
 }

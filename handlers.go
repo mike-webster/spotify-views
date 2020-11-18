@@ -19,17 +19,18 @@ import (
 )
 
 var (
-	queryStringCode                = "code"
-	queryStringError               = "error"
-	queryStringTimeRange           = "time_range"
-	cookieKeyToken                 = "svauth"
-	cookieKeyID                    = "svid"
-	topTracksLimit           int32 = 25
-	topGenresTopTracksLimit  int32 = 50
-	wordCloudTopTracksLimit  int32 = 50
-	spotifyPlayerHeightShort int32 = 80
-	spotifyPlayerHeightTall  int32 = 380
-	spotifyPlayerWidth       int32 = 300
+	queryStringCode                 = "code"
+	queryStringError                = "error"
+	queryStringTimeRange            = "time_range"
+	cookieKeyToken                  = "svauth"
+	cookieKeyID                     = "svid"
+	keyArtistInfo            string = "artist-cache"
+	topTracksLimit           int32  = 25
+	topGenresTopTracksLimit  int32  = 50
+	wordCloudTopTracksLimit  int32  = 50
+	spotifyPlayerHeightShort int32  = 80
+	spotifyPlayerHeightTall  int32  = 380
+	spotifyPlayerWidth       int32  = 300
 )
 
 func handlerOauth(c *gin.Context) {
@@ -564,5 +565,212 @@ func handlerHome(c *gin.Context) {
 }
 
 func handlerRecommendations(c *gin.Context) {
+	logger := logging.GetLogger(nil)
+	token, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		logger.Debug("no token, redirecting")
+		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
+		return
+	}
 
+	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	ctx = context.WithValue(c, keyArtistInfo, &map[string]string{})
+	c.JSON(200, getData(ctx))
+}
+
+// getLevel1Recs retrieves the user's top artists and their related artists
+func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int, context.Context) {
+	artists := map[string]int{}
+	artistCache := map[string]string{}
+
+	for _, i := range *seeds {
+		iName := strings.ToLower(i.Name)
+		if _, ok := artists[iName]; !ok {
+			artists[iName] = 1
+			continue
+		}
+		artists[iName]++
+
+		res, err := spotify.GetRelatedArtists(ctx, i.ID)
+		if err != nil {
+			fmt.Println("fuck3, ", err)
+			return nil, ctx
+		}
+
+		for _, i := range *res {
+			iName := strings.ToLower(i.Name)
+			if _, ok := artists[iName]; !ok {
+				artists[iName] = 1
+				artistCache[iName] = i.ID
+				continue
+			}
+			artists[iName]++
+		}
+	}
+
+	return &artists, context.WithValue(ctx, keyArtistInfo, &artistCache)
+}
+
+func removeUsersKnownArtists(ctx context.Context, lib *map[string]int, recs *map[string]int) *[]string {
+
+	sa := sortablemap.GetSortableMap(*recs)
+	sort.Sort(sort.Reverse(sa))
+
+	lm := sortablemap.GetSortableMap(*lib)
+	sort.Sort(sort.Reverse(lm))
+
+	whatsLeft := []string{}
+	// this didn't work
+	for _, k := range sa {
+		found := false
+		for _, kk := range lm {
+			if strings.ToLower(k.Key) == strings.ToLower(kk.Key) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		whatsLeft = append(whatsLeft, k.Key)
+	}
+
+	return &whatsLeft
+}
+
+func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[string]int) *map[string]int {
+	// this method is fucked. I can't retrieve any additional info from spotify
+	// with the way I've been passing around this information.  I need the ids for
+	// api calls, and all I have is names.
+	rrArtists := map[string]int{}
+	sorted := sortablemap.GetSortableMap(*orderedRecs)
+	sort.Sort(sort.Reverse(sorted))
+	chunk := sorted.Take(5)
+	ids := []string{}
+
+	cache := *ctx.Value(keyArtistInfo).(*map[string]string)
+
+	for _, i := range chunk {
+		found := false
+		iName := ""
+		for _, j := range *recs {
+			iName = strings.ToLower(j.Name)
+			if i.Key == iName {
+				ids = append(ids, j.ID)
+				found = true
+				break
+			}
+		}
+		if !found {
+			logging.GetLogger(nil).Error(fmt.Sprint("couldnt find artist id; ", iName))
+			if v, ok := cache[iName]; ok {
+				logging.GetLogger(nil).Info("found artist in cache")
+				ids = append(ids, v)
+			}
+		}
+	}
+
+	res, err := spotify.GetRecommendations(ctx, map[string][]string{spotify.KeySeedArtists: ids})
+	if err != nil {
+		panic(err)
+	}
+
+	for _, j := range res.Tracks {
+		for _, k := range j.Artists {
+			iName := strings.ToLower(k)
+			if _, ok := rrArtists[iName]; !ok {
+				rrArtists[iName] = 1
+				continue
+			}
+
+			rrArtists[iName]++
+		}
+
+	}
+
+	// fold in the original recs
+
+	for k := range *orderedRecs {
+		iName := strings.ToLower(k)
+		if _, ok := rrArtists[iName]; !ok {
+			rrArtists[iName] = 1
+			continue
+		}
+
+		rrArtists[iName]++
+	}
+
+	return &rrArtists
+}
+
+func getData(ctx context.Context) *[]string {
+	iRsp, err := spotify.GetTopArtists(ctx)
+	if err != nil {
+		fmt.Println("fuck1: ", err)
+		return nil
+	}
+	ita := iRsp.Value(spotify.ContextResults)
+	topArtists, ok := ita.(spotify.Artists)
+	if !ok {
+		fmt.Println("fuck3", reflect.TypeOf(ita))
+		return nil
+	}
+
+	artistCache := map[string]string{}
+	for _, i := range topArtists {
+		iName := strings.ToLower(i.Name)
+		if _, ok := artistCache[iName]; !ok {
+			artistCache[iName] = i.ID
+		}
+	}
+	ctx = context.WithValue(ctx, keyArtistInfo, &artistCache)
+
+	lvl1, ctx := getLevel1Recs(ctx, &topArtists)
+
+	// so... I think ideally, before we return the artists would it be good to filter by their library?
+	// I'm thinking - the artist recommendation counter indicates the "strength" of the recommendation
+	// because it's just how many times we would "recommend" that artist based on their current top artsts.
+	// We can use the inverse, measure the artists in their library with a measure  of tracks saved to
+	// indicate strength, in order to determine what we should actually be recommending.  We wouldn't want
+	// to be recommending someone such as myself Blink-182 - based on my library you could probably guess
+	// I know most of that already.
+
+	// random thought: don't use "top artists" as provided by spotify, calculate top artists based on
+	// the user's library.  Use the measure described above - tracks per artist saved - as a measure
+	// of popularity
+
+	// another random thought: I wonder if there's a way to find out how many times a user has listened
+	// to a track.  If so, we can take this a little further.
+
+	// The more we can refine this and sort of build our own definitions, the closer we'll be able to get
+	// to offering our own "featured" recommendations.  We'll want to make sure they're different from
+	// what spotify gives you... so think  about how to  measure  the differences.
+
+	// -- end rant
+
+	// this isn't going to work because I'll only have the top artist information, not their related artists
+	lvl2 := getLevel2Recs(ctx, &topArtists, lvl1)
+
+	lib, err := spotify.GetUserLibraryTracks(ctx)
+	if err != nil {
+		panic(err)
+	}
+	libMap := getArtistCountFromLib(&lib)
+
+	return removeUsersKnownArtists(ctx, libMap, lvl2)
+}
+
+func getArtistCountFromLib(lib *spotify.Tracks) *map[string]int {
+	ret := map[string]int{}
+	for _, i := range *lib {
+		iName := strings.ToLower(i.Name)
+		if _, ok := ret[iName]; !ok {
+			ret[iName] = 1
+			continue
+		}
+
+		ret[iName]++
+	}
+
+	return &ret
 }
