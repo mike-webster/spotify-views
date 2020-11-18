@@ -704,6 +704,16 @@ func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[
 }
 
 func getData(ctx context.Context) *[]string {
+	// Leaving off:
+	//
+	//
+	// This is cool... I'm getting recs, and they seem accurate.
+	// however; the filtering does not seem to be working.  I'm seeing results of which I'm sure I have songs saved.
+	//
+	//
+	// Ideally, when I get recommendations they wouldn't contain any artists for which I have songs saved.  We're trying to
+	// surface new music.
+
 	iRsp, err := spotify.GetTopArtists(ctx)
 	if err != nil {
 		fmt.Println("fuck1: ", err)
