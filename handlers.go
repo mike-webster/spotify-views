@@ -50,21 +50,21 @@ func handlerOauth(c *gin.Context) {
 	requestCtx = context.WithValue(requestCtx, spotify.ContextClientSecret, c.MustGet(string(spotify.ContextClientSecret)))
 	requestCtx = context.WithValue(requestCtx, spotify.ContextReturnURL, c.MustGet(string(spotify.ContextReturnURL)))
 
-	oauthResultCtx, err := spotify.HandleOauth(requestCtx, code)
+	accessTok, refreshTok, err := spotify.HandleOauth(requestCtx, code)
+	fmt.Println("Tokens: ", accessTok, " - ", refreshTok)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")
 		c.Status(500)
 		return
 	}
 
-	token := oauthResultCtx.Value(spotify.ContextAccessToken)
-	if token == nil {
+	if len(accessTok) < 1 {
 		logger.WithError(err).Error("no access token returned from spotify")
 		c.Status(500)
 		return
 	}
 
-	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, token)
+	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, accessTok)
 	userResultCtx, err := spotify.GetUserInfo(requestCtx)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve userid from spotify")
@@ -98,11 +98,10 @@ func handlerOauth(c *gin.Context) {
 		logger.WithField("info", info).Warn("couldnt create user - may have already existed")
 	}
 
-	refresh := oauthResultCtx.Value(spotify.ContextRefreshToken)
-	if refresh == nil {
+	if len(refreshTok) < 1 {
 		logger.Error("no refresh token returned from spotify")
 	} else {
-		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refresh), info["id"])
+		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refreshTok), info["id"])
 		if err != nil {
 			logger.WithField("info", info).WithError(err).Error("couldnt save refresh token for user")
 			c.Status(500)
@@ -114,7 +113,7 @@ func handlerOauth(c *gin.Context) {
 	}
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(token), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyToken, fmt.Sprint(accessTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	val, err := c.Cookie("redirect_url")
 	if err == nil && len(val) > 0 {
 		c.Redirect(http.StatusTemporaryRedirect, val)
