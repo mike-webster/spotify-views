@@ -175,7 +175,7 @@ func encrypt(ctx context.Context, val string) (string, error) {
 		return "", err
 	}
 	ciphertext := gcm.Seal(nonce, nonce, []byte(val), nil)
-	return string(ciphertext), nil
+	return hex.EncodeToString(ciphertext), nil
 }
 
 func decrypt(ctx context.Context, val string) (string, error) {
@@ -183,7 +183,10 @@ func decrypt(ctx context.Context, val string) (string, error) {
 	if secKey == nil {
 		return "", errors.New("cannot encrypt - no security key")
 	}
-	data := []byte(val)
+	data, err := hex.DecodeString(val)
+	if err != nil {
+		return "", err
+	}
 	key := []byte(createHash(fmt.Sprint(secKey)))
 	block, err := aes.NewCipher(key)
 	if err != nil {

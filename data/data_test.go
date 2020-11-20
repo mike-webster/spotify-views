@@ -15,7 +15,7 @@ func TestEncryption(t *testing.T) {
 	encrypted, err := encrypt(ctx, val)
 	t.Run("EncryptSuccess", func(t *testing.T) {
 		assert.Equal(t, err, nil)
-		assert.NotEqual(t, val, encrypted)
+		assert.NotEqual(t, encrypted, val)
 	})
 
 	dec, err := decrypt(ctx, encrypted)
