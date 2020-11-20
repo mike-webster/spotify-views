@@ -159,6 +159,9 @@ func getConnectionString(ctx context.Context) (string, error) {
 
 func encrypt(ctx context.Context, val string) (string, error) {
 	secKey := ctx.Value(ContextSecurityKey)
+	if secKey == nil {
+		return "", errors.New("cannot encrypt - no security key")
+	}
 	block, err := aes.NewCipher([]byte(createHash(fmt.Sprint(secKey))))
 	if err != nil {
 		return "", err
@@ -176,8 +179,11 @@ func encrypt(ctx context.Context, val string) (string, error) {
 }
 
 func decrypt(ctx context.Context, val string) (string, error) {
-	data := []byte(val)
 	secKey := ctx.Value(ContextSecurityKey)
+	if secKey == nil {
+		return "", errors.New("cannot encrypt - no security key")
+	}
+	data := []byte(val)
 	key := []byte(createHash(fmt.Sprint(secKey)))
 	block, err := aes.NewCipher(key)
 	if err != nil {
