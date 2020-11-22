@@ -96,8 +96,14 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	logging.GetLogger(ctx).WithField("event", "saving_refresh_token").Info(enc)
 
 	// write query
-	query := `INSERT IGNORE INTO tokens (spotify_id, refresh) VALUES ('%v','%v')`
-	res, err := _db.Exec(fmt.Sprintf(query, id, enc))
+	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh) VALUES ('%v','%v') ON DUPLICATE KEY UPDATE`,
+		id, enc)
+	logging.GetLogger(ctx).WithFields(map[string]interface{}{
+		"event": "sql_query",
+		"query": query,
+	}).Info()
+
+	res, err := _db.Exec(query)
 	if err != nil {
 		return false, err
 	}
