@@ -161,7 +161,10 @@ func encrypt(ctx context.Context, val string) (string, error) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
 	key := []byte(fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey)))
-	logging.GetLogger(ctx).WithField("event", "checking_key").Info(key)
+	logging.GetLogger(ctx).WithFields(map[string]interface{}{
+		"event": "checking_key",
+		"key":   key,
+	}).Info()
 	plaintext := []byte(val)
 
 	block, err := aes.NewCipher(key)
@@ -217,6 +220,7 @@ func decrypt(ctx context.Context, val string) (string, error) {
 	}
 
 	nonce := ciphertext[:nonceSize]
+	encrypted := ciphertext[nonceSize:]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -228,7 +232,7 @@ func decrypt(ctx context.Context, val string) (string, error) {
 		return "", err
 	}
 
-	plaintext, err := aesgcm.Open(nil, nonce, ciphertext[(nonceSize):], nil)
+	plaintext, err := aesgcm.Open(nil, nonce, encrypted, nil)
 	if err != nil {
 		return "", err
 	}
