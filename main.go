@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
-	"github.com/mike-webster/spotify-views/keys"
 )
 
 var (
@@ -70,7 +69,9 @@ func main() {
 }
 
 func testMethod(ctx context.Context) {
-	ctx = context.WithValue(ctx, spotify.ContextAccessToken, os.Getenv("SPOT_TOK"))
+	// ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, os.Getenv("SPOT_TOK"))
+	// ctx = context.WithValue(ctx, keys.ContextSpotifyUserID, "1236463819")
+	// ctx = context.WithValue(ctx, keys.ContextSecurityKey, `!;$W=T3rYHXpB'K^`)
 
 	// ctx, err := spotify.GetTopArtists(ctx)
 	// if err != nil {
