@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,19 +18,30 @@ import (
 
 func loadContextValues() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parseEnvironmentVariables(c)
-		c.Set(string(spotify.ContextClientID), clientID)
-		c.Set(string(spotify.ContextClientSecret), clientSecret)
-		c.Set(string(genius.ContextAccessToken), lyricsKey)
-		c.Set(string(data.ContextHost), dbHost)
-		c.Set(string(data.ContextUser), dbUser)
-		c.Set(string(data.ContextPass), dbPass)
-		c.Set(string(data.ContextDatabase), dbName)
-		c.Set(string(data.ContextSecurityKey), secKey)
-		// TODO: get an SSL certificate and make this secure
-		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("http://www.", host, "/spotify/oauth"))
-		ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
-		c.Set("logger", logging.GetLogger(&ctx))
+		vals, err := parseEnvironmentVariables(c)
+		if err != nil {
+			logging.GetLogger(c).WithField("error", err).Error("misconfigured")
+			panic(err)
+		}
+
+		uid, _ := c.Cookie("svid")
+		c.Set(string(keys.ContextSpotifyUserID), uid)
+		for k, v := range vals {
+			key, ok := k.(string)
+			if !ok {
+				kk, ok := k.(keys.ContextKey)
+				if !ok {
+					logging.GetLogger(c).WithFields(map[string]interface{}{
+						"event": "couldnt_parse_context_field",
+						"key":   k,
+						"value": v,
+					}).Error()
+					panic("misconfigured2")
+				}
+				key = string(kk)
+			}
+			c.Set(key, v)
+		}
 		c.Next()
 	}
 }
