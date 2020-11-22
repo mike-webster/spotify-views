@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	data "github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
@@ -45,12 +46,7 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	requestCtx := context.Background()
-	requestCtx = context.WithValue(requestCtx, spotify.ContextClientID, c.MustGet(string(spotify.ContextClientID)))
-	requestCtx = context.WithValue(requestCtx, spotify.ContextClientSecret, c.MustGet(string(spotify.ContextClientSecret)))
-	requestCtx = context.WithValue(requestCtx, spotify.ContextReturnURL, c.MustGet(string(spotify.ContextReturnURL)))
-
-	accessTok, refreshTok, err := spotify.HandleOauth(requestCtx, code)
+	accessTok, refreshTok, err := spotify.HandleOauth(c, code)
 	fmt.Println("Tokens: ", accessTok, " - ", refreshTok)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")
@@ -64,28 +60,20 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	requestCtx = context.WithValue(requestCtx, spotify.ContextAccessToken, accessTok)
-	userResultCtx, err := spotify.GetUserInfo(requestCtx)
+	userResultCtx, err := spotify.GetUserInfo(c)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve userid from spotify")
 		c.Status(500)
 		return
 	}
 
-	ctxInfo := userResultCtx.Value(spotify.ContextResults)
-	if ctxInfo == nil {
+	ctxResults := keys.GetContextValue(userResultCtx, keys.ContextSpotifyResults)
+	if ctxResults == nil {
 		logger.Error("no id returned from query")
 		c.Status(500)
 		return
 	}
 
-	info := ctxInfo.(map[string]string)
-
-	requestCtx = context.WithValue(requestCtx, data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
-	requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
-	requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
-	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
-	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
 
 	success, err := data.SaveUser(requestCtx, info["id"], info["email"])
 	if err != nil {
@@ -122,18 +110,20 @@ func handlerOauth(c *gin.Context) {
 }
 
 func handlerTopTracks(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
+		// TODO: check for refresh token first
+		// TODO: maybe move this ^^ check into middleware?
 		logger.Debug("no token, redirecting")
 		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
 		return
 	}
 
-	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
+	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(requestCtx, spotify.ContextTimeRange, tr)
+		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
@@ -155,7 +145,7 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	reqTracks := tracksResultsCtx.Value(spotify.ContextResults)
+	reqTracks := keys.GetContextValue(tracksResultsCtx, keys.ContextSpotifyResults)
 	if reqTracks == nil {
 		logger.Error("no tracks returned from spotify")
 		c.Status(500)
@@ -193,7 +183,7 @@ func handlerTopTracks(c *gin.Context) {
 }
 
 func handlerTopArtists(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
@@ -201,10 +191,10 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
+	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(requestCtx, spotify.ContextTimeRange, tr)
+		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	artistResponseCtx, err := spotify.GetTopArtists(requestCtx)
@@ -226,7 +216,7 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	reqArtists := artistResponseCtx.Value(spotify.ContextResults)
+	reqArtists := keys.GetContextValue(artistResponseCtx, keys.ContextSpotifyResults)
 	if reqArtists == nil {
 		logger.Error("received no artists")
 		c.Status(500)
@@ -264,7 +254,7 @@ func handlerTopArtists(c *gin.Context) {
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
@@ -272,11 +262,12 @@ func handlerUserLibraryTempo(c *gin.Context) {
 		return
 	}
 
-	requestCtx := context.WithValue(c, spotify.ContextAccessToken, token)
+	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	t, err := spotify.GetUserLibraryTracks(requestCtx)
 	if err != nil {
 		panic(err)
 	}
+
 	af, err := spotify.GetAudioFeatures(requestCtx, t.IDs())
 	if err != nil {
 		panic(err)
@@ -323,7 +314,7 @@ func handlerUserLibraryTempo(c *gin.Context) {
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
@@ -331,11 +322,11 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
+		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	reqCtx, err := spotify.GetTopArtists(ctx)
@@ -345,7 +336,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		return
 	}
 
-	reqArtists := reqCtx.Value(spotify.ContextResults)
+	reqArtists := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
 	artists, ok := reqArtists.(spotify.Artists)
 	if !ok {
 		logger.WithField("type", reflect.TypeOf(reqArtists)).Error("couldnt parse artists from spotify")
@@ -372,7 +363,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		return
 	}
 
-	reqGenres := reqCtx.Value(spotify.ContextResults)
+	reqGenres := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
 	genres, ok := reqGenres.(spotify.Pairs)
 	if !ok {
 		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
@@ -386,7 +377,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
@@ -394,11 +385,11 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
+		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	reqCtx, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
@@ -420,7 +411,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	reqTracks := reqCtx.Value(spotify.ContextResults)
+	reqTracks := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if !ok {
 		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
@@ -447,7 +438,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	reqGenres := reqCtx.Value(spotify.ContextResults)
+	reqGenres := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
 	genres, ok := reqGenres.(spotify.Pairs)
 	if !ok {
 		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
@@ -465,7 +456,7 @@ func handlerWordCloud(c *gin.Context) {
 }
 
 func handlerWordCloudData(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	token, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		logger.Debug("no token, redirecting")
@@ -473,11 +464,11 @@ func handlerWordCloudData(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, spotify.ContextTimeRange, tr)
+		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	reqCtx, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
@@ -500,7 +491,7 @@ func handlerWordCloudData(c *gin.Context) {
 	}
 	logger.Debug("got top tracks")
 
-	reqTracks := reqCtx.Value(spotify.ContextResults)
+	reqTracks := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
 	tracks, ok := reqTracks.(spotify.Tracks)
 	if !ok {
 		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
@@ -516,7 +507,7 @@ func handlerWordCloudData(c *gin.Context) {
 		})
 	}
 
-	ctx = context.WithValue(c, genius.ContextAccessToken, lyricsKey)
+	ctx = context.WithValue(c, keys.ContextLyricsToken, lyricsKey)
 
 	wordCounts, err := genius.GetLyricCountForSong(ctx, searches)
 	if err != nil {
@@ -543,12 +534,13 @@ func handlerWordCloudData(c *gin.Context) {
 }
 
 func handlerLogin(c *gin.Context) {
+	returl := keys.GetContextValue(c, keys.ContextSpotifyReturnURL)
 	// TODO Add state
 	pathScopes := url.QueryEscape(strings.Join(scopes, " "))
 	spotifyURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
 		clientID,
 		pathScopes,
-		c.MustGet(string(spotify.ContextReturnURL)))
+		returl)
 
 	if len(c.Query("redirectUrl")) > 0 {
 		c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
@@ -572,7 +564,7 @@ func handlerRecommendations(c *gin.Context) {
 		return
 	}
 
-	ctx := context.WithValue(c, spotify.ContextAccessToken, token)
+	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	ctx = context.WithValue(c, keyArtistInfo, &map[string]string{})
 	c.JSON(200, getData(ctx))
 }
@@ -718,7 +710,7 @@ func getData(ctx context.Context) *[]string {
 		fmt.Println("fuck1: ", err)
 		return nil
 	}
-	ita := iRsp.Value(spotify.ContextResults)
+	ita := keys.GetContextValue(iRsp, keys.ContextSpotifyResults)
 	topArtists, ok := ita.(spotify.Artists)
 	if !ok {
 		fmt.Println("fuck3", reflect.TypeOf(ita))

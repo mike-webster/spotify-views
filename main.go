@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
-	"github.com/mike-webster/spotify-views/spotify"
+	"github.com/mike-webster/spotify-views/keys"
 )
 
 var (
@@ -47,9 +47,13 @@ type ViewBag struct {
 }
 
 func main() {
-	ctx, err := parseEnvironmentVariables(context.Background())
+	ctx := context.Background()
+	vals, err := parseEnvironmentVariables(ctx)
 	if err != nil {
 		panic(err)
+	}
+	for k, v := range vals {
+		ctx = context.WithValue(ctx, k, v)
 	}
 
 	if os.Getenv("GO_ENV") == "test" {

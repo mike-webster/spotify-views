@@ -12,10 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
-	data "github.com/mike-webster/spotify-views/data"
-	genius "github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
-	spotify "github.com/mike-webster/spotify-views/spotify"
 	"github.com/sirupsen/logrus"
 )
 
@@ -94,7 +92,7 @@ func redisClient(c *gin.Context) {
 func parseUserID(c *gin.Context) {
 	uid, err := c.Cookie("svid")
 	if err == nil {
-		c.Set(string(spotify.ContextUserID), uid)
+		c.Set(string(keys.ContextSpotifyUserID), uid)
 	}
 	c.Next()
 }
@@ -152,7 +150,7 @@ func requestLogger() gin.HandlerFunc {
 				logger.Info()
 			}
 
-			ctx.Set(string(logging.ContextLogger), logger)
+			ctx.Set(string(keys.ContextLogger), logger)
 
 			return logger
 		}(ctx)

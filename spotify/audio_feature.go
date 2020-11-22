@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 )
 
@@ -48,8 +49,8 @@ func (af *AudioFeatures) String() []string {
 }
 
 func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
-	logger := logging.GetLogger(&ctx)
-	token := ctx.Value(ContextAccessToken)
+	logger := logging.GetLogger(ctx)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

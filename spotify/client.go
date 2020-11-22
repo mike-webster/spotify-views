@@ -11,6 +11,7 @@ import (
 	"time"
 
 	redis "github.com/go-redis/redis/v8"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -41,7 +42,7 @@ func addToCache(ctx context.Context, key string, body *[]byte) error {
 }
 
 func calculateRedisKey(ctx context.Context, req *http.Request) (string, error) {
-	uid := ctx.Value(string(ContextUserID))
+	uid := ctx.Value(string(keys.ContextSpotifyUserID))
 	if len(fmt.Sprint(uid)) < 1 {
 		return "", errors.New("no user id in context")
 	}
@@ -77,7 +78,7 @@ func checkCache(ctx context.Context, key string) (*[]byte, error) {
 }
 
 func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, string, int, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, "", 0, errors.New("no access token provided")
 	}
@@ -113,7 +114,7 @@ func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, strin
 }
 
 func getGenres(ctx context.Context) ([]string, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -146,7 +147,7 @@ func getGenres(ctx context.Context) ([]string, error) {
 }
 
 func getUserInfo(ctx context.Context) (map[string]string, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return map[string]string{}, errors.New("no access token provided")
 	}
@@ -180,7 +181,7 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 
 func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte, error) {
 	s := time.Now()
-	logger := logging.GetLogger(&ctx)
+	logger := logging.GetLogger(ctx)
 	cacheKey, err := calculateRedisKey(ctx, req)
 	if err != nil {
 		logger.WithField("event", "redis-key-error").Error(err.Error())

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/mike-webster/spotify-views/keys"
 )
 
-// ContextKey is used to store and access information from the context
-type ContextKey string
 type ErrTokenExpired string
 
 func (e ErrTokenExpired) Error() string {
@@ -15,23 +15,7 @@ func (e ErrTokenExpired) Error() string {
 }
 
 var (
-	// ContextReturnURL is the key to use for the ouath return url
-	ContextReturnURL = ContextKey("return_url")
-	// ContextClientID is the key to use for the spotify client id
-	ContextClientID = ContextKey("client_id")
-	// ContextClientSecret is the key to use for the spotify client secret
-	ContextClientSecret = ContextKey("client_secret")
-	// ContextAccessToken is the key to use for the spotify access token
-	ContextAccessToken = ContextKey("access_token")
-	// ContextRefreshToken TODO
-	ContextRefreshToken = ContextKey("refresh_token")
-	// ContextTimeRange is the key to use for the spotify search
-	ContextTimeRange = ContextKey("time_range")
-	// ContextResults is the key to use to retrieve the results
-	ContextResults = ContextKey("results")
-	// ContextLogger is the key to use to retrieve the logger
-	ContextLogger = "logger"
-	ContextUserID = ContextKey("s_user_id")
+
 	// EventNeedsRefreshToken holds the key to log when a user needs a to
 	// refresh their session
 	EventNeedsRefreshToken = "token_needs_refresh"
@@ -97,7 +81,7 @@ func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, er
 		}
 	}
 
-	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, getPairs(ret))
 	return c, nil
 }
 
@@ -141,7 +125,7 @@ func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, err
 		}
 	}
 
-	c := context.WithValue(ctx, ContextResults, getPairs(ret))
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, getPairs(ret))
 	return c, nil
 }
 
@@ -152,7 +136,7 @@ func GetTopArtists(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, *artists)
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, *artists)
 	return c, nil
 }
 
@@ -175,7 +159,7 @@ func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, tracks)
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, tracks)
 	return c, nil
 }
 
@@ -191,7 +175,7 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, info)
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, info)
 	return c, nil
 }
 
@@ -221,6 +205,6 @@ func RefreshToken(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, ContextResults, tok)
+	c := context.WithValue(ctx, keys.ContextSpotifyResults, tok)
 	return c, nil
 }

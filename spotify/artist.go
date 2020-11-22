@@ -6,7 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
+
+	"github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/logging"
 )
 
 // Artist represents a spotify Artist
@@ -37,7 +42,7 @@ func (a *Artists) IDs() []string {
 }
 
 func getArtist(ctx context.Context, id string) (*Artist, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -67,7 +72,7 @@ func getArtist(ctx context.Context, id string) (*Artist, error) {
 }
 
 func getArtists(ctx context.Context, ids []string) (*Artists, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -101,7 +106,7 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 }
 
 func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -154,12 +159,12 @@ func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 }
 
 func getTopArtists(ctx context.Context) (*Artists, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
 
-	tr := ctx.Value(ContextTimeRange)
+	tr := ctx.Value(keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
@@ -178,9 +183,52 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-
 	body, err := makeRequest(ctx, req, true)
 	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(ErrTokenExpired("")) {
+			logging.GetLogger(ctx).
+				WithFields(map[string]interface{}{
+					"event": keys.AppEventErrTokenExpired,
+				}).
+				Info()
+
+			refTok, err := data.GetRefreshTokenForUser(ctx,
+				fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyUserID)))
+			if err != nil {
+				logging.GetLogger(ctx).
+					WithFields(map[string]interface{}{
+						"event": keys.AppEventErrDataRetrieval,
+						"error": err,
+					}).
+					Info()
+				return nil, err
+			}
+
+			ctx = context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refTok)
+			newTok, err := refreshToken(ctx)
+			if err != nil {
+				logging.GetLogger(ctx).
+					WithFields(map[string]interface{}{
+						"event": keys.AppEventErrRefreshingToken,
+						"error": err,
+					}).
+					Info()
+				return nil, err
+			}
+
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, newTok)
+			newBody, err := makeRequest(ctx, req, false)
+			if err != nil {
+				logging.GetLogger(ctx).
+					WithFields(map[string]interface{}{
+						"event": "retry_request_fail",
+						"error": err,
+					}).Error()
+
+				return nil, err
+			}
+			body = newBody
+		}
 		return nil, err
 	}
 

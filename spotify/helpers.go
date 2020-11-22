@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/mike-webster/spotify-views/keys"
 )
 
 func requestTokens(ctx context.Context, code string) ([]string, error) {
-	returnURL := ctx.Value(ContextReturnURL)
+	returnURL := keys.GetContextValue(ctx, keys.ContextSpotifyReturnURL)
 	if returnURL == nil {
 		return []string{}, errors.New("no return url provided")
 	}
@@ -22,7 +24,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, errors.New("return url couldn't be parsed")
 	}
 
-	clientID := ctx.Value(ContextClientID)
+	clientID := keys.GetContextValue(ctx, keys.ContextSpotifyClientID)
 	if clientID == nil {
 		return []string{}, errors.New("no client id provided")
 	}
@@ -32,7 +34,7 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 		return []string{}, errors.New("client id couldn't be parsed")
 	}
 
-	clientSecret := ctx.Value(ContextClientSecret)
+	clientSecret := keys.GetContextValue(ctx, keys.ContextSpotifyClientSecret)
 	if clientSecret == nil {
 		return []string{}, errors.New("no client secret provided")
 	}
@@ -74,17 +76,17 @@ func requestTokens(ctx context.Context, code string) ([]string, error) {
 }
 
 func refreshToken(ctx context.Context) (string, error) {
-	refTok := ctx.Value(ContextRefreshToken)
+	refTok := keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)
 	if refTok == nil {
 		return "", errors.New("no refresh token provided")
 	}
-	clientID := ctx.Value(ContextClientID)
+	clientID := keys.GetContextValue(ctx, keys.ContextSpotifyClientID)
 	if clientID == nil {
 		return "", errors.New("no client id provided")
 	}
-	clientSecret := ctx.Value(ContextClientSecret)
+	clientSecret := keys.GetContextValue(ctx, keys.ContextSpotifyClientSecret)
 	if clientSecret == nil {
-		return "", errors.New("no client secret is provided")
+		return "", errors.New("no client secret provided")
 	}
 
 	body := url.Values{}

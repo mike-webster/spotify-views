@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 )
 
@@ -19,12 +20,12 @@ type TopTracks struct {
 }
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
 
-	tr := ctx.Value(ContextTimeRange)
+	tr := ctx.Value(keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
@@ -61,7 +62,7 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 }
 
 func getTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -115,7 +116,7 @@ func getTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error)
 	return &ret, nil
 }
 func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
+
+	"github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/keys"
 )
 
 type Recommendation struct {
@@ -27,7 +31,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	// holy shit, this is actually _really_ configurable.  Come back to this
 	// and explore the possibilities a little more after v1 is out.
 
-	token := ctx.Value(ContextAccessToken)
+	token := ctx.Value(keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -67,7 +71,30 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 
 	body, err := makeRequest(ctx, req, false)
 	if err != nil {
-		return nil, err
+		if err.Error() == EventNeedsRefreshToken {
+			log.Println("refreshing token")
+			refTok, err := data.GetRefreshTokenForUser(ctx, fmt.Sprint(ctx.Value(keys.ContextSpotifyUserID)))
+			if err != nil {
+				log.Println("couldnt refresh token")
+				return nil, err
+			}
+			ctx = context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refTok)
+			newTok, err := refreshToken(ctx)
+			if err != nil {
+				log.Println("couldnt retrieve new token")
+				return nil, err
+			}
+			log.Println("new token: ", newTok)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, newTok)
+			newBody, err := makeRequest(ctx, req, false)
+			if err != nil {
+				log.Println("retry failed")
+				return nil, err
+			}
+			body = newBody
+		} else {
+			return nil, err
+		}
 	}
 
 	type tApiResponse struct {

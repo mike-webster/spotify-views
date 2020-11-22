@@ -8,14 +8,17 @@ import (
 type ContextKey string
 
 var (
-	ErrCantFindValue   = "couldnt find requested value in context"
-	ContextDbHost      = ContextKey("db_host")
-	ContextDbUser      = ContextKey("db_user")
-	ContextDbPass      = ContextKey("db_pass")
-	ContextSecurityKey = ContextKey("sec_key")
-	ContextDatabase    = ContextKey("db_name")
-	ContextLyricsToken = ContextKey("access_token")
-	ContextLogger      = ContextKey("logger")
+	AppEventErrTokenExpired    = "token_expired"
+	AppEventErrDataRetrieval   = "data_retrieval_error"
+	AppEventErrRefreshingToken = "error_refreshing_token"
+	ErrCantFindValue           = "couldnt find requested value in context"
+	ContextDbHost              = ContextKey("db_host")
+	ContextDbUser              = ContextKey("db_user")
+	ContextDbPass              = ContextKey("db_pass")
+	ContextSecurityKey         = ContextKey("sec_key")
+	ContextDatabase            = ContextKey("db_name")
+	ContextLyricsToken         = ContextKey("access_token")
+	ContextLogger              = ContextKey("logger")
 	// ContextSpotifyReturnURL is the key to use for the ouath return url
 	ContextSpotifyReturnURL = ContextKey("return_url")
 	// ContextSpotifyClientIDContextSpotifyClientID is the key to use for the spotify client id
