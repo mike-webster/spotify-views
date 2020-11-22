@@ -35,7 +35,7 @@ var (
 )
 
 func handlerOauth(c *gin.Context) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(c)
 	code := c.Query(queryStringCode)
 	// TODO: query state verification
 	qErr := c.Query(queryStringError)
@@ -95,7 +95,10 @@ func handlerOauth(c *gin.Context) {
 	} else {
 		success, err := data.SaveRefreshTokenForUser(c, fmt.Sprint(refreshTok), info["id"])
 		if err != nil {
-			logger.WithField("info", info).WithError(err).Error("couldnt save refresh token for user")
+			logger.WithFields(map[string]interface{}{
+				"info":  info,
+				"error": err,
+			}).Error("couldnt save refresh token for user")
 			c.Status(500)
 			return
 		}
