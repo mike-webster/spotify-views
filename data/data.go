@@ -94,8 +94,8 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	}
 
 	// write query
-	query := `INSERT IGNORE INTO tokens (spotify_id, refresh) VALUES (?,?)`
-	res := _db.MustExec(query, id, enc)
+	query := `INSERT IGNORE INTO tokens (spotify_id, refresh) VALUES (%v,%v)`
+	res := _db.MustExec(fmt.Sprintf(query, id, enc))
 	rows, err := res.RowsAffected()
 	if err != nil {
 		return false, err
