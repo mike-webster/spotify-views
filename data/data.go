@@ -165,6 +165,7 @@ func encrypt(ctx context.Context, val string) (string, error) {
 		"event": "checking_key",
 		"key":   key,
 	}).Info()
+	fmt.Println("key: ", key)
 	plaintext := []byte(val)
 
 	block, err := aes.NewCipher(key)
