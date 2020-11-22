@@ -196,9 +196,12 @@ func encrypt(ctx context.Context, val string) (string, error) {
 func decrypt(ctx context.Context, val string) (string, error) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
-	fmt.Println("seckey: ", ctx.Value(keys.ContextSecurityKey))
-	key := []byte(fmt.Sprint(ctx.Value(keys.ContextSecurityKey)))
+	secKey := keys.GetContextValue(ctx, keys.ContextSecurityKey)
+	fmt.Println("seckey: ", secKey)
+
+	key := []byte(fmt.Sprint(secKey))
 	fmt.Println("key: ", key)
+
 	ciphertext, err := hex.DecodeString(val)
 	fmt.Println("decoded: ", string(ciphertext))
 	if err != nil {
