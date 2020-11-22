@@ -1,35 +1,33 @@
 package data
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 
+	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/logging"
+
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/jmoiron/sqlx"
-	"github.com/mike-webster/spotify-views/logging"
 )
 
 var (
-	_db                *Database
-	ContextHost        = ContextKey("db_host")
-	ContextUser        = ContextKey("db_user")
-	ContextPass        = ContextKey("db_pass")
-	ContextSecurityKey = ContextKey("sec_key")
-	ContextDatabase    = ContextKey("db_name")
+	_db *Database
+
+	nonceSize = 12
 )
 
 // Database holds a database
 type Database struct {
 	*sqlx.DB
 }
-type ContextKey string
 
 // Ping returns true if we can successfully ping the db
 func Ping(ctx context.Context) error {
@@ -38,7 +36,7 @@ func Ping(ctx context.Context) error {
 		return err
 	}
 
-	logger := logging.GetLogger(&ctx)
+	logger := logging.GetLogger(ctx)
 	err = _db.Ping()
 	if err != nil {
 		logger.WithField("event", "ping_fail").Error(err)
@@ -60,12 +58,12 @@ func GetRefreshTokenForUser(ctx context.Context, id string) (string, error) {
 		return "", errors.New("weird - couldnt connect to databse")
 	}
 
-	query := `SELECT refresh FROM tokens WHERE id = ?`
+	query := `SELECT refresh FROM tokens WHERE spotify_id = %v`
 	type token struct {
 		Refresh string `db:"refresh"`
 	}
 	tok := token{}
-	err = _db.Get(&tok, query)
+	err = _db.Get(&tok, fmt.Sprintf(query, id))
 	if err != nil {
 		return "", err
 	}
@@ -145,10 +143,10 @@ func loadDB(ctx context.Context) (bool, error) {
 }
 
 func getConnectionString(ctx context.Context) (string, error) {
-	host := ctx.Value(ContextHost)
-	user := ctx.Value(ContextUser)
-	pass := ctx.Value(ContextPass)
-	dbname := ctx.Value(ContextDatabase)
+	host := keys.GetContextValue(ctx, keys.ContextDbHost)
+	user := keys.GetContextValue(ctx, keys.ContextDbUser)
+	pass := keys.GetContextValue(ctx, keys.ContextDbPass)
+	dbname := keys.GetContextValue(ctx, keys.ContextDatabase)
 
 	if host == nil || user == nil || pass == nil || dbname == nil {
 		return "", errors.New("missing connection string info")
@@ -158,55 +156,74 @@ func getConnectionString(ctx context.Context) (string, error) {
 }
 
 func encrypt(ctx context.Context, val string) (string, error) {
-	secKey := ctx.Value(ContextSecurityKey)
-	if secKey == nil {
-		return "", errors.New("cannot encrypt - no security key")
-	}
-	block, err := aes.NewCipher([]byte(createHash(fmt.Sprint(secKey))))
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
-	ciphertext := gcm.Seal(nonce, nonce, []byte(val), nil)
-	return hex.EncodeToString(ciphertext), nil
-}
+	// The key argument should be the AES key, either 16 or 32 bytes
+	// to select AES-128 or AES-256.
+	key := []byte(fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey)))
+	plaintext := []byte(val)
 
-func decrypt(ctx context.Context, val string) (string, error) {
-	secKey := ctx.Value(ContextSecurityKey)
-	if secKey == nil {
-		return "", errors.New("cannot encrypt - no security key")
-	}
-	data, err := hex.DecodeString(val)
-	if err != nil {
-		return "", err
-	}
-	key := []byte(createHash(fmt.Sprint(secKey)))
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
-	gcm, err := cipher.NewGCM(block)
+
+	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
+	nonce := make([]byte, nonceSize)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
-	nonceSize := gcm.NonceSize()
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", err
-	}
-	return string(plaintext), nil
+
+	summer := bytes.NewBuffer(nonce)
+
+	fmt.Println("nonce:  ", len(nonce))
+
+	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
+
+	fmt.Println("enc: ", ciphertext)
+
+	summer.Write(ciphertext)
+
+	ret := hex.EncodeToString(summer.Bytes())
+
+	fmt.Println("hex: ", ret)
+	return ret, nil
 }
 
-func createHash(key string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(key))
-	return hex.EncodeToString(hasher.Sum(nil))
+func decrypt(ctx context.Context, val string) (string, error) {
+	// The key argument should be the AES key, either 16 or 32 bytes
+	// to select AES-128 or AES-256.
+	fmt.Println("seckey: ", ctx.Value(keys.ContextSecurityKey))
+	key := []byte(fmt.Sprint(ctx.Value(keys.ContextSecurityKey)))
+	fmt.Println("key: ", key)
+	ciphertext, err := hex.DecodeString(val)
+	fmt.Println("decoded: ", string(ciphertext))
+	if err != nil {
+		return "", err
+	}
+
+	nonce := ciphertext[:nonceSize]
+	fmt.Println("nonce: ", len(nonce))
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	plaintext, err := aesgcm.Open(nil, nonce, ciphertext[(nonceSize):], nil)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("plaintext: %s\n", string(plaintext))
+
+	return string(plaintext), nil
 }
