@@ -190,8 +190,12 @@ func encrypt(ctx context.Context, val string) (string, error) {
 	// write the encrypted token
 	summer.Write(ciphertext)
 
+	toStore := summer.Bytes()
+
+	logging.GetLogger(ctx).WithField("event", "webby_test").Info(string(toStore))
+
 	// encode the bytes to a string for storing
-	ret := hex.EncodeToString(summer.Bytes())
+	ret := hex.EncodeToString(toStore)
 
 	fmt.Println("hex: ", ret)
 	return ret, nil
