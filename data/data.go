@@ -180,16 +180,17 @@ func encrypt(ctx context.Context, val string) (string, error) {
 		return "", err
 	}
 
+	// write the nonce first
 	summer := bytes.NewBuffer(nonce)
-
-	fmt.Println("nonce:  ", len(nonce))
 
 	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
 
-	fmt.Println("enc: ", ciphertext)
+	fmt.Println("enc: ", string(ciphertext))
 
+	// write the encrypted token
 	summer.Write(ciphertext)
 
+	// encode the bytes to a string for storing
 	ret := hex.EncodeToString(summer.Bytes())
 
 	fmt.Println("hex: ", ret)
