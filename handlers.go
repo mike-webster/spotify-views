@@ -576,6 +576,20 @@ func handlerRecommendations(c *gin.Context) {
 	c.JSON(200, getData(ctx))
 }
 
+func handlerTest(c *gin.Context) {
+	id, err := c.Cookie("svid")
+	if err != nil {
+		panic(err)
+	}
+	refTok, err := data.GetRefreshTokenForUser(c, id)
+	ctx := context.WithValue(c, keys.ContextSpotifyRefreshToken, refTok)
+	tok, err := spotify.RefreshToken(ctx)
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(200, gin.H{"token": tok})
+}
+
 // getLevel1Recs retrieves the user's top artists and their related artists
 func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int, context.Context) {
 	artists := map[string]int{}
