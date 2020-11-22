@@ -160,15 +160,17 @@ func getConnectionString(ctx context.Context) (string, error) {
 func encrypt(ctx context.Context, val string) (string, error) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
-	key := []byte(fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey)))
+	key := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey))
 	logging.GetLogger(ctx).WithFields(map[string]interface{}{
 		"event": "checking_key",
 		"key":   key,
 	}).Info()
-	fmt.Println("key: ", key)
+	secKey := []byte(key)
+
+	fmt.Println("sekkey: ", secKey)
 	plaintext := []byte(val)
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(secKey)
 	if err != nil {
 		return "", err
 	}
