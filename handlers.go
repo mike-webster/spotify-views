@@ -74,8 +74,9 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	info := ctxResults.(map[string]string)
 
-	success, err := data.SaveUser(requestCtx, info["id"], info["email"])
+	success, err := data.SaveUser(c, info["id"], info["email"])
 	if err != nil {
 		logger.WithField("info", info).WithError(err).Error("couldnt save user")
 		c.Status(500)
@@ -89,7 +90,7 @@ func handlerOauth(c *gin.Context) {
 	if len(refreshTok) < 1 {
 		logger.Error("no refresh token returned from spotify")
 	} else {
-		success, err := data.SaveRefreshTokenForUser(requestCtx, fmt.Sprint(refreshTok), info["id"])
+		success, err := data.SaveRefreshTokenForUser(c, fmt.Sprint(refreshTok), info["id"])
 		if err != nil {
 			logger.WithField("info", info).WithError(err).Error("couldnt save refresh token for user")
 			c.Status(500)
@@ -535,6 +536,12 @@ func handlerWordCloudData(c *gin.Context) {
 
 func handlerLogin(c *gin.Context) {
 	returl := keys.GetContextValue(c, keys.ContextSpotifyReturnURL)
+	if returl == nil {
+		//c.HTML(500, "error.tmpl", nil)
+		c.Status(500)
+		return
+	}
+
 	// TODO Add state
 	pathScopes := url.QueryEscape(strings.Join(scopes, " "))
 	spotifyURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",

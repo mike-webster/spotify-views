@@ -39,7 +39,6 @@ func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}
 	if len(host) < 1 {
 		return nil, errors.New("no host provided")
 	}
-	// TODO: get an SSL certificate and make this secure
 	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", host, "/spotify/oauth")
 
 	// TODO: Do we need this in the context? or just set for the main package?
