@@ -97,7 +97,7 @@ func refreshToken(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", clientID, clientSecret))))
+	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("Basic %s:%s", clientID, clientSecret))))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := makeRequest(ctx, req, false)
