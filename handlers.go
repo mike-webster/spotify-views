@@ -54,6 +54,8 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	c.Set(string(keys.ContextSpotifyAccessToken), fmt.Sprint(accessTok))
+	c.Set(string(keys.ContextSpotifyRefreshToken), fmt.Sprint(refreshTok))
 	if len(accessTok) < 1 {
 		logger.WithError(err).Error("no access token returned from spotify")
 		c.Status(500)
