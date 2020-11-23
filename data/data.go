@@ -92,8 +92,6 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 		return false, err
 	}
 
-	logging.GetLogger(ctx).WithField("event", "saving_refresh_token").Info(enc)
-
 	// write query
 	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh, refresh2) VALUES ('%v','testingnew','%v')`,
 		id, enc)
