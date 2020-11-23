@@ -568,10 +568,6 @@ func handlerRecommendations(c *gin.Context) {
 }
 
 func handlerTest(c *gin.Context) {
-	id, err := c.Cookie("svid")
-	if err != nil {
-		panic(err)
-	}
 	refTok, err := c.Cookie(cookieKeyRefresh)
 	if err != nil {
 		panic(err)
