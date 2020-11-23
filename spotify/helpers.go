@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/logging"
 )
 
 func requestTokens(ctx context.Context, code string) ([]string, error) {
@@ -96,8 +97,9 @@ func refreshToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("Basic %s:%s", clientID, clientSecret))))
+	key := fmt.Sprintf("Basic %s:%s", clientID, clientSecret)
+	logging.GetLogger(ctx).WithField("key", key).Info("checking")
+	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(key)))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := makeRequest(ctx, req, false)
