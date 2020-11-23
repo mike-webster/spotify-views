@@ -89,19 +89,6 @@ func handlerOauth(c *gin.Context) {
 
 	if len(refreshTok) < 1 {
 		logger.Error("no refresh token returned from spotify")
-	} else {
-		success, err := data.SaveRefreshTokenForUser(c, fmt.Sprint(refreshTok), info["id"])
-		if err != nil {
-			logger.WithFields(map[string]interface{}{
-				"info":  info,
-				"error": err,
-			}).Error("couldnt save refresh token for user")
-			c.Status(500)
-			return
-		}
-		if !success {
-			logger.WithField("info", info).Warn("refresh token not inserted - may have already existed")
-		}
 	}
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
