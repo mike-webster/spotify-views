@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
@@ -120,7 +121,16 @@ func SaveUser(ctx context.Context, id string, email string) (bool, error) {
 	}
 
 	query := `INSERT INTO users	(spotify_id, email) VALUES (?, ?)`
-	res := _db.MustExec(query, id, email)
+	res, err := _db.Exec(query, id, email)
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062: Duplicate entry") {
+			logging.GetLogger(ctx).WithFields(map[string]interface{}{
+				"event": "duplicate_user_insert",
+				"email": email,
+			}).Error()
+			return false, nil
+		}
+	}
 	rows, err := res.RowsAffected()
 	if err != nil {
 		return false, err
