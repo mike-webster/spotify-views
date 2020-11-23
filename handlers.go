@@ -79,15 +79,11 @@ func handlerOauth(c *gin.Context) {
 
 	info := ctxResults.(map[string]string)
 
-	success, err := data.SaveUser(c, info["id"], info["email"])
+	_, err = data.SaveUser(c, info["id"], info["email"])
 	if err != nil {
 		logger.WithField("info", info).WithError(err).Error("couldnt save user")
 		c.Status(500)
 		return
-	}
-
-	if !success {
-		logger.WithField("info", info).Warn("couldnt create user - may have already existed")
 	}
 
 	if len(refreshTok) < 1 {
