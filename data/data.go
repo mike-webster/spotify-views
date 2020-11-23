@@ -6,7 +6,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -58,9 +57,9 @@ func GetRefreshTokenForUser(ctx context.Context, id string) (string, error) {
 		return "", errors.New("weird - couldnt connect to databse")
 	}
 
-	query := `SELECT refresh FROM tokens WHERE spotify_id = %v`
+	query := `SELECT refresh2 FROM tokens WHERE spotify_id = %v`
 	type token struct {
-		Refresh string `db:"refresh"`
+		Refresh []byte `db:"refresh2"`
 	}
 	tok := token{}
 	err = _db.Get(&tok, fmt.Sprintf(query, id))
@@ -96,7 +95,7 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	logging.GetLogger(ctx).WithField("event", "saving_refresh_token").Info(enc)
 
 	// write query
-	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh) VALUES ('%v','%v') ON DUPLICATE KEY UPDATE`,
+	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh, refresh2) VALUES ('%v','testingnew','%v')`,
 		id, enc)
 	logging.GetLogger(ctx).WithFields(map[string]interface{}{
 		"event": "sql_query",
@@ -122,7 +121,7 @@ func SaveUser(ctx context.Context, id string, email string) (bool, error) {
 		return false, errors.New("weird - couldnt connect to databse")
 	}
 
-	query := `INSERT IGNORE INTO users	(spotify_id, email) VALUES (?, ?)`
+	query := `INSERT INTO users	(spotify_id, email) VALUES (?, ?)`
 	res := _db.MustExec(query, id, email)
 	rows, err := res.RowsAffected()
 	if err != nil {
@@ -163,7 +162,7 @@ func getConnectionString(ctx context.Context) (string, error) {
 	return fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname), nil
 }
 
-func encrypt(ctx context.Context, val string) (string, error) {
+func encrypt(ctx context.Context, val string) ([]byte, error) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
 	key := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey))
@@ -178,18 +177,18 @@ func encrypt(ctx context.Context, val string) (string, error) {
 
 	block, err := aes.NewCipher(secKey)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
 	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
 	nonce := make([]byte, nonceSize)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
 	// write the nonce first
@@ -203,17 +202,10 @@ func encrypt(ctx context.Context, val string) (string, error) {
 	summer.Write(ciphertext)
 
 	toStore := summer.Bytes()
-
-	logging.GetLogger(ctx).WithField("event", "webby_test").Info(string(toStore))
-
-	// encode the bytes to a string for storing
-	ret := hex.EncodeToString(toStore)
-
-	fmt.Println("hex: ", ret)
-	return ret, nil
+	return toStore, nil
 }
 
-func decrypt(ctx context.Context, val string) (string, error) {
+func decrypt(ctx context.Context, val []byte) (string, error) {
 	// The key argument should be the AES key, either 16 or 32 bytes
 	// to select AES-128 or AES-256.
 	secKey := keys.GetContextValue(ctx, keys.ContextSecurityKey)
@@ -222,14 +214,8 @@ func decrypt(ctx context.Context, val string) (string, error) {
 	key := []byte(fmt.Sprint(secKey))
 	fmt.Println("key: ", key)
 
-	ciphertext, err := hex.DecodeString(val)
-	fmt.Println("decoded: ", string(ciphertext))
-	if err != nil {
-		return "", err
-	}
-
-	nonce := ciphertext[:nonceSize]
-	encrypted := ciphertext[nonceSize:]
+	nonce := val[:nonceSize]
+	encrypted := val[nonceSize:]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
