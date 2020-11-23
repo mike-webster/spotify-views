@@ -555,15 +555,6 @@ func handlerHome(c *gin.Context) {
 
 func handlerRecommendations(c *gin.Context) {
 	logger := logging.GetLogger(nil)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
-	ctx = context.WithValue(c, keyArtistInfo, &map[string]string{})
 	c.JSON(200, getData(ctx))
 }
 
