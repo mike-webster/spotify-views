@@ -1,11 +1,11 @@
 package data
 
 import (
-	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +21,7 @@ import (
 var (
 	_db *Database
 
-	nonceSize = 12
+	//nonceSize = 12
 )
 
 // Database holds a database
@@ -58,9 +58,9 @@ func GetRefreshTokenForUser(ctx context.Context, id string) (string, error) {
 		return "", errors.New("weird - couldnt connect to databse")
 	}
 
-	query := `SELECT refresh2 FROM tokens WHERE spotify_id = %v`
+	query := `SELECT refresh FROM tokens WHERE spotify_id = %v`
 	type token struct {
-		Refresh []byte `db:"refresh2"`
+		Refresh string `db:"refresh"`
 	}
 	tok := token{}
 	err = _db.Get(&tok, fmt.Sprintf(query, id))
@@ -94,7 +94,7 @@ func SaveRefreshTokenForUser(ctx context.Context, tok string, id string) (bool, 
 	}
 
 	// write query
-	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh, refresh2) VALUES ('%v','testingnew','%v')`,
+	query := fmt.Sprintf(`INSERT INTO tokens (spotify_id, refresh) VALUES ('%v','%v')`,
 		id, enc)
 	logging.GetLogger(ctx).WithFields(map[string]interface{}{
 		"event": "sql_query",
@@ -170,77 +170,148 @@ func getConnectionString(ctx context.Context) (string, error) {
 	return fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname), nil
 }
 
-func encrypt(ctx context.Context, val string) ([]byte, error) {
-	// The key argument should be the AES key, either 16 or 32 bytes
-	// to select AES-128 or AES-256.
-	key := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey))
-	logging.GetLogger(ctx).WithFields(map[string]interface{}{
-		"event": "checking_key",
-		"key":   key,
-	}).Info()
-	secKey := []byte(key)
-
-	fmt.Println("sekkey: ", secKey)
-	plaintext := []byte(val)
-
-	block, err := aes.NewCipher(secKey)
+func encrypt(ctx context.Context, stringToEncrypt string) (string, error) {
+	//Since the key is in string, we need to convert decode it to bytes
+	key, err := hex.DecodeString(fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey)))
 	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
+	plaintext := []byte(stringToEncrypt)
 
-	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
-	nonce := make([]byte, nonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return []byte{}, err
-	}
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	// write the nonce first
-	summer := bytes.NewBuffer(nonce)
-
-	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
-
-	fmt.Println("enc: ", string(ciphertext))
-
-	// write the encrypted token
-	summer.Write(ciphertext)
-
-	toStore := summer.Bytes()
-	return toStore, nil
-}
-
-func decrypt(ctx context.Context, val []byte) (string, error) {
-	// The key argument should be the AES key, either 16 or 32 bytes
-	// to select AES-128 or AES-256.
-	secKey := keys.GetContextValue(ctx, keys.ContextSecurityKey)
-	fmt.Println("seckey: ", secKey)
-
-	key := []byte(fmt.Sprint(secKey))
-	fmt.Println("key: ", key)
-
-	nonce := val[:nonceSize]
-	encrypted := val[nonceSize:]
-
+	//Create a new Cipher Block from the key
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	aesgcm, err := cipher.NewGCM(block)
+	//Create a new GCM - https://en.wikipedia.org/wiki/Galois/Counter_Mode
+	//https://golang.org/pkg/crypto/cipher/#NewGCM
+	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
 
-	plaintext, err := aesgcm.Open(nil, nonce, encrypted, nil)
-	if err != nil {
+	//Create a nonce. Nonce should be from GCM
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
 
-	fmt.Printf("plaintext: %s\n", string(plaintext))
-
-	return string(plaintext), nil
+	//Encrypt the data using aesGCM.Seal
+	//Since we don't want to save the nonce somewhere else in this case, we add it as a prefix to the encrypted data. The first nonce argument in Seal is the prefix.
+	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
+	return fmt.Sprintf("%x", ciphertext), nil
 }
+
+func decrypt(ctx context.Context, encryptedString string) (string, error) {
+
+	key, err := hex.DecodeString(fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey)))
+	if err != nil {
+		return "", err
+	}
+	enc, err := hex.DecodeString(encryptedString)
+	if err != nil {
+		return "", err
+	}
+
+	//Create a new Cipher Block from the key
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	//Create a new GCM
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	//Get the nonce size
+	nonceSize := aesGCM.NonceSize()
+
+	//Extract the nonce from the encrypted data
+	nonce, ciphertext := enc[:nonceSize], enc[nonceSize:]
+
+	//Decrypt the data
+	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s", plaintext), nil
+}
+
+// func encrypt(ctx context.Context, val string) ([]byte, error) {
+// 	// The key argument should be the AES key, either 16 or 32 bytes
+// 	// to select AES-128 or AES-256.
+// 	key := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSecurityKey))
+// 	logging.GetLogger(ctx).WithFields(map[string]interface{}{
+// 		"event": "checking_key",
+// 		"key":   key,
+// 	}).Info()
+// 	secKey := []byte(key)
+
+// 	fmt.Println("sekkey: ", secKey)
+// 	plaintext := []byte(val)
+
+// 	block, err := aes.NewCipher(secKey)
+// 	if err != nil {
+// 		return []byte{}, err
+// 	}
+
+// 	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
+// 	nonce := make([]byte, nonceSize)
+// 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+// 		return []byte{}, err
+// 	}
+
+// 	aesgcm, err := cipher.NewGCM(block)
+// 	if err != nil {
+// 		return []byte{}, err
+// 	}
+
+// 	// write the nonce first
+// 	summer := bytes.NewBuffer(nonce)
+
+// 	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
+
+// 	fmt.Println("enc: ", string(ciphertext))
+
+// 	// write the encrypted token
+// 	summer.Write(ciphertext)
+
+// 	toStore := summer.Bytes()
+// 	return toStore, nil
+// }
+
+// func decrypt(ctx context.Context, val []byte) (string, error) {
+// 	// The key argument should be the AES key, either 16 or 32 bytes
+// 	// to select AES-128 or AES-256.
+// 	secKey := keys.GetContextValue(ctx, keys.ContextSecurityKey)
+// 	fmt.Println("seckey: ", secKey)
+
+// 	key := []byte(fmt.Sprint(secKey))
+// 	fmt.Println("key: ", key)
+
+// 	nonce := val[:nonceSize]
+// 	encrypted := val[nonceSize:]
+
+// 	block, err := aes.NewCipher(key)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	aesgcm, err := cipher.NewGCM(block)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	plaintext, err := aesgcm.Open(nil, nonce, encrypted, nil)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	fmt.Printf("plaintext: %s\n", string(plaintext))
+
+// 	return string(plaintext), nil
+// }
