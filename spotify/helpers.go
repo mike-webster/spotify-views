@@ -97,9 +97,10 @@ func refreshToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	key := fmt.Sprintf("Basic %s:%s", clientID, clientSecret)
+
+	key := base64.URLEncoding.EncodeToString([]byte(fmt.Sprint(clientID, ":", clientSecret)))
 	logging.GetLogger(ctx).WithField("key", key).Info("checking")
-	req.Header.Add("Authorization", base64.URLEncoding.EncodeToString([]byte(key)))
+	req.Header.Add("Authorization", fmt.Sprint("Basic ", key))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := makeRequest(ctx, req, false)
