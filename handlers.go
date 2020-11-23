@@ -25,6 +25,7 @@ var (
 	queryStringTimeRange            = "time_range"
 	cookieKeyToken                  = "svauth"
 	cookieKeyID                     = "svid"
+	cookieKeyRefresh                = "svref"
 	keyArtistInfo            string = "artist-cache"
 	topTracksLimit           int32  = 25
 	topGenresTopTracksLimit  int32  = 50
@@ -105,6 +106,7 @@ func handlerOauth(c *gin.Context) {
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(accessTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyRefresh, fmt.Sprint(refreshTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	val, err := c.Cookie("redirect_url")
 	if err == nil && len(val) > 0 {
 		c.Redirect(http.StatusTemporaryRedirect, val)

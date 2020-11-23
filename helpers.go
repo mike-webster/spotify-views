@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
@@ -172,14 +171,7 @@ func refreshToken(c *gin.Context) (bool, error) {
 	// need to refresh tokens and try again
 	// TODO: we'll probably need a way to stop infinite redirects
 	logger := logging.GetLogger(c)
-
-	spotifyID, err := c.Cookie(cookieKeyID)
-	if err != nil {
-		logger.WithError(err).Error("no userid stored")
-		return false, err
-	}
-
-	refreshToken, err := data.GetRefreshTokenForUser(c, spotifyID)
+	refreshToken, err := c.Cookie(cookieKeyRefresh)
 	if err != nil {
 		logger.WithError(err).Error("no refresh token stored")
 		return false, err
