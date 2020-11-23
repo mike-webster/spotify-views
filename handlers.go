@@ -572,7 +572,7 @@ func handlerTest(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	refTok, err := data.GetRefreshTokenForUser(c, id)
+	refTok, err := c.Cookie(cookieKeyRefresh)
 	if err != nil {
 		panic(err)
 	}
