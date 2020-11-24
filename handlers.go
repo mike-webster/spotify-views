@@ -121,15 +121,18 @@ func handlerTopTracks(c *gin.Context) {
 	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
 				return
 			}
-			if success {
+			if len(newTok) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -192,15 +195,18 @@ func handlerTopArtists(c *gin.Context) {
 	artistResponseCtx, err := spotify.GetTopArtists(requestCtx)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
 				return
 			}
-			if success {
+			if len(newTok) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtists)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top artists from spotify")
@@ -339,15 +345,18 @@ func handlerTopArtistsGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForArtists(ctx, artists.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
 				return
 			}
-			if success {
+			if len(newTok) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtistGenres)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve genres for artists from spotify")
@@ -387,15 +396,18 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
 				return
 			}
-			if success {
+			if len(newTok) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -414,15 +426,18 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForTracks(ctx, tracks.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
 				return
 			}
-			if success {
+			if len(newTok) < 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retreive top genres for top tracks from spotify")
@@ -466,15 +481,18 @@ func handlerWordCloudData(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			success, err := refreshToken(c)
+			newTok, err := refreshToken(c)
 			if err != nil {
 				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
 				return
 			}
-			if success {
+			if len(newTok) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathWordCloud)
 				return
 			}
+
+			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -554,8 +572,7 @@ func handlerHome(c *gin.Context) {
 }
 
 func handlerRecommendations(c *gin.Context) {
-	logger := logging.GetLogger(nil)
-	c.JSON(200, getData(ctx))
+	c.JSON(200, getData(c))
 }
 
 func handlerTest(c *gin.Context) {

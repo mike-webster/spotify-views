@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/keys"
 )
 
@@ -73,12 +72,6 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	if err != nil {
 		if err.Error() == EventNeedsRefreshToken {
 			log.Println("refreshing token")
-			refTok, err := data.GetRefreshTokenForUser(ctx, fmt.Sprint(ctx.Value(keys.ContextSpotifyUserID)))
-			if err != nil {
-				log.Println("couldnt refresh token")
-				return nil, err
-			}
-			ctx = context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refTok)
 			newTok, err := refreshToken(ctx)
 			if err != nil {
 				log.Println("couldnt retrieve new token")

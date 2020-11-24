@@ -44,11 +44,11 @@ func loadContextValues() gin.HandlerFunc {
 		}
 		tok, _ := c.Cookie(cookieKeyToken)
 		if len(tok) > 0 {
-			c.Set(keys.ContextSpotifyAccessToken, tok)
+			c.Set(string(keys.ContextSpotifyAccessToken), tok)
 		}
 		ref, _ := c.Cookie(cookieKeyRefresh)
 		if len(ref) > 0 {
-			c.Set(keys.ContextSpotifyRefreshToken, ref)
+			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 		}
 		c.Next()
 	}

@@ -199,12 +199,11 @@ func HandleOauth(ctx context.Context, code string) (string, string, error) {
 }
 
 // RefreshToken attempts to get a new access token for the user
-func RefreshToken(ctx context.Context) (context.Context, error) {
+func RefreshToken(ctx context.Context) (string, error) {
 	tok, err := refreshToken(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	c := context.WithValue(ctx, keys.ContextSpotifyResults, tok)
-	return c, nil
+	return tok, nil
 }

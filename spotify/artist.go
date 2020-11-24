@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 )
@@ -192,19 +191,6 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 				}).
 				Info()
 
-			refTok, err := data.GetRefreshTokenForUser(ctx,
-				fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyUserID)))
-			if err != nil {
-				logging.GetLogger(ctx).
-					WithFields(map[string]interface{}{
-						"event": keys.AppEventErrDataRetrieval,
-						"error": err,
-					}).
-					Info()
-				return nil, err
-			}
-
-			ctx = context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refTok)
 			newTok, err := refreshToken(ctx)
 			if err != nil {
 				logging.GetLogger(ctx).
