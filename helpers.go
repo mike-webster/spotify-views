@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mike-webster/spotify-views/keys"
@@ -167,30 +165,22 @@ func runServer() {
 	r.Run()
 }
 
-func refreshToken(c *gin.Context) (bool, error) {
+// what the fuck is this? Why is it taking a gin context like a controller handler but
+// still getting invoked as if its a helper function?
+func refreshToken(ctx context.Context) (string, error) {
 	// need to refresh tokens and try again
 	// TODO: we'll probably need a way to stop infinite redirects
-	logger := logging.GetLogger(c)
-	refreshToken, err := c.Cookie(cookieKeyRefresh)
+	refreshToken := keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)
+	if refreshToken == nil {
+		return "", errors.New("No refresh token provided")
+	}
+
+	requestCtx := context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refreshToken)
+	newTok, err := spotify.RefreshToken(requestCtx)
 	if err != nil {
-		logger.WithError(err).Error("no refresh token stored")
-		return false, err
+		logging.GetLogger(ctx).WithError(err).Error("refresh token attempt failed")
+		return "", err
 	}
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyRefreshToken, refreshToken)
-	refrshResponseCtx, err := spotify.RefreshToken(requestCtx)
-	if err != nil {
-		logger.WithError(err).Error("refresh token attempt failed")
-		return false, err
-	}
-
-	refTok := keys.GetContextValue(refrshResponseCtx, keys.ContextSpotifyResults)
-	if refTok == nil {
-		logger.WithError(err).Error("no token returned from refresh attempt")
-		return false, err
-	}
-
-	c.SetCookie(cookieKeyToken, fmt.Sprint(refTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-	return true, nil
+	return newTok, nil
 }
