@@ -42,7 +42,7 @@ func addToCache(ctx context.Context, key string, body *[]byte) error {
 }
 
 func calculateRedisKey(ctx context.Context, req *http.Request) (string, error) {
-	uid := ctx.Value(string(keys.ContextSpotifyUserID))
+	uid := keys.GetContextValue(ctx, keys.ContextSpotifyUserID)
 	if len(fmt.Sprint(uid)) < 1 {
 		return "", errors.New("no user id in context")
 	}
@@ -78,7 +78,7 @@ func checkCache(ctx context.Context, key string) (*[]byte, error) {
 }
 
 func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, string, int, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, "", 0, errors.New("no access token provided")
 	}
@@ -114,7 +114,7 @@ func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, strin
 }
 
 func getGenres(ctx context.Context) ([]string, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

@@ -42,7 +42,7 @@ type tempResp struct {
 // do the search at all, the error encountered is returned.
 func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[string]int, error) {
 	logger := logging.GetLogger(ctx)
-	token := ctx.Value(keys.ContextLyricsToken)
+	token := keys.GetContextValue(ctx, keys.ContextLyricsToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

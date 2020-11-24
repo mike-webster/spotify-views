@@ -50,7 +50,7 @@ func (af *AudioFeatures) String() []string {
 
 func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	logger := logging.GetLogger(ctx)
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

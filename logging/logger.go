@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/mike-webster/spotify-views/keys"
@@ -15,8 +16,12 @@ func newLogger() *logrus.Logger {
 		return _logger
 	}
 	_logger := logrus.New()
-	_logger.Formatter = &logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339Nano,
+	if os.Getenv("GO_ENV") == "development" {
+		_logger.Formatter = &logrus.TextFormatter{}
+	} else {
+		_logger.Formatter = &logrus.JSONFormatter{
+			TimestampFormat: time.RFC3339Nano,
+		}
 	}
 	_logger.Level = logrus.DebugLevel
 	return _logger
@@ -30,16 +35,10 @@ func GetLogger(ctx context.Context) *logrus.Logger {
 	}
 
 	var logger *logrus.Logger
-	l := ctx.Value(keys.ContextLogger)
+	l := keys.GetContextValue(ctx, keys.ContextLogger)
 	logger, ok := l.(*logrus.Logger)
 	if !ok {
-		l = ctx.Value(string(keys.ContextLogger))
-		logger, ok := l.(*logrus.Logger)
-		if !ok {
-			return newLogger()
-		}
-
-		return logger
+		return newLogger()
 	}
 
 	return logger

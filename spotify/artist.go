@@ -41,7 +41,7 @@ func (a *Artists) IDs() []string {
 }
 
 func getArtist(ctx context.Context, id string) (*Artist, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -71,7 +71,7 @@ func getArtist(ctx context.Context, id string) (*Artist, error) {
 }
 
 func getArtists(ctx context.Context, ids []string) (*Artists, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -105,7 +105,7 @@ func getArtists(ctx context.Context, ids []string) (*Artists, error) {
 }
 
 func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -158,12 +158,12 @@ func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 }
 
 func getTopArtists(ctx context.Context) (*Artists, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
 
-	tr := ctx.Value(keys.ContextSpotifyTimeRange)
+	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)

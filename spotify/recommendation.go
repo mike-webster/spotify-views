@@ -30,7 +30,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	// holy shit, this is actually _really_ configurable.  Come back to this
 	// and explore the possibilities a little more after v1 is out.
 
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}

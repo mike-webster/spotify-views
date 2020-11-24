@@ -20,12 +20,12 @@ type TopTracks struct {
 }
 
 func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
 
-	tr := ctx.Value(keys.ContextSpotifyTimeRange)
+	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
 		strRange = tr.(string)
@@ -62,7 +62,7 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 }
 
 func getTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -116,7 +116,7 @@ func getTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error)
 	return &ret, nil
 }
 func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
-	token := ctx.Value(keys.ContextSpotifyAccessToken)
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
