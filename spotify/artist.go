@@ -166,7 +166,15 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
-		strRange = tr.(string)
+		castRange, ok := tr.(string)
+		if !ok {
+
+			if err, ok := tr.(error); ok {
+				// the value wasn't in the context as a string
+				logging.GetLogger(ctx).WithError(err).Info("couldnt find time range in context")
+			}
+		}
+		strRange = castRange
 	}
 
 	// TODO: make this limit a param
