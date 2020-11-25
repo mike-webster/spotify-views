@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
@@ -192,37 +191,6 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 	body, err := makeRequest(ctx, req, true)
 	if err != nil {
-		if reflect.TypeOf(err) == reflect.TypeOf(ErrTokenExpired("")) {
-			logging.GetLogger(ctx).
-				WithFields(map[string]interface{}{
-					"event": keys.AppEventErrTokenExpired,
-				}).
-				Info()
-
-			newTok, err := refreshToken(ctx)
-			if err != nil {
-				logging.GetLogger(ctx).
-					WithFields(map[string]interface{}{
-						"event": keys.AppEventErrRefreshingToken,
-						"error": err,
-					}).
-					Info()
-				return nil, err
-			}
-
-			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, newTok)
-			newBody, err := makeRequest(ctx, req, false)
-			if err != nil {
-				logging.GetLogger(ctx).
-					WithFields(map[string]interface{}{
-						"event": "retry_request_fail",
-						"error": err,
-					}).Error()
-
-				return nil, err
-			}
-			body = newBody
-		}
 		return nil, err
 	}
 
