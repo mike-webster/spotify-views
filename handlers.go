@@ -121,13 +121,12 @@ func handlerTopTracks(c *gin.Context) {
 	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
-				return
-			}
-			if len(newTok) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
@@ -195,13 +194,12 @@ func handlerTopArtists(c *gin.Context) {
 	artistResponseCtx, err := spotify.GetTopArtists(requestCtx)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
-				return
-			}
-			if len(newTok) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtists)
 				return
 			}
@@ -345,13 +343,12 @@ func handlerTopArtistsGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForArtists(ctx, artists.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
-				return
-			}
-			if len(newTok) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtistGenres)
 				return
 			}
@@ -396,18 +393,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
-			if len(newTok) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
-				return
-			}
-
-			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -426,14 +420,13 @@ func handlerTopTracksGenres(c *gin.Context) {
 	reqCtx, err = spotify.GetGenresForTracks(ctx, tracks.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
-				return
-			}
-			if len(newTok) < 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracksGenres)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
 
@@ -481,18 +474,15 @@ func handlerWordCloudData(c *gin.Context) {
 	reqCtx, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			newTok, err := refreshToken(c)
-			if err != nil {
-				c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
+			// If the error is due to the token being expired, we will have automatically attempted
+			// to get a refresh token for the user.  If  that was successful, it will be returned
+			// as the error value.  Set the cookie to the new value and redirect the user back to the
+			// same path  to start the process again with the new token.
+			if len(err.Error()) > 0 {
+				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
 				return
 			}
-			if len(newTok) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(newTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathWordCloud)
-				return
-			}
-
-			logging.GetLogger(c).Info("couldnt refresh token for user")
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
