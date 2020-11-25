@@ -221,7 +221,12 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 401 {
 			logger.WithField("event", EventNeedsRefreshToken).Info()
-			return nil, ErrTokenExpired("")
+			tok, err := refreshToken(ctx)
+			if err != nil {
+				logging.GetLogger(ctx).WithError(err).Error("auto refreshing token failed")
+				return nil, ErrTokenExpired("")
+			}
+			return nil, ErrTokenExpired(tok)
 		}
 
 		logger.WithFields(logrus.Fields{
