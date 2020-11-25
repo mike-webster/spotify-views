@@ -130,14 +130,13 @@ func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, err
 }
 
 // GetTopArtists will perform a search for the user's top artists
-func GetTopArtists(ctx context.Context) (context.Context, error) {
+func GetTopArtists(ctx context.Context) (*Artists, error) {
 	artists, err := getTopArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	c := context.WithValue(ctx, keys.ContextSpotifyResults, *artists)
-	return c, nil
+	return artists, nil
 }
 
 // GetRecommendations will perform a request to  retrieve spotify's recommendations for the user

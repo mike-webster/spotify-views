@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
 )
 
+// Recommendation holds information about a track that spotify is recommending
 type Recommendation struct {
 	Tracks []struct {
 		ID      string   `json:"id"`
@@ -26,15 +26,7 @@ type Recommendation struct {
 	} `json:"seeds"`
 }
 
-func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
-	// holy shit, this is actually _really_ configurable.  Come back to this
-	// and explore the possibilities a little more after v1 is out.
-
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return nil, errors.New("no access token provided")
-	}
-
+func getRecommendationsURL(ctx context.Context, seeds map[string][]string) string {
 	qs := "?"
 	if artists, ok := seeds[KeySeedArtists]; ok {
 		qs = fmt.Sprint(qs, "seed_artists=", strings.Join(artists, ","))
@@ -55,12 +47,16 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 
 		qs = fmt.Sprint(qs, "seed_genres=", strings.Join(genres, ","))
 	}
+	return fmt.Sprint("https://api.spotify.com/v1/recommendations", qs)
+}
 
-	url := "https://api.spotify.com/v1/recommendations"
-	if len(qs) > 1 {
-		url = fmt.Sprint(url, qs)
+func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
 	}
 
+	url := getRecommendationsURL(ctx, seeds)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -70,24 +66,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 
 	body, err := makeRequest(ctx, req, false)
 	if err != nil {
-		if err.Error() == EventNeedsRefreshToken {
-			log.Println("refreshing token")
-			newTok, err := refreshToken(ctx)
-			if err != nil {
-				log.Println("couldnt retrieve new token")
-				return nil, err
-			}
-			log.Println("new token: ", newTok)
-			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, newTok)
-			newBody, err := makeRequest(ctx, req, false)
-			if err != nil {
-				log.Println("retry failed")
-				return nil, err
-			}
-			body = newBody
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	type tApiResponse struct {

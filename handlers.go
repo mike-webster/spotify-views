@@ -191,7 +191,7 @@ func handlerTopArtists(c *gin.Context) {
 		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
 	}
 
-	artistResponseCtx, err := spotify.GetTopArtists(requestCtx)
+	artists, err := spotify.GetTopArtists(requestCtx)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -212,20 +212,6 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	reqArtists := keys.GetContextValue(artistResponseCtx, keys.ContextSpotifyResults)
-	if reqArtists == nil {
-		logger.Error("received no artists")
-		c.Status(500)
-		return
-	}
-
-	artists, ok := reqArtists.(spotify.Artists)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqArtists)).Error("couldnt parse artists returned from spotify")
-		c.Status(500)
-		return
-	}
-
 	type tempBag struct {
 		Width    int32
 		Height   int32
@@ -236,7 +222,7 @@ func handlerTopArtists(c *gin.Context) {
 
 	data := []tempBag{}
 
-	for _, i := range artists {
+	for _, i := range *artists {
 		data = append(data, tempBag{
 			ID:       i.ID,
 			Height:   380,
@@ -325,22 +311,14 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
 	}
 
-	reqCtx, err := spotify.GetTopArtists(ctx)
+	artists, err := spotify.GetTopArtists(ctx)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve top artists from spotify")
 		c.Status(500)
 		return
 	}
 
-	reqArtists := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
-	artists, ok := reqArtists.(spotify.Artists)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqArtists)).Error("couldnt parse artists from spotify")
-		c.Status(500)
-		return
-	}
-
-	reqCtx, err = spotify.GetGenresForArtists(ctx, artists.IDs())
+	reqCtx, err := spotify.GetGenresForArtists(ctx, artists.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -714,20 +692,14 @@ func getData(ctx context.Context) *[]string {
 	// Ideally, when I get recommendations they wouldn't contain any artists for which I have songs saved.  We're trying to
 	// surface new music.
 
-	iRsp, err := spotify.GetTopArtists(ctx)
+	topArtists, err := spotify.GetTopArtists(ctx)
 	if err != nil {
 		fmt.Println("fuck1: ", err)
 		return nil
 	}
-	ita := keys.GetContextValue(iRsp, keys.ContextSpotifyResults)
-	topArtists, ok := ita.(spotify.Artists)
-	if !ok {
-		fmt.Println("fuck3", reflect.TypeOf(ita))
-		return nil
-	}
 
 	artistCache := map[string]string{}
-	for _, i := range topArtists {
+	for _, i := range *topArtists {
 		iName := strings.ToLower(i.Name)
 		if _, ok := artistCache[iName]; !ok {
 			artistCache[iName] = i.ID
@@ -735,7 +707,7 @@ func getData(ctx context.Context) *[]string {
 	}
 	ctx = context.WithValue(ctx, keyArtistInfo, &artistCache)
 
-	lvl1, ctx := getLevel1Recs(ctx, &topArtists)
+	lvl1, ctx := getLevel1Recs(ctx, topArtists)
 
 	// so... I think ideally, before we return the artists would it be good to filter by their library?
 	// I'm thinking - the artist recommendation counter indicates the "strength" of the recommendation
@@ -759,13 +731,18 @@ func getData(ctx context.Context) *[]string {
 	// -- end rant
 
 	// this isn't going to work because I'll only have the top artist information, not their related artists
-	lvl2 := getLevel2Recs(ctx, &topArtists, lvl1)
+	lvl2 := getLevel2Recs(ctx, topArtists, lvl1)
 
 	lib, err := spotify.GetUserLibraryTracks(ctx)
 	if err != nil {
 		panic(err)
 	}
 	libMap := getArtistCountFromLib(&lib)
+	al := "artists:  "
+	for k := range *libMap {
+		al = fmt.Sprint(al, k, ", ")
+	}
+	fmt.Println(al)
 
 	return removeUsersKnownArtists(ctx, libMap, lvl2)
 }
