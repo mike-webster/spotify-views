@@ -28,7 +28,15 @@ func getTopTracks(ctx context.Context, limit int32) (Tracks, error) {
 	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
 	strRange := ""
 	if tr != nil {
-		strRange = tr.(string)
+		castRange, ok := tr.(string)
+		if !ok {
+
+			if err, ok := tr.(error); ok {
+				// the value wasn't in the context as a string
+				logging.GetLogger(ctx).WithError(err).Info("couldnt find time range in context")
+			}
+		}
+		strRange = castRange
 	}
 
 	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", limit)

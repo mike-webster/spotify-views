@@ -598,19 +598,27 @@ func removeUsersKnownArtists(ctx context.Context, lib *map[string]int, recs *map
 	sort.Sort(sort.Reverse(lm))
 
 	whatsLeft := []string{}
-	// this didn't work
-	for _, k := range sa {
-		found := false
-		for _, kk := range lm {
-			if strings.ToLower(k.Key) == strings.ToLower(kk.Key) {
-				found = true
-				break
-			}
+
+	llib := *lib
+
+	for k, v := range llib {
+		logging.GetLogger(ctx).WithFields(map[string]interface{}{
+			"key":   k,
+			"value": v,
+		}).Info("checking")
+	}
+
+	logging.GetLogger(ctx).WithFields(map[string]interface{}{
+		"lib length":  len(llib),
+		"recs length": len(*recs),
+	}).Info("checking data")
+	for k := range *recs {
+		if _, ok := llib[strings.ToLower(k)]; !ok {
+			logging.GetLogger(ctx).WithField("artist", k).Info("not in lib")
+			whatsLeft = append(whatsLeft, strings.ToLower(k))
+		} else {
+			logging.GetLogger(ctx).WithField("artist", k).Info("excluding artist from lib from recs")
 		}
-		if found {
-			continue
-		}
-		whatsLeft = append(whatsLeft, k.Key)
 	}
 
 	return &whatsLeft
@@ -681,6 +689,17 @@ func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[
 	return &rrArtists
 }
 
+func addToCache(cache map[string]string, artists *spotify.Artists) map[string]string {
+	ret := map[string]string{}
+	for _, i := range *artists {
+		iName := strings.ToLower(i.Name)
+		if _, ok := ret[iName]; !ok {
+			ret[iName] = i.ID
+		}
+	}
+	return ret
+}
+
 func getData(ctx context.Context) *[]string {
 	// Leaving off:
 	//
@@ -692,57 +711,46 @@ func getData(ctx context.Context) *[]string {
 	// Ideally, when I get recommendations they wouldn't contain any artists for which I have songs saved.  We're trying to
 	// surface new music.
 
-	topArtists, err := spotify.GetTopArtists(ctx)
+	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "short_term")
+	topArtists1, err := spotify.GetTopArtists(ctx)
 	if err != nil {
 		fmt.Println("fuck1: ", err)
 		return nil
 	}
 
-	artistCache := map[string]string{}
-	for _, i := range *topArtists {
-		iName := strings.ToLower(i.Name)
-		if _, ok := artistCache[iName]; !ok {
-			artistCache[iName] = i.ID
-		}
+	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "medium_term")
+	topArtists2, err := spotify.GetTopArtists(ctx)
+	if err != nil {
+		fmt.Println("fuck2: ", err)
+		return nil
 	}
+
+	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "long_term")
+	topArtists3, err := spotify.GetTopArtists(ctx)
+	if err != nil {
+		fmt.Println("fuck3: ", err)
+		return nil
+	}
+
+	sumArtists := append(spotify.Artists{}, *topArtists1...)
+	sumArtists = append(spotify.Artists{}, *topArtists2...)
+	sumArtists = append(spotify.Artists{}, *topArtists3...)
+
+	artistCache := map[string]string{}
+	artistCache = addToCache(artistCache, &sumArtists)
+
 	ctx = context.WithValue(ctx, keyArtistInfo, &artistCache)
 
-	lvl1, ctx := getLevel1Recs(ctx, topArtists)
-
-	// so... I think ideally, before we return the artists would it be good to filter by their library?
-	// I'm thinking - the artist recommendation counter indicates the "strength" of the recommendation
-	// because it's just how many times we would "recommend" that artist based on their current top artsts.
-	// We can use the inverse, measure the artists in their library with a measure  of tracks saved to
-	// indicate strength, in order to determine what we should actually be recommending.  We wouldn't want
-	// to be recommending someone such as myself Blink-182 - based on my library you could probably guess
-	// I know most of that already.
-
-	// random thought: don't use "top artists" as provided by spotify, calculate top artists based on
-	// the user's library.  Use the measure described above - tracks per artist saved - as a measure
-	// of popularity
-
-	// another random thought: I wonder if there's a way to find out how many times a user has listened
-	// to a track.  If so, we can take this a little further.
-
-	// The more we can refine this and sort of build our own definitions, the closer we'll be able to get
-	// to offering our own "featured" recommendations.  We'll want to make sure they're different from
-	// what spotify gives you... so think  about how to  measure  the differences.
-
-	// -- end rant
+	lvl1, ctx := getLevel1Recs(ctx, &sumArtists)
 
 	// this isn't going to work because I'll only have the top artist information, not their related artists
-	lvl2 := getLevel2Recs(ctx, topArtists, lvl1)
+	lvl2 := getLevel2Recs(ctx, &sumArtists, lvl1)
 
 	lib, err := spotify.GetUserLibraryTracks(ctx)
 	if err != nil {
 		panic(err)
 	}
 	libMap := getArtistCountFromLib(&lib)
-	al := "artists:  "
-	for k := range *libMap {
-		al = fmt.Sprint(al, k, ", ")
-	}
-	fmt.Println(al)
 
 	return removeUsersKnownArtists(ctx, libMap, lvl2)
 }
@@ -750,13 +758,15 @@ func getData(ctx context.Context) *[]string {
 func getArtistCountFromLib(lib *spotify.Tracks) *map[string]int {
 	ret := map[string]int{}
 	for _, i := range *lib {
-		iName := strings.ToLower(i.Name)
-		if _, ok := ret[iName]; !ok {
-			ret[iName] = 1
-			continue
-		}
+		for _, j := range i.Artists {
+			iName := strings.ToLower(j.Name)
+			if _, ok := ret[iName]; !ok {
+				ret[iName] = 1
+				continue
+			}
 
-		ret[iName]++
+			ret[iName]++
+		}
 	}
 
 	return &ret
