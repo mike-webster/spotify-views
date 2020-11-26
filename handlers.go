@@ -540,7 +540,14 @@ func handlerHome(c *gin.Context) {
 }
 
 func handlerRecommendations(c *gin.Context) {
-	c.JSON(200, getData(c))
+	type vb struct {
+		Names []string
+	}
+	ret := vb{}
+	for _, i := range *getData(c) {
+		ret.Names = append(ret.Names, i)
+	}
+	c.HTML(200, "recommendations.tmpl", ret)
 }
 
 func handlerTest(c *gin.Context) {
