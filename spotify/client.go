@@ -187,7 +187,7 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 		logger.WithField("event", "redis-key-error").Error(err.Error())
 	}
 
-	if useCache {
+	if useCache && false {
 		val, err := checkCache(ctx, cacheKey)
 		if err != nil {
 			logger.WithField("event", "redis-error").Error(err.Error())
@@ -237,7 +237,7 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
 	}
 
-	if useCache {
+	if useCache && false {
 		err = addToCache(ctx, cacheKey, &b)
 		if err != nil {
 			logger.WithField("event", "redis-add-error").Error(err.Error())
