@@ -6,86 +6,82 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mike-webster/spotify-views/data"
-	"github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
 	"github.com/psykhi/wordclouds"
 )
 
-func parseEnvironmentVariables(ctx context.Context) (context.Context, error) {
+// TODO: put together a yaml config to parse these for me
+// TODO: these context keys should all be the same type, not unique per package. abstract
+//       the keys package
+func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}, error) {
+	ret := map[interface{}]interface{}{}
 	clientID = os.Getenv("CLIENT_ID")
 	if len(clientID) < 1 {
 		return nil, errors.New("no client id provided")
 	}
-	ctx = context.WithValue(ctx, spotify.ContextClientID, clientID)
+	ret[keys.ContextSpotifyClientID] = clientID
 
 	clientSecret = os.Getenv("CLIENT_SECRET")
 	if len(clientSecret) < 1 {
 		return nil, errors.New("no client secret provided")
 	}
-	ctx = context.WithValue(ctx, spotify.ContextClientSecret, clientSecret)
+	ret[keys.ContextSpotifyClientSecret] = clientSecret
 
 	host = os.Getenv("HOST")
 	if len(host) < 1 {
 		return nil, errors.New("no host provided")
 	}
-	// TODO: get an SSL certificate and make this secure
-	ctx = context.WithValue(ctx, spotify.ContextReturnURL, fmt.Sprint("http://www.", host, "/spotify/oauth"))
+	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", host, "/spotify/oauth")
+
 	// TODO: Do we need this in the context? or just set for the main package?
 	// consider: the main goal here is to be able to verify everything is working
 	// on app start using the context returned from this method.
-
 	lyricsKey = os.Getenv("LYRICS_KEY")
 	if len(lyricsKey) < 1 {
 		return nil, errors.New("no lyrics key provided")
 	}
-	ctx = context.WithValue(ctx, genius.ContextAccessToken, lyricsKey)
+	ret[keys.ContextLyricsToken] = lyricsKey
 
 	dbHost = os.Getenv("DB_HOST")
 	if len(dbHost) < 1 {
 		return nil, errors.New("no db host provided")
 	}
-	ctx = context.WithValue(ctx, data.ContextHost, dbHost)
+	ret[keys.ContextDbHost] = dbHost
 
 	dbUser = os.Getenv("DB_USER")
 	if len(dbUser) < 1 {
 		return nil, errors.New("no db user provided")
 	}
-	ctx = context.WithValue(ctx, data.ContextUser, dbUser)
+	ret[keys.ContextDbUser] = dbUser
 
 	dbPass = os.Getenv("DB_PASS")
 	if len(dbPass) < 1 {
 		return nil, errors.New("no db pass provided")
 	}
-	ctx = context.WithValue(ctx, data.ContextPass, dbPass)
+	ret[keys.ContextDbPass] = dbPass
 
 	dbName = os.Getenv("DB_NAME")
 	if len(dbName) < 1 {
 		return nil, errors.New("no db name provided")
 	}
-	ctx = context.WithValue(ctx, data.ContextDatabase, dbName)
+	ret[keys.ContextDatabase] = dbName
 
 	secKey = os.Getenv("SEC_KEY")
 	if len(secKey) < 1 {
 		return nil, errors.New("no sec key provided")
 	}
-	ctx = context.WithValue(ctx, data.ContextSecurityKey, secKey)
+	ret[keys.ContextSecurityKey] = secKey
 
-	redisHost = os.Getenv("REDIS_HOST")
-	ctx = context.WithValue(ctx, "redis-host", redisHost)
-	redisPort = os.Getenv("REDIS_PORT")
-	ctx = context.WithValue(ctx, "redis-port", redisPort)
-	redisPass = os.Getenv("REDIS_PASS")
-	ctx = context.WithValue(ctx, "redis-pass", redisPass)
+	ret["redis-host"] = os.Getenv("REDIS_HOST")
+	ret["redis-port"] = os.Getenv("REDIS_PORT")
+	ret["redis-pass"] = os.Getenv("REDIS_PASS")
 
-	ctx = context.WithValue(ctx, logging.ContextLogger, logging.GetLogger(nil))
-	return ctx, nil
+	return ret, nil
 }
 
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
@@ -137,6 +133,8 @@ var (
 	PathWordCloud        = "/wordcloud"
 	PathWordCloudData    = "/wordcloud/data"
 	PathUserLibraryTempo = "/library/tempo"
+	PathRecommendations  = "/tracks/recommendations"
+	PathTest             = "/test"
 )
 
 func runServer() {
@@ -157,6 +155,8 @@ func runServer() {
 	r.GET(PathWordCloud, handlerWordCloud)
 	r.GET(PathWordCloudData, handlerWordCloudData)
 	r.GET(PathUserLibraryTempo, handlerUserLibraryTempo)
+	r.GET(PathRecommendations, handlerRecommendations)
+	r.GET(PathTest, handlerTest)
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")
@@ -165,42 +165,22 @@ func runServer() {
 	r.Run()
 }
 
-func refreshToken(c *gin.Context) (bool, error) {
+// what the fuck is this? Why is it taking a gin context like a controller handler but
+// still getting invoked as if its a helper function?
+func refreshToken(ctx context.Context) (string, error) {
 	// need to refresh tokens and try again
 	// TODO: we'll probably need a way to stop infinite redirects
-	requestCtx := context.WithValue(context.Background(), data.ContextDatabase, c.MustGet(string(data.ContextDatabase)))
-	requestCtx = context.WithValue(requestCtx, data.ContextHost, c.MustGet(string(data.ContextHost)))
-	requestCtx = context.WithValue(requestCtx, data.ContextPass, c.MustGet(string(data.ContextPass)))
-	requestCtx = context.WithValue(requestCtx, data.ContextSecurityKey, c.MustGet(string(data.ContextSecurityKey)))
-	requestCtx = context.WithValue(requestCtx, data.ContextUser, c.MustGet(string(data.ContextUser)))
-	logger := logging.GetLogger(nil)
+	refreshToken := keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)
+	if refreshToken == nil {
+		return "", errors.New("No refresh token provided")
+	}
 
-	spotifyID, err := c.Cookie(cookieKeyID)
+	requestCtx := context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refreshToken)
+	newTok, err := spotify.RefreshToken(requestCtx)
 	if err != nil {
-		logger.WithError(err).Error("no userid stored")
-		return false, err
+		logging.GetLogger(ctx).WithError(err).Error("refresh token attempt failed")
+		return "", err
 	}
 
-	refreshToken, err := data.GetRefreshTokenForUser(requestCtx, spotifyID)
-	if err != nil {
-		logger.WithError(err).Error("no refresh token stored")
-		return false, err
-	}
-
-	requestCtx = context.WithValue(requestCtx, spotify.ContextRefreshToken, refreshToken)
-	refrshResponseCtx, err := spotify.RefreshToken(requestCtx)
-	if err != nil {
-		logger.WithError(err).Error("refresh token attempt failed")
-		return false, err
-	}
-
-	refTok := refrshResponseCtx.Value(spotify.ContextResults)
-	if refTok == nil {
-		logger.WithError(err).Error("no token returned from refresh attempt")
-		return false, err
-	}
-
-	c.SetCookie(cookieKeyToken, fmt.Sprint(refTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-	return true, nil
+	return newTok, nil
 }

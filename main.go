@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
-	"github.com/mike-webster/spotify-views/spotify"
 )
 
 var (
@@ -46,9 +46,13 @@ type ViewBag struct {
 }
 
 func main() {
-	ctx, err := parseEnvironmentVariables(context.Background())
+	ctx := context.Background()
+	vals, err := parseEnvironmentVariables(ctx)
 	if err != nil {
 		panic(err)
+	}
+	for k, v := range vals {
+		ctx = context.WithValue(ctx, k, v)
 	}
 
 	if os.Getenv("GO_ENV") == "test" {
@@ -65,7 +69,9 @@ func main() {
 }
 
 func testMethod(ctx context.Context) {
-	ctx = context.WithValue(ctx, spotify.ContextAccessToken, os.Getenv("SPOT_TOK"))
+	// ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, os.Getenv("SPOT_TOK"))
+	// ctx = context.WithValue(ctx, keys.ContextSpotifyUserID, "1236463819")
+	// ctx = context.WithValue(ctx, keys.ContextSecurityKey, `!;$W=T3rYHXpB'K^`)
 
 	// ctx, err := spotify.GetTopArtists(ctx)
 	// if err != nil {
@@ -80,10 +86,11 @@ func testMethod(ctx context.Context) {
 	// }
 	// fmt.Println(artists)
 
-	tt, err := spotify.GetTopTracksForArtist(ctx, "6FBDaR13swtiWwGhX1WQsP")
-	if err != nil {
-		panic(err)
-	}
+	//tt, err := spotify.GetTopTracksForArtist(ctx, "6FBDaR13swtiWwGhX1WQsP")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	fmt.Println(*tt)
+	//fmt.Println(getData(ctx))
+	fmt.Println(strings.Join(*getData(ctx), ","))
 }

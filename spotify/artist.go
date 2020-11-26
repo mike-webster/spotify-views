@@ -1,6 +1,16 @@
 package spotify
 
-import "fmt"
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/logging"
+)
 
 // Artist represents a spotify Artist
 type Artist struct {
@@ -27,4 +37,172 @@ func (a *Artists) IDs() []string {
 		ret = append(ret, i.ID)
 	}
 	return ret
+}
+
+func getArtist(ctx context.Context, id string) (*Artist, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/artists/", id)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret Artist
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
+}
+
+func getArtists(ctx context.Context, ids []string) (*Artists, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"artists"`
+	}
+
+	var ret tempResp
+
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
+}
+
+func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := "https://api.spotify.com/v1/artists/%v/related-artists"
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(url, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+
+	body, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	type tRes struct {
+		Artists []struct {
+			Followers struct {
+				Total int64 `json:"total"`
+			} `json:"followers"`
+			Genres     []string `json:"genres"`
+			Link       string   `json:"href"`
+			ID         string   `json:"id"`
+			Name       string   `json:"name"`
+			Popularity int32    `json:"popularity"`
+			Type       string   `json:"type"`
+		} `json:"artists"`
+	}
+
+	rsp := tRes{}
+	err = json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []Artist{}
+	for _, i := range rsp.Artists {
+		ret = append(ret, Artist{
+			Genres:     i.Genres,
+			ID:         i.ID,
+			Name:       i.Name,
+			Popularity: i.Popularity,
+		})
+	}
+
+	return &ret, nil
+}
+
+func getTopArtists(ctx context.Context) (*Artists, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
+	strRange := ""
+	if tr != nil {
+		castRange, ok := tr.(string)
+		if !ok {
+
+			if err, ok := tr.(error); ok {
+				// the value wasn't in the context as a string
+				logging.GetLogger(ctx).WithError(err).Info("couldnt find time range in context")
+			}
+		}
+		strRange = castRange
+	}
+
+	// TODO: make this limit a param
+	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
+	if len(strRange) > 0 {
+		url += fmt.Sprint("&time_range=", strRange)
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	type tempResp struct {
+		Items Artists `json:"items"`
+	}
+
+	var ret tempResp
+	err = json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
 }

@@ -8,16 +8,11 @@ import (
 	"strings"
 
 	"github.com/bbalet/stopwords"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	lyrics "github.com/rhnvrm/lyric-api-go"
 	"github.com/sirupsen/logrus"
 )
-
-// ContextKey is used to store and access information from the context
-type ContextKey string
-
-// ContextAccessToken is the key to use for the genius access token
-var ContextAccessToken = ContextKey("access_token")
 
 // LyricSearch holds the information for which a lyric search is desired
 type LyricSearch struct {
@@ -46,8 +41,8 @@ type tempResp struct {
 // When single songs are not found, we just log the error and move on.  If we can't
 // do the search at all, the error encountered is returned.
 func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[string]int, error) {
-	logger := logging.GetLogger(&ctx)
-	token := ctx.Value(ContextAccessToken)
+	logger := logging.GetLogger(ctx)
+	token := keys.GetContextValue(ctx, keys.ContextLyricsToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
 	}
@@ -74,7 +69,7 @@ func GetLyricCountForSong(ctx context.Context, searches []LyricSearch) (map[stri
 
 func convertToMap(ctx context.Context, lyric string) map[string]int {
 	ret := map[string]int{}
-	logger := logging.GetLogger(&ctx)
+	logger := logging.GetLogger(ctx)
 	treated := strings.TrimSpace(strings.Replace(lyric, "\n", " ", -1))
 	// This is attempting to strip the dumb "[Intro: Mark Hoppus]" lines
 	pattern := `.*\[{1}.*\].*`

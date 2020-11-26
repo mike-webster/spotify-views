@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,28 +11,45 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
-	data "github.com/mike-webster/spotify-views/data"
-	genius "github.com/mike-webster/spotify-views/genius"
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
-	spotify "github.com/mike-webster/spotify-views/spotify"
 	"github.com/sirupsen/logrus"
 )
 
 func loadContextValues() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parseEnvironmentVariables(c)
-		c.Set(string(spotify.ContextClientID), clientID)
-		c.Set(string(spotify.ContextClientSecret), clientSecret)
-		c.Set(string(genius.ContextAccessToken), lyricsKey)
-		c.Set(string(data.ContextHost), dbHost)
-		c.Set(string(data.ContextUser), dbUser)
-		c.Set(string(data.ContextPass), dbPass)
-		c.Set(string(data.ContextDatabase), dbName)
-		c.Set(string(data.ContextSecurityKey), secKey)
-		// TODO: get an SSL certificate and make this secure
-		c.Set(string(spotify.ContextReturnURL), fmt.Sprint("http://www.", host, "/spotify/oauth"))
-		ctx := context.WithValue(c, "dumb", "im just doing this to switch the type to use with the logging package")
-		c.Set("logger", logging.GetLogger(&ctx))
+		vals, err := parseEnvironmentVariables(c)
+		if err != nil {
+			logging.GetLogger(c).WithField("error", err).Error("misconfigured")
+			panic(err)
+		}
+
+		uid, _ := c.Cookie("svid")
+		c.Set(string(keys.ContextSpotifyUserID), uid)
+		for k, v := range vals {
+			key, ok := k.(string)
+			if !ok {
+				kk, ok := k.(keys.ContextKey)
+				if !ok {
+					logging.GetLogger(c).WithFields(map[string]interface{}{
+						"event": "couldnt_parse_context_field",
+						"key":   k,
+						"value": v,
+					}).Error()
+					panic("misconfigured2")
+				}
+				key = string(kk)
+			}
+			c.Set(key, v)
+		}
+		tok, _ := c.Cookie(cookieKeyToken)
+		if len(tok) > 0 {
+			c.Set(string(keys.ContextSpotifyAccessToken), tok)
+		}
+		ref, _ := c.Cookie(cookieKeyRefresh)
+		if len(ref) > 0 {
+			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
+		}
 		c.Next()
 	}
 }
@@ -94,7 +110,7 @@ func redisClient(c *gin.Context) {
 func parseUserID(c *gin.Context) {
 	uid, err := c.Cookie("svid")
 	if err == nil {
-		c.Set(string(spotify.ContextUserID), uid)
+		c.Set(string(keys.ContextSpotifyUserID), uid)
 	}
 	c.Next()
 }
@@ -152,7 +168,7 @@ func requestLogger() gin.HandlerFunc {
 				logger.Info()
 			}
 
-			ctx.Set(string(logging.ContextLogger), logger)
+			ctx.Set(string(keys.ContextLogger), logger)
 
 			return logger
 		}(ctx)
