@@ -182,12 +182,14 @@ func getUserInfo(ctx context.Context) (map[string]string, error) {
 func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(ctx)
-	cacheKey, err := calculateRedisKey(ctx, req)
-	if err != nil {
-		logger.WithField("event", "redis-key-error").Error(err.Error())
-	}
+
+	cacheKey := ""
 
 	if useCache && false {
+		cacheKey, err := calculateRedisKey(ctx, req)
+		if err != nil {
+			logger.WithField("event", "redis-key-error").Error(err.Error())
+		}
 		val, err := checkCache(ctx, cacheKey)
 		if err != nil {
 			logger.WithField("event", "redis-error").Error(err.Error())
