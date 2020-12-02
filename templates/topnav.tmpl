@@ -1,24 +1,30 @@
 {{ define "topnav" }}
-
-    <link rel="stylesheet" type="text/css" href="/static/css/topnav.css" media="screen"/>
     <div class="topnav responsive" id="svTopNav">
-        <a href="/artists/top">Top Artists</a>
-        <a href="/tracks/top">Top Tracks</a>
-        <div class="dropdown">
-            <button class="dropbtn">Genres<i class="fa fa-caret-down"></i></button>
+        <div class="left logo">
+            <a href="/" class="left">
+                <img src="/logos/cover.png" />
+            </a>
+        </div>
+        <div>
+            <a href="/wordcloud" class="right">Word Cloud</a>
+        </div>
+        <div>
+            <a href="/library/tempo" class="right">Library</a>
+        </div>
+        <div class="dropdown right">
+            <button class="dropbtn">Artists<i class="fa fa-caret-down"></i></button>
             <div class="dropdown-content">
-                <a href="/artists/genres">Artist</a>
-                <a href="/tracks/genres">Tracks</a>
+                <a href="/artists/top" class="right">Top</a>
+                <a href="/tracks/genres" class="right">Genres</a>
+                <a href="/tracks/recommendations" class="right">Recommendations</a>
             </div>
         </div>
-        <div>
-            <a href="/tracks/recommendations">Recommendations</a>
-        </div>
-        <div>
-            <a href="/wordcloud">Word Cloud</a>
-        </div>
-        <div>
-            <a href="/library/tempo">Library</a>
+        <div class="dropdown right">
+            <button class="dropbtn">Tracks<i class="fa fa-caret-down"></i></button>
+            <div class="dropdown-content">
+                <a href="/tracks/top" class="right">Top</a>
+                <a href="/tracks/genres" class="right">Genres</a>
+            </div>
         </div>
     </div>
     
