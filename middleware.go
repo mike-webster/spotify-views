@@ -54,6 +54,19 @@ func loadContextValues() gin.HandlerFunc {
 	}
 }
 
+func authenticate(c *gin.Context) {
+	tok, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		c.Redirect(301, "/?noauth")
+		return
+	}
+
+	logging.GetLogger(c).Info("found token")
+
+	c.Set(string(keys.ContextSpotifyAccessToken), tok)
+	c.Next()
+}
+
 // consolidate stack on crahes
 func recovery(c *gin.Context) {
 	defer func() {
