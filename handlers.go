@@ -103,19 +103,11 @@ func handlerOauth(c *gin.Context) {
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		// TODO: check for refresh token first
-		// TODO: maybe move this ^^ check into middleware?
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
-		return
-	}
+	var requestCtx context.Context
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
+		requestCtx = context.WithValue(c, keys.ContextSpotifyTimeRange, tr)
 	}
 
 	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
@@ -178,14 +170,8 @@ func handlerTopTracks(c *gin.Context) {
 
 func handlerTopArtists(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
-		return
-	}
+	var requestCtx context.Context
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
 		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
@@ -236,21 +222,12 @@ func handlerTopArtists(c *gin.Context) {
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
-	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
-		return
-	}
-
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
-	t, err := spotify.GetUserLibraryTracks(requestCtx)
+	t, err := spotify.GetUserLibraryTracks(c)
 	if err != nil {
 		panic(err)
 	}
 
-	af, err := spotify.GetAudioFeatures(requestCtx, t.IDs())
+	af, err := spotify.GetAudioFeatures(c, t.IDs())
 	if err != nil {
 		panic(err)
 	}
@@ -297,14 +274,7 @@ func handlerUserLibraryTempo(c *gin.Context) {
 
 func handlerTopArtistsGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
+	var ctx context.Context
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
@@ -354,14 +324,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 func handlerTopTracksGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
+	var ctx context.Context
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
@@ -435,14 +398,7 @@ func handlerWordCloud(c *gin.Context) {
 
 func handlerWordCloudData(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
+	var ctx context.Context
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
