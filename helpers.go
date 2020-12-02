@@ -161,6 +161,8 @@ func runServer() {
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")
 	r.Static("/static/js", "./static")
+	r.Static("/logos/", "./static/logos")
+	r.Static("/images/", "./static/images")
 
 	r.Run()
 }

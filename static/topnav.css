@@ -2,18 +2,30 @@
 /* Add a black background color to the top navigation */
 .topnav {
     background-color: #333;
-    overflow: hidden;
+    /* overflow: hidden; */
   }
+
+.topnav .logo {
+  padding: 0 0 0 20px;
+}
+
+.topnav img {
+  height: 70px;
+  width: 177px;
+}
+
   
   /* Style the links inside the navigation bar */
   .topnav a {
-    float: right;
     display: block;
     color: #f2f2f2;
     text-align: center;
     padding: 14px 16px;
     text-decoration: none;
     font-size: 17px;
+  }
+  .logo a {
+    padding: 0;
   }
   
   /* Add an active class to highlight the current page */
@@ -29,7 +41,6 @@
   
   /* Dropdown container - needed to position the dropdown content */
   .dropdown {
-    float: right;
     overflow: hidden;
   }
   
@@ -68,7 +79,7 @@
   /* Add a dark background on topnav links and the dropdown button on hover */
   .topnav a:hover, .dropdown:hover .dropbtn {
     background-color: #555;
-    color: white;
+    color: #1DB954;;
   }
   
   /* Add a grey background to dropdown links on hover */
@@ -114,3 +125,11 @@
       text-align: left;
     }
   }
+
+.right {
+  float: right;
+}
+
+.left {
+  float: left;
+}

@@ -16,13 +16,37 @@ body {
     margin: 0;
 }
 
+h1 {
+    padding: 20px 0;
+    font-size: 36px;
+}
+
+.center-text {
+    text-align: center;
+    margin: auto;
+}
+
+.full-width {
+    width: 100%;
+}
+
 .content {
     flex: 1 0 auto;
+    max-width: 800px;
+    min-width: 600px;
+    min-height: 400px;
+    margin: 0 auto;
+    background: linear-gradient(to bottom, #4CAF50, #89db8d) ;
+    padding: 0px 20px;
+}
+
+.content a{
+    color: #FFF;
 }
 
 .footer {
     flex-shrink: 0;
-    background-color: #000;
+    background-color: #333;
     color: #FFF;
     width: 100%;
     text-align: center;
@@ -58,4 +82,76 @@ p {
 
 a:hover {
     background: darkgray;
+}
+
+.large-pad-v {
+    padding-top: 50px;
+    padding-bottom: 50px;
+}
+
+.med-pad-v {
+    padding-top: 35px;
+    padding-bottom: 35px;
+}
+
+.med-pad-h {
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+.large-pad-h {
+    padding-left: 45px;
+    padding-right: 45px;
+}
+
+.large-pad-top {
+    padding-top: 50px;
+}
+
+.small-marg-top {
+    margin-top: 10px;
+}
+
+.small-pad {
+    padding: 10px 5px;
+}
+
+.small-marg {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.large-marg-top {
+    margin-top: 50px;
+}
+
+.home-banner {
+    background-image: url('/images/human-headphones-back.jpg');
+    background-size: cover;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.blurry-back-white {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+.white-back {
+    background-color: white;
+}
+
+.btn {
+    padding: 20px 50px;
+    background-color:  rgba(29, 185, 84, 0.75);
+    color: #FFFFFF;
+    border-radius: 25px;
+}
+
+.btn:hover { 
+    cursor: pointer;
+}
+
+.half-width {
+    width: 50%;
 }

@@ -4,18 +4,24 @@
         {{ template "header" }}
     </head>
     <body>
+        {{ template "topnav" }}
         <div class="content">
-            {{ template "topnav" }}
-            
-            <div style="text-align:center;min-height: 480px;">
-                <h1>Spotify Views</h1>
-                <h4>Beta</h4>
-                <p>Discover your listening trends.</p>
-
-                <p>Log in with Spotify <a href="/login">here</a> to take a look.</p>
+            <div class="home-banner">
+                <div class="blurry-back-white">
+                    <h1 class="full-width center-text large-pad-top">Spotify Views</h1>
+                    <p class="fill-width center-text">Find More Of What You Love</p>
+                </div>
+                <div style="flex-grow: 1"></div>
+                <div class="blurry-back-white large-pad-v large-marg-top">
+                    <div onclick="window.location.href='/login';" class="btn half-width center-text">LOG IN WITH SPOTIFY</div>
+                </div>
             </div>
+            <p class="white-back small-marg med-pad-v large-pad-h">
+                Using Spotify Views, you can take a dive into your music taste to discover more about the music you love! Log in with your existing
+                Spotify account and learn about your top tracks, artists and genres, get recommendations for new artists, and more!
+            </p>
             <br />
-            <div style="text-align: center;">Powered by <a href="https://www.heroku.com">Heroku</a> and <a href="https://www.github.com">Github</a></div>
+            <div>Powered by <a href="https://www.heroku.com">Heroku</a> and <a href="https://www.github.com">Github</a></div>
         </div>
         
         {{ template "footer" }}
