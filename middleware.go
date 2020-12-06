@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -16,59 +17,64 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func loadContextValues() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		vals, err := parseEnvironmentVariables(c)
-		if err != nil {
-			logging.GetLogger(c).WithField("error", err).Error("misconfigured")
-			panic(err)
-		}
+func loadContextValues(c *gin.Context) {
+	logging.GetLogger(c).WithField("event", "attaching context values").Debug()
 
-		uid, _ := c.Cookie("svid")
-		c.Set(string(keys.ContextSpotifyUserID), uid)
-		for k, v := range vals {
-			key, ok := k.(string)
-			if !ok {
-				kk, ok := k.(keys.ContextKey)
-				if !ok {
-					logging.GetLogger(c).WithFields(map[string]interface{}{
-						"event": "couldnt_parse_context_field",
-						"key":   k,
-						"value": v,
-					}).Error()
-					panic("misconfigured2")
-				}
-				key = string(kk)
-			}
-			c.Set(key, v)
-		}
-		tok, _ := c.Cookie(cookieKeyToken)
-		if len(tok) > 0 {
-			c.Set(string(keys.ContextSpotifyAccessToken), tok)
-		}
-		ref, _ := c.Cookie(cookieKeyRefresh)
-		if len(ref) > 0 {
-			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
-		}
-		c.Next()
-	}
-}
-
-func authenticate(c *gin.Context) {
-	tok, err := c.Cookie(cookieKeyToken)
+	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
-		c.Redirect(301, "/?noauth")
+		c.AbortWithError(500, err)
 		return
 	}
 
-	logging.GetLogger(c).Info("found token")
+	uid, _ := c.Cookie("svid")
+	c.Set(string(keys.ContextSpotifyUserID), uid)
 
-	c.Set(string(keys.ContextSpotifyAccessToken), tok)
+	for k, v := range vals {
+		key, ok := k.(string)
+		if !ok {
+			kk, ok := k.(keys.ContextKey)
+			if !ok {
+				logging.GetLogger(c).WithFields(map[string]interface{}{
+					"event": "couldnt_parse_context_field",
+					"key":   k,
+					"value": v,
+				}).Error()
+				c.AbortWithError(500, errors.New("couldnt parse context values"))
+				return
+			}
+			key = string(kk)
+		}
+		c.Set(key, v)
+	}
+	tok, _ := c.Cookie(cookieKeyToken)
+	if len(tok) > 0 {
+		c.Set(string(keys.ContextSpotifyAccessToken), tok)
+	}
+	ref, _ := c.Cookie(cookieKeyRefresh)
+	if len(ref) > 0 {
+		c.Set(string(keys.ContextSpotifyRefreshToken), ref)
+	}
 	c.Next()
+}
+
+func authenticate(c *gin.Context) {
+	logging.GetLogger(c).WithField("event", "authenticating").Debug()
+	tok, err := c.Cookie(cookieKeyToken)
+	if err == nil {
+		logging.GetLogger(c).Info("found token")
+
+		c.Set(string(keys.ContextSpotifyAccessToken), tok)
+		c.Next()
+	}
+
+	c.Redirect(301, "/?noauth")
+	return
 }
 
 // consolidate stack on crahes
 func recovery(c *gin.Context) {
+	logging.GetLogger(c).WithField("event", "attaching_panic_recovery").Debug()
+
 	defer func() {
 		if r := recover(); r != nil {
 			b, _ := ioutil.ReadAll(c.Request.Body)
@@ -121,6 +127,8 @@ func redisClient(c *gin.Context) {
 }
 
 func parseUserID(c *gin.Context) {
+	logging.GetLogger(c).WithField("event", "parsing_user_id").Debug()
+
 	uid, err := c.Cookie("svid")
 	if err == nil {
 		c.Set(string(keys.ContextSpotifyUserID), uid)
@@ -128,62 +136,62 @@ func parseUserID(c *gin.Context) {
 	c.Next()
 }
 
-func requestLogger() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		defer func(ctx *gin.Context) logrus.FieldLogger {
-			// don't log requests to these paths when successful
-			quiet := []string{
-				"/healthcheck",
-				"/static",
-				"/clouds",
-			}
-			skip := false
-			for _, i := range quiet {
-				if strings.HasPrefix(ctx.Request.URL.Path, i) {
-					skip = true
-				}
-			}
-			if skip && ctx.Writer.Status() == 200 {
-				return nil
-			}
+func requestLogger(ctx *gin.Context) {
+	logging.GetLogger(ctx).WithField("event", "attaching_request_logger").Debug()
 
-			// log body if one is given]
-			strBody := ""
-			body, err := ioutil.ReadAll(ctx.Request.Body)
-			if err != nil {
-				logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
-			} else {
-				// write the body back into the request
-				ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
-				strBody = string(body)
-				strBody = strings.Replace(strBody, "\n", "", -1)
-				strBody = strings.Replace(strBody, "\t", "", -1)
-			}
-
-			reqID, _ := uuid.NewV4()
-			logger := logging.GetLogger(nil).WithFields(logrus.Fields{
-				"client_ip":    ctx.ClientIP(),
-				"event":        "http.in",
-				"method":       ctx.Request.Method,
-				"path":         ctx.Request.URL.Path,
-				"query":        ctx.Request.URL.RawQuery,
-				"referer":      ctx.Request.Referer(),
-				"status":       ctx.Writer.Status(),
-				"user_agent":   ctx.Request.UserAgent(),
-				"request_body": strBody,
-				"request_id":   reqID,
-			})
-
-			if len(ctx.Errors) > 0 {
-				logger.Error(strings.TrimSpace(ctx.Errors.String()))
-			} else {
-				logger.Info()
-			}
-
-			ctx.Set(string(keys.ContextLogger), logger)
-
-			return logger
-		}(ctx)
+	// don't log requests to these paths when successful
+	quiet := []string{
+		"/healthcheck",
+		"/static",
+		"/clouds",
+		"/logos",
+		"/favicon.ico",
 	}
+	skip := false
+	for _, i := range quiet {
+		if strings.HasPrefix(ctx.Request.URL.Path, i) {
+			skip = true
+		}
+	}
+	if skip && ctx.Writer.Status() == 200 {
+		ctx.Next()
+		return
+	}
+
+	// log body if one is given]
+	strBody := ""
+	body, err := ioutil.ReadAll(ctx.Request.Body)
+	if err != nil {
+		logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
+	} else {
+		// write the body back into the request
+		ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
+		strBody = string(body)
+		strBody = strings.Replace(strBody, "\n", "", -1)
+		strBody = strings.Replace(strBody, "\t", "", -1)
+	}
+
+	reqID, _ := uuid.NewV4()
+	logger := logging.GetLogger(nil).WithFields(logrus.Fields{
+		"client_ip":    ctx.ClientIP(),
+		"event":        "http.in",
+		"method":       ctx.Request.Method,
+		"path":         ctx.Request.URL.Path,
+		"query":        ctx.Request.URL.RawQuery,
+		"referer":      ctx.Request.Referer(),
+		"status":       ctx.Writer.Status(),
+		"user_agent":   ctx.Request.UserAgent(),
+		"request_body": strBody,
+		"request_id":   reqID,
+	})
+
+	if len(ctx.Errors) > 0 {
+		logger.Error(strings.TrimSpace(ctx.Errors.String()))
+	} else {
+		logger.Info()
+	}
+
+	ctx.Set(string(keys.ContextLogger), logger)
+	ctx.Next()
 }

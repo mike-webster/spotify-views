@@ -3,10 +3,13 @@
 .topnav {
     background-color: #333;
     /* overflow: hidden; */
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
 
 .topnav .logo {
   padding: 0 0 0 20px;
+  width: 100px;
 }
 
 .topnav img {
@@ -101,6 +104,9 @@
     .topnav a.icon {
       float: right;
       display: block;
+    }
+    .topnav .logo {
+      display: none;
     }
   }
   

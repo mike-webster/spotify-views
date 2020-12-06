@@ -2,7 +2,6 @@ package keys
 
 import (
 	"context"
-	"errors"
 )
 
 type ContextKey string
@@ -17,7 +16,7 @@ var (
 	ContextDbPass              = ContextKey("db_pass")
 	ContextSecurityKey         = ContextKey("sec_key")
 	ContextDatabase            = ContextKey("db_name")
-	ContextLyricsToken         = ContextKey("access_token")
+	ContextLyricsToken         = ContextKey("genius_access_token")
 	ContextLogger              = ContextKey("logger")
 	// ContextSpotifyReturnURL is the key to use for the ouath return url
 	ContextSpotifyReturnURL = ContextKey("return_url")
@@ -47,5 +46,5 @@ func GetContextValue(ctx context.Context, key ContextKey) interface{} {
 		return ret
 	}
 
-	return errors.New(ErrCantFindValue)
+	return nil
 }

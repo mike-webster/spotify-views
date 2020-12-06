@@ -43,7 +43,7 @@ func addToCache(ctx context.Context, key string, body *[]byte) error {
 
 func calculateRedisKey(ctx context.Context, req *http.Request) (string, error) {
 	uid := keys.GetContextValue(ctx, keys.ContextSpotifyUserID)
-	if len(fmt.Sprint(uid)) < 1 {
+	if uid == nil {
 		return "", errors.New("no user id in context")
 	}
 	return fmt.Sprint(uid, "-", req.URL), nil

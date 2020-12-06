@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
@@ -19,63 +20,72 @@ import (
 // TODO: these context keys should all be the same type, not unique per package. abstract
 //       the keys package
 func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}, error) {
+	type env struct {
+		ClientID     string `envconfig:"CLIENT_ID"`
+		ClientSecret string `envconfig:"CLIENT_SECRET"`
+		Host         string `envconfig:"HOST"`
+		LyricsKey    string `envconfig:"LYRICS_KEY"`
+		DbHost       string `envconfig:"DB_HOST"`
+		DbUser       string `envconfig:"DB_USER"`
+		DbPass       string `envconfig:"DB_PASS"`
+		DbName       string `envconfig:"DB_NAME"`
+		SecKey       string `envconfig:"SEC_KEY"`
+		RedisHost    string `envconfig:"REDIS_HOST"`
+		RedisPort    string `envconfig:"REDIS_PORT"`
+		RedisPass    string `envconfig:"REDIS_PASS"`
+	}
+	e := env{}
+	envconfig.MustProcess("", &e)
+
 	ret := map[interface{}]interface{}{}
-	clientID = os.Getenv("CLIENT_ID")
-	if len(clientID) < 1 {
+	if len(e.ClientID) < 1 {
 		return nil, errors.New("no client id provided")
 	}
-	ret[keys.ContextSpotifyClientID] = clientID
+	ret[keys.ContextSpotifyClientID] = e.ClientID
 
-	clientSecret = os.Getenv("CLIENT_SECRET")
-	if len(clientSecret) < 1 {
+	if len(e.ClientSecret) < 1 {
 		return nil, errors.New("no client secret provided")
 	}
-	ret[keys.ContextSpotifyClientSecret] = clientSecret
+	ret[keys.ContextSpotifyClientSecret] = e.ClientSecret
 
-	host = os.Getenv("HOST")
-	if len(host) < 1 {
+	if len(e.Host) < 1 {
 		return nil, errors.New("no host provided")
 	}
-	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", host, "/spotify/oauth")
+	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
 
 	// TODO: Do we need this in the context? or just set for the main package?
 	// consider: the main goal here is to be able to verify everything is working
 	// on app start using the context returned from this method.
-	lyricsKey = os.Getenv("LYRICS_KEY")
-	if len(lyricsKey) < 1 {
+
+	if len(e.LyricsKey) < 1 {
 		return nil, errors.New("no lyrics key provided")
 	}
-	ret[keys.ContextLyricsToken] = lyricsKey
+	ret[keys.ContextLyricsToken] = e.LyricsKey
 
-	dbHost = os.Getenv("DB_HOST")
-	if len(dbHost) < 1 {
+	if len(e.DbHost) < 1 {
 		return nil, errors.New("no db host provided")
 	}
-	ret[keys.ContextDbHost] = dbHost
+	ret[keys.ContextDbHost] = e.DbHost
 
-	dbUser = os.Getenv("DB_USER")
-	if len(dbUser) < 1 {
+	if len(e.DbUser) < 1 {
 		return nil, errors.New("no db user provided")
 	}
-	ret[keys.ContextDbUser] = dbUser
+	ret[keys.ContextDbUser] = e.DbUser
 
-	dbPass = os.Getenv("DB_PASS")
-	if len(dbPass) < 1 {
+	if len(e.DbPass) < 1 {
 		return nil, errors.New("no db pass provided")
 	}
-	ret[keys.ContextDbPass] = dbPass
+	ret[keys.ContextDbPass] = e.DbPass
 
-	dbName = os.Getenv("DB_NAME")
-	if len(dbName) < 1 {
+	if len(e.DbName) < 1 {
 		return nil, errors.New("no db name provided")
 	}
-	ret[keys.ContextDatabase] = dbName
+	ret[keys.ContextDatabase] = e.DbName
 
-	secKey = os.Getenv("SEC_KEY")
-	if len(secKey) < 1 {
+	if len(e.SecKey) < 1 {
 		return nil, errors.New("no sec key provided")
 	}
-	ret[keys.ContextSecurityKey] = secKey
+	ret[keys.ContextSecurityKey] = e.SecKey
 
 	ret["redis-host"] = os.Getenv("REDIS_HOST")
 	ret["redis-port"] = os.Getenv("REDIS_PORT")
@@ -139,11 +149,11 @@ var (
 
 func runServer() {
 	r := gin.New()
-	r.Use(requestLogger())
+	r.Use(requestLogger)
 	r.Use(recovery)
 	r.Use(parseUserID)
 	//r.Use(redisClient)
-	r.Use(loadContextValues())
+	r.Use(loadContextValues)
 	r.LoadHTMLGlob("templates/*")
 
 	r.GET(PathHome, handlerHome)
@@ -165,6 +175,7 @@ func runServer() {
 	r.Static("/static/js", "./static")
 	r.Static("/logos/", "./static/logos")
 	r.Static("/images/", "./static/images")
+	r.StaticFile("/favicon.ico", "./static/logos/favicon.ico")
 
 	r.Run()
 }
