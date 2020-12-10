@@ -186,7 +186,7 @@ func runServer(ctx context.Context) {
 	r.GET(PathRecommendations, authenticate, handlerRecommendations)
 	r.GET(PathTest, authenticate, handlerTest)
 
-	addy := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextHost), ":", keys.GetContextValue(ctx, keys.ContextPort))
+	addy := fmt.Sprint("localhost:8080")
 
 	r.Run(addy)
 }
