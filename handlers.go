@@ -103,14 +103,13 @@ func handlerOauth(c *gin.Context) {
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	var requestCtx context.Context
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(c, keys.ContextSpotifyTimeRange, tr)
+		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
+	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
