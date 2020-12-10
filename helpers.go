@@ -24,6 +24,7 @@ func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}
 		ClientID     string `envconfig:"CLIENT_ID"`
 		ClientSecret string `envconfig:"CLIENT_SECRET"`
 		Host         string `envconfig:"HOST"`
+		Port         string `envconfig:"PORT"`
 		LyricsKey    string `envconfig:"LYRICS_KEY"`
 		DbHost       string `envconfig:"DB_HOST"`
 		DbUser       string `envconfig:"DB_USER"`
@@ -51,7 +52,13 @@ func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}
 	if len(e.Host) < 1 {
 		return nil, errors.New("no host provided")
 	}
+	ret[keys.ContextHost] = e.Host
 	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
+
+	if len(e.Port) < 1 {
+		return nil, errors.New("no port provided")
+	}
+	ret[keys.ContextPort] = e.Port
 
 	// TODO: Do we need this in the context? or just set for the main package?
 	// consider: the main goal here is to be able to verify everything is working
@@ -86,6 +93,8 @@ func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}
 		return nil, errors.New("no sec key provided")
 	}
 	ret[keys.ContextSecurityKey] = e.SecKey
+
+	ret["port"] = e.Port
 
 	ret["redis-host"] = os.Getenv("REDIS_HOST")
 	ret["redis-port"] = os.Getenv("REDIS_PORT")
@@ -147,13 +156,20 @@ var (
 	PathTest             = "/test"
 )
 
-func runServer() {
+func runServer(ctx context.Context) {
 	r := gin.New()
 	r.Use(requestLogger)
 	r.Use(recovery)
 	r.Use(parseUserID)
 	//r.Use(redisClient)
 	r.Use(loadContextValues)
+
+	r.StaticFile("/sitemap", "./static/sitemap.xml")
+	r.Static("/static/css", "./static")
+	r.Static("/static/js", "./static")
+	r.Static("/logos/", "./static/logos")
+	r.Static("/images/", "./static/images")
+	r.StaticFile("/favicon.ico", "./static/logos/favicon.ico")
 	r.LoadHTMLGlob("templates/*")
 
 	r.GET(PathHome, handlerHome)
@@ -170,14 +186,9 @@ func runServer() {
 	r.GET(PathRecommendations, authenticate, handlerRecommendations)
 	r.GET(PathTest, authenticate, handlerTest)
 
-	r.StaticFile("/sitemap", "./static/sitemap.xml")
-	r.Static("/static/css", "./static")
-	r.Static("/static/js", "./static")
-	r.Static("/logos/", "./static/logos")
-	r.Static("/images/", "./static/images")
-	r.StaticFile("/favicon.ico", "./static/logos/favicon.ico")
+	addy := fmt.Sprint(keys.GetContextValue(ctx, keys.ContextHost), ":", keys.GetContextValue(ctx, keys.ContextPort))
 
-	r.Run()
+	r.Run(addy)
 }
 
 // what the fuck is this? Why is it taking a gin context like a controller handler but

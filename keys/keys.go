@@ -11,6 +11,8 @@ var (
 	AppEventErrDataRetrieval   = "data_retrieval_error"
 	AppEventErrRefreshingToken = "error_refreshing_token"
 	ErrCantFindValue           = "couldnt find requested value in context"
+	ContextHost                = ContextKey("host")
+	ContextPort                = ContextKey("port")
 	ContextDbHost              = ContextKey("db_host")
 	ContextDbUser              = ContextKey("db_user")
 	ContextDbPass              = ContextKey("db_pass")
