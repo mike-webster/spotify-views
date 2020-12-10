@@ -475,7 +475,7 @@ func handlerLogin(c *gin.Context) {
 	// TODO Add state
 	pathScopes := url.QueryEscape(strings.Join(scopes, " "))
 	spotifyURL := fmt.Sprintf("https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s&show_dialog=false",
-		keys.GetContextValue(keys.ContextSpotifyClientID),
+		keys.GetContextValue(c, keys.ContextSpotifyClientID),
 		pathScopes,
 		returl)
 
