@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
-	"github.com/mike-webster/spotify-views/logging"
 )
 
 var (
