@@ -186,9 +186,7 @@ func runServer(ctx context.Context) {
 	r.GET(PathRecommendations, authenticate, handlerRecommendations)
 	r.GET(PathTest, authenticate, handlerTest)
 
-	addy := fmt.Sprint("localhost:8080")
-
-	r.Run(addy)
+	r.Run()
 }
 
 // what the fuck is this? Why is it taking a gin context like a controller handler but
