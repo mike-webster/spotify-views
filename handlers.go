@@ -103,22 +103,13 @@ func handlerOauth(c *gin.Context) {
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		// TODO: check for refresh token first
-		// TODO: maybe move this ^^ check into middleware?
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
-		return
-	}
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
+		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	tracksResultsCtx, err := spotify.GetTopTracks(requestCtx, topTracksLimit)
+	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -178,20 +169,13 @@ func handlerTopTracks(c *gin.Context) {
 
 func handlerTopArtists(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtists)
-		return
-	}
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		requestCtx = context.WithValue(requestCtx, keys.ContextSpotifyTimeRange, tr)
+		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	artists, err := spotify.GetTopArtists(requestCtx)
+	artists, err := spotify.GetTopArtists(c)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -236,23 +220,18 @@ func handlerTopArtists(c *gin.Context) {
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
-	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
+	logging.GetLogger(c).WithField("event", "webby_test").Debug()
+	t, err := spotify.GetUserLibraryTracks(c)
 	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracks)
+		logging.GetLogger(c).WithError(err).Error()
+		c.Status(500)
 		return
 	}
 
-	requestCtx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
-	t, err := spotify.GetUserLibraryTracks(requestCtx)
+	af, err := spotify.GetAudioFeatures(c, t.IDs())
 	if err != nil {
-		panic(err)
-	}
-
-	af, err := spotify.GetAudioFeatures(requestCtx, t.IDs())
-	if err != nil {
-		panic(err)
+		c.Status(500)
+		return
 	}
 	laf := *af
 
@@ -297,14 +276,7 @@ func handlerUserLibraryTempo(c *gin.Context) {
 
 func handlerTopArtistsGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopArtistGenres)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
+	var ctx context.Context
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
@@ -354,21 +326,12 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 func handlerTopTracksGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathTopTracksGenres)
-		return
+
+	if tr := c.Query(queryStringTimeRange); len(tr) > 0 {
+		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
-
-	tr := c.Query(queryStringTimeRange)
-	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
-	}
-
-	reqCtx, err := spotify.GetTopTracks(ctx, topGenresTopTracksLimit)
+	reqCtx, err := spotify.GetTopTracks(c, topGenresTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -395,7 +358,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	reqCtx, err = spotify.GetGenresForTracks(ctx, tracks.IDs())
+	reqCtx, err = spotify.GetGenresForTracks(reqCtx, tracks.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -435,21 +398,13 @@ func handlerWordCloud(c *gin.Context) {
 
 func handlerWordCloudData(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	token, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		logger.Debug("no token, redirecting")
-		c.Redirect(http.StatusTemporaryRedirect, PathLogin+"?redirectUrl="+PathWordCloud)
-		return
-	}
-
-	ctx := context.WithValue(c, keys.ContextSpotifyAccessToken, token)
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
+		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	reqCtx, err := spotify.GetTopTracks(ctx, wordCloudTopTracksLimit)
+	reqCtx, err := spotify.GetTopTracks(c, wordCloudTopTracksLimit)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -485,9 +440,7 @@ func handlerWordCloudData(c *gin.Context) {
 		})
 	}
 
-	ctx = context.WithValue(c, keys.ContextLyricsToken, lyricsKey)
-
-	wordCounts, err := genius.GetLyricCountForSong(ctx, searches)
+	wordCounts, err := genius.GetLyricCountForSong(c, searches)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve word counts")
 		c.Status(500)

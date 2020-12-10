@@ -155,3 +155,9 @@ a:hover {
 .half-width {
     width: 50%;
 }
+
+.bottom {
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+}

@@ -65,7 +65,7 @@ func main() {
 		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
 	}
 
-	runServer()
+	runServer(ctx)
 }
 
 func testMethod(ctx context.Context) {
