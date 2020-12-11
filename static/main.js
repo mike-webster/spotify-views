@@ -40,7 +40,6 @@ document.ready(function(){
 
     btn = document.getElementById("cookie-close")
     btn.onclick = function(){
-        alert("click");
         // make the close button work
         document.getElementById("cookie-banner").style.display = "none";
         setCookie("cookie-banner", "1", 30);
