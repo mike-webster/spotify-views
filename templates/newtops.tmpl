@@ -33,19 +33,6 @@
             }
         </style>
         <script>
-            // something I found for document.ready
-            Document.prototype.ready = function(callback) {
-                if(callback && typeof callback === 'function') {
-                    document.addEventListener("DOMContentLoaded", function() {
-                    if(document.readyState === "interactive" || document.readyState === "complete") {
-                        return callback();
-                    }
-                    });
-                }
-            };
-
-
-
             function handleDDL(obj) {
                 cur = window.location.href.split("?")[0]
                 window.location.href = cur + "?time_range=" + obj.value;                
