@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        {{ template "header" }}
+        <style>
+            .results-container {
+                display:flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .results-container .row {
+                padding-top: 3px;
+                padding-bottom: 3px;
+                flex: 1 0 21%; 
+                margin: 5px;
+                background-color: rgba(255,255,255,0.7);
+                text-align: center;
+            }
+
+            .pic {
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+                margin:auto;
+            }
+
+            @media (max-width: 800px) {
+                .results-container {
+                    flex-direction: column;
+                }
+            }
+        </style>
+        <script>
+            // something I found for document.ready
+            Document.prototype.ready = function(callback) {
+                if(callback && typeof callback === 'function') {
+                    document.addEventListener("DOMContentLoaded", function() {
+                    if(document.readyState === "interactive" || document.readyState === "complete") {
+                        return callback();
+                    }
+                    });
+                }
+            };
+
+
+
+            function handleDDL(obj) {
+                cur = window.location.href.split("?")[0]
+                window.location.href = cur + "?time_range=" + obj.value;                
+            }
+
+            document.ready(function() {
+                splits = window.location.href.split("?");
+                if (splits.length == 2) {
+                    // this has the val
+                    val = splits[1].split("%20").join(" ");
+                    ddl = val.split("=")[1];
+
+                }
+                sel = document.getElementById('opts');
+                selIn = 0;
+                for (i = 0; i < sel.length; i++) {
+                    if (sel[i].value == ddl) {
+                        sel[i].setAttribute('selected', '');
+                    } else {
+                        sel[i].removeAttribute('selected');
+                    }
+                }
+            });
+        </script>  
+    </head>
+    <body>
+        {{ template "topnav" }}
+        <div class="content">            
+            <div style="width:100%; text-align:center;">
+                <h1>Top {{ .Category }}</h1>
+                {{ if eq .Category "Genres" }}
+                    <h3>by {{ .Type }}</h3>
+                {{ end }}
+
+                <div style="width:100%;padding:20px 10px;text-align:center;margin:auto;">
+                    <select style="margin:auto; padding: 5px 20px; border:none; border-radius: 25px;" name="opts" id="opts" onchange="handleDDL(this);">
+                        {{ range .Opts }}
+                            <option value="{{.}}">{{.}}</option>
+                        {{ end }}
+                    </select>
+                </div>
+
+                <div class="results-container">
+                    {{ range .Results }}
+                        <div class="row" >
+                            <div class="pic" style="background-image: url('{{ .Background }}')"></div>
+                            <span> {{ .Key }}<br />{{.Value }}</span>
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        {{ template "footer" }}
+    </body>
+</html>

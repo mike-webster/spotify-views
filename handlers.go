@@ -33,6 +33,12 @@ var (
 	spotifyPlayerHeightShort int32  = 80
 	spotifyPlayerHeightTall  int32  = 380
 	spotifyPlayerWidth       int32  = 300
+
+	ddlOpts = map[string]string{
+		"Recent":         "short_term",
+		"In Between":     "medium_term",
+		"Going Way Back": "long_term",
+	}
 )
 
 func handlerOauth(c *gin.Context) {
@@ -106,7 +112,8 @@ func handlerTopTracks(c *gin.Context) {
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		c.Set(string(keys.ContextSpotifyTimeRange), tr)
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
 	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
@@ -144,27 +151,39 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	type tempBag struct {
-		Width    int32
-		Height   int32
-		ID       string
-		Name     string
-		Resource string
+	type Result struct {
+		Key        string
+		Value      string
+		Background string
+		Width      int
+		Height     int
 	}
 
-	data := []tempBag{}
+	type tempBag struct {
+		Category string
+		Type     string
+		Opts     []string
+		Results  []Result
+	}
 
+	r := []Result{}
 	for _, i := range tracks {
-		data = append(data, tempBag{
-			ID:       i.ID,
-			Height:   spotifyPlayerHeightShort,
-			Width:    spotifyPlayerWidth,
-			Resource: "track",
-			Name:     i.Name,
+		r = append(r, Result{
+			Key:        i.FindArtist(),
+			Value:      i.Name,
+			Background: i.FindImage().URL,
+			Height:     i.FindImage().Height,
+			Width:      i.FindImage().Width,
 		})
 	}
+	data := tempBag{
+		Category: "Tracks",
+		Type:     "",
+		Opts:     []string{"Recent", "In Between", "Going Way Back"},
+		Results:  r,
+	}
 
-	c.HTML(200, "toptracks.tmpl", data)
+	c.HTML(200, "newtops.tmpl", data)
 }
 
 func handlerTopArtists(c *gin.Context) {
@@ -172,7 +191,8 @@ func handlerTopArtists(c *gin.Context) {
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		c.Set(string(keys.ContextSpotifyTimeRange), tr)
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
 	artists, err := spotify.GetTopArtists(c)
@@ -196,27 +216,39 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	type tempBag struct {
-		Width    int32
-		Height   int32
-		ID       string
-		Name     string
-		Resource string
+	type Result struct {
+		Key        string
+		Value      string
+		Background string
+		Width      int
+		Height     int
 	}
 
-	data := []tempBag{}
+	type tempBag struct {
+		Category string
+		Type     string
+		Opts     []string
+		Results  []Result
+	}
 
+	r := []Result{}
 	for _, i := range *artists {
-		data = append(data, tempBag{
-			ID:       i.ID,
-			Height:   380,
-			Width:    300,
-			Resource: "artist",
-			Name:     i.Name,
+		r = append(r, Result{
+			Key:        "",
+			Value:      i.Name,
+			Background: i.FindImage().URL,
+			Height:     i.FindImage().Height,
+			Width:      i.FindImage().Width,
 		})
 	}
+	data := tempBag{
+		Category: "Artists",
+		Type:     "",
+		Opts:     []string{"Recent", "In Between", "Going Way Back"},
+		Results:  r,
+	}
 
-	c.HTML(200, "topartists.tmpl", data)
+	c.HTML(200, "newtops.tmpl", data)
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
@@ -280,7 +312,8 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
-		ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, tr)
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
 	artists, err := spotify.GetTopArtists(ctx)
@@ -319,16 +352,45 @@ func handlerTopArtistsGenres(c *gin.Context) {
 		return
 	}
 
+	type Result struct {
+		Key        string
+		Value      string
+		Background string
+		Width      int
+		Height     int
+	}
+
+	type tempBag struct {
+		Category string
+		Type     string
+		Opts     []string
+		Results  []Result
+	}
+
+	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	vb := ViewBag{Resource: "artist", Results: genres}
-	c.HTML(200, "topgenres.tmpl", vb)
+	for _, i := range genres {
+		r = append(r, Result{
+			Key:   i.Key,
+			Value: fmt.Sprint("( ", i.Value, ")"),
+		})
+	}
+	data := tempBag{
+		Category: "Genres",
+		Type:     "artists",
+		Opts:     []string{"Recent", "In Between", "Going Way Back"},
+		Results:  r,
+	}
+
+	c.HTML(200, "newtops.tmpl", data)
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
 
 	if tr := c.Query(queryStringTimeRange); len(tr) > 0 {
-		c.Set(string(keys.ContextSpotifyTimeRange), tr)
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
 	reqCtx, err := spotify.GetTopTracks(c, topGenresTopTracksLimit)
@@ -387,9 +449,37 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
+	type Result struct {
+		Key        string
+		Value      string
+		Background string
+		Width      int
+		Height     int
+	}
+
+	type tempBag struct {
+		Category string
+		Type     string
+		Opts     []string
+		Results  []Result
+	}
+
+	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	vb := ViewBag{Resource: "track", Results: genres}
-	c.HTML(200, "topgenres.tmpl", vb)
+	for _, i := range genres {
+		r = append(r, Result{
+			Key:   i.Key,
+			Value: fmt.Sprint("( ", i.Value, ")"),
+		})
+	}
+	data := tempBag{
+		Category: "Genres",
+		Type:     "tracks",
+		Opts:     []string{"Recent", "In Between", "Going Way Back"},
+		Results:  r,
+	}
+
+	c.HTML(200, "newtops.tmpl", data)
 }
 
 func handlerWordCloud(c *gin.Context) {
@@ -504,16 +594,66 @@ func handlerRecommendations(c *gin.Context) {
 }
 
 func handlerTest(c *gin.Context) {
-	refTok, err := c.Cookie(cookieKeyRefresh)
-	if err != nil {
-		panic(err)
+	tr := c.Query(queryStringTimeRange)
+	if len(tr) > 0 {
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
-	ctx := context.WithValue(c, keys.ContextSpotifyRefreshToken, refTok)
-	tok, err := spotify.RefreshToken(ctx)
+
+	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
 	if err != nil {
-		panic(err)
+		logging.GetLogger(c).WithError(err).Error()
+		c.Status(500)
+		return
 	}
-	c.JSON(200, gin.H{"token": tok})
+
+	reqTracks := keys.GetContextValue(tracksResultsCtx, keys.ContextSpotifyResults)
+	if reqTracks == nil {
+		logging.GetLogger(c).Error("no tracks returned from spotify")
+		c.Status(500)
+		return
+	}
+
+	tracks, ok := reqTracks.(spotify.Tracks)
+	if !ok {
+		logging.GetLogger(c).WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks returned from spotify")
+		c.Status(500)
+		return
+	}
+
+	type Result struct {
+		Key        string
+		Value      string
+		Background string
+		Width      int
+		Height     int
+	}
+
+	type tempBag struct {
+		Category string
+		Type     string
+		Opts     []string
+		Results  []Result
+	}
+
+	r := []Result{}
+	for _, i := range tracks {
+		r = append(r, Result{
+			Key:        i.FindArtist(),
+			Value:      i.Name,
+			Background: i.FindImage().URL,
+			Height:     i.FindImage().Height,
+			Width:      i.FindImage().Width,
+		})
+	}
+	data := tempBag{
+		Category: "Tracks",
+		Type:     "",
+		Opts:     []string{"Recent", "In Between", "Going Way Back"},
+		Results:  r,
+	}
+
+	c.HTML(200, "newtops.tmpl", data)
 }
 
 // getLevel1Recs retrieves the user's top artists and their related artists

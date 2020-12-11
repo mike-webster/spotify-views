@@ -13,6 +13,7 @@ type Track struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"artists"`
+	Album Album `json:"album"`
 }
 
 // Tracks is a collection of spotify Tracks
@@ -31,4 +32,24 @@ func (t *Tracks) IDs() []string {
 		ret = append(ret, i.ID)
 	}
 	return ret
+}
+
+func (t *Track) FindArtist() string {
+	if len(t.Artists) < 1 {
+		return ""
+	}
+
+	return t.Artists[0].Name
+}
+
+func (t *Track) FindImage() *Image {
+	if len(t.Album.Images) < 1 {
+		return nil
+	}
+
+	if len(t.Album.Images) == 1 {
+		return &t.Album.Images[0]
+	}
+
+	return &t.Album.Images[1]
 }

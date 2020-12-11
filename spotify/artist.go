@@ -19,6 +19,7 @@ type Artist struct {
 	Popularity int32    `json:"popularity"`
 	URI        string   `json:"uri"`
 	ID         string   `json:"ID"`
+	Images     []Image  `json:"images"`
 }
 
 // Artists is a collection of spotify Artist
@@ -205,4 +206,16 @@ func getTopArtists(ctx context.Context) (*Artists, error) {
 	}
 
 	return &ret.Items, nil
+}
+
+func (a *Artist) FindImage() *Image {
+	if len(a.Images) < 1 {
+		return nil
+	}
+
+	if len(a.Images) == 1 {
+		return &a.Images[0]
+	}
+
+	return &a.Images[1]
 }
