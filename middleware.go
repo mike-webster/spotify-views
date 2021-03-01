@@ -18,7 +18,8 @@ import (
 )
 
 func loadContextValues(c *gin.Context) {
-	logging.GetLogger(c).WithField("event", "attaching context values").Debug()
+	logger := logging.GetLogger(c)
+	logger.WithField("event", "attaching context values").Debug()
 
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
@@ -26,15 +27,19 @@ func loadContextValues(c *gin.Context) {
 		return
 	}
 
-	uid, _ := c.Cookie("svid")
-	c.Set(string(keys.ContextSpotifyUserID), uid)
+	uid, err := c.Cookie("svid")
+	if err != nil {
+		logger.WithError(err).Error("couldnt retrieve user id")
+	} else {
+		c.Set(string(keys.ContextSpotifyUserID), uid)
+	}
 
 	for k, v := range vals {
 		key, ok := k.(string)
 		if !ok {
 			kk, ok := k.(keys.ContextKey)
 			if !ok {
-				logging.GetLogger(c).WithFields(map[string]interface{}{
+				logger.WithFields(map[string]interface{}{
 					"event": "couldnt_parse_context_field",
 					"key":   k,
 					"value": v,
@@ -54,6 +59,7 @@ func loadContextValues(c *gin.Context) {
 	if len(ref) > 0 {
 		c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 	}
+	logging.SetLogger(c, logger)
 	c.Next()
 }
 

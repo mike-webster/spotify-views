@@ -43,3 +43,17 @@ func GetLogger(ctx context.Context) *logrus.Logger {
 
 	return logger
 }
+
+// SetLogger will assign the given logger in the given context
+func SetLogger(ctx context.Context, logger *logrus.Logger) {
+	if ctx == nil {
+		return
+	}
+
+	if logger == nil {
+		ctx = context.WithValue(ctx, keys.ContextLogger, GetLogger(nil))
+		return
+	}
+
+	ctx = context.WithValue(ctx, keys.ContextLogger, logger)
+}
