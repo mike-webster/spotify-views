@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime/debug"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -16,16 +15,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func loadToken(c *gin.Context) {
-	entry := logging.GetLogger(c)
-	entry.WithField("event", "loading_token").Debug()
+func setTokens(c *gin.Context) {
+	entry := logging.GetLogger(c).WithField("event", "loading_token")
 
 	tok, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		entry.WithField("event", "err_retrieving_token").WithError(err).Error("token not added to context")
 	} else {
-		entry.WithField("loading_token", tok).Debug()
 		if len(tok) > 0 {
+			entry.Debug("found token")
 			c.Set(string(keys.ContextSpotifyAccessToken), tok)
 		}
 	}
@@ -34,8 +32,8 @@ func loadToken(c *gin.Context) {
 	if err != nil {
 		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error("refresh not added to context")
 	} else {
-		entry.WithField("loading_refresh_token", ref).Debug()
 		if len(ref) > 0 {
+			entry.Debug("found refresh token")
 			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 		}
 	}
@@ -43,25 +41,30 @@ func loadToken(c *gin.Context) {
 	c.Next()
 }
 
-func loadContextValues(c *gin.Context) {
-	entry := logging.GetLogger(c)
-	entry.WithField("event", "loading_env_vars").Debug()
+func setUserID(c *gin.Context) {
+	entry := logging.GetLogger(c).WithField("event", "loading_user_id")
 
-	vals, err := parseEnvironmentVariables(c)
-	if err != nil {
-		c.AbortWithError(500, err)
-		return
-	}
-
-	entry.WithField("event", "loading_user_id").Debug()
 	uid, err := c.Cookie("svid")
 	if err != nil {
 		if c.Request.URL.Path != "/" {
 			entry.WithError(err).Error("couldnt retrieve user id")
 		}
 	} else {
-		entry = entry.WithField("spotify_id", uid)
+		entry.Debug("found user_id")
 		c.Set(string(keys.ContextSpotifyUserID), uid)
+	}
+
+	c.Next()
+}
+
+func setEnv(c *gin.Context) {
+	entry := logging.GetLogger(c).WithField("event", "loading_env_vars")
+
+	vals, err := parseEnvironmentVariables(c)
+	if err != nil {
+		entry.WithError(err).Error("error encountered parsing env vars")
+		c.AbortWithError(500, err)
+		return
 	}
 
 	for k, v := range vals {
@@ -69,38 +72,36 @@ func loadContextValues(c *gin.Context) {
 		if !ok {
 			kk, ok := k.(keys.ContextKey)
 			if !ok {
-				entry.WithFields(map[string]interface{}{
+				entry.WithFields(logrus.Fields{
 					"event": "couldnt_parse_context_field",
 					"key":   k,
 					"value": v,
-				}).Error()
+				}).Error("problem adding an environment variable to the context - aborting")
 				c.AbortWithError(500, errors.New("couldnt parse context values"))
 				return
 			}
 			key = string(kk)
 		}
 		c.Set(key, v)
-		entry.WithFields(logrus.Fields{"adding_value_key": key, "adding_value_value": v})
-		entry = entry.WithField(key, v)
+		entry.WithField("added_env_val", key).Debug()
 	}
 
-	logging.SetRequestLogger(c, entry)
 	c.Next()
 }
 
 func authenticate(c *gin.Context) {
-	logging.GetLogger(c).WithField("event", "authenticating").Debug()
+	entry := logging.GetLogger(c).WithField("event", "authenticating")
 	tok, err := c.Cookie(cookieKeyToken)
-	if err == nil {
-		logging.GetLogger(c).Info("found token")
-
-		c.Set(string(keys.ContextSpotifyAccessToken), tok)
-		c.Next()
+	if err != nil {
+		entry.WithField("redirect_reason", "authenticate: found no token").WithError(err).Error("redirecting")
+		c.Redirect(301, "/?noauth")
+		return
 	}
 
-	logging.GetLogger(c).WithField("event", "redirecting; found no token").WithError(err).Error("issue encountered in authenticate middleware")
-	c.Redirect(301, "/?noauth")
-	return
+	entry.Info("found token")
+
+	c.Set(string(keys.ContextSpotifyAccessToken), tok)
+	c.Next()
 }
 
 // consolidate stack on crahes
@@ -158,6 +159,85 @@ func redisClient(c *gin.Context) {
 	c.Next()
 }
 
+func setContextLogger(c *gin.Context) {
+	logging.SetRequestLogger(c, logging.GetLogger(c))
+	c.Next()
+}
+
+func setRequestID(c *gin.Context) {
+	reqID, _ := uuid.NewV4()
+
+	entry := logging.GetLogger(c).WithField("request_id", reqID)
+	logging.SetRequestLogger(c, entry)
+	c.Next()
+}
+
+func setClientIP(c *gin.Context) {
+	entry := logging.GetLogger(c).WithField("event", "set_client_ip")
+
+	if len(c.ClientIP()) > 0 {
+		entry = entry.WithField("client_ip", c.ClientIP())
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
+func setMethod(c *gin.Context) {
+	entry := logging.GetLogger(c)
+
+	if len(c.Request.Method) > 0 {
+		entry = entry.WithField("method", c.Request.Method)
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
+func setRequestPath(c *gin.Context) {
+	entry := logging.GetLogger(c)
+
+	if len(c.Request.URL.Path) > 0 {
+		entry = entry.WithField("path", c.Request.URL.Path)
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
+func setRequestQuery(c *gin.Context) {
+	entry := logging.GetLogger(c)
+
+	if len(c.Request.URL.RawQuery) > 0 {
+		entry = entry.WithField("query", c.Request.URL.RawQuery)
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
+func setReferer(c *gin.Context) {
+	entry := logging.GetLogger(c)
+
+	if len(c.Request.Referer()) > 0 {
+		entry = entry.WithField("referer", c.Request.Referer())
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
+func setUserAgent(c *gin.Context) {
+	entry := logging.GetLogger(c)
+
+	if len(c.Request.UserAgent()) > 0 {
+		entry = entry.WithField("user_agent", c.Request.UserAgent())
+		logging.SetRequestLogger(c, entry)
+	}
+
+	c.Next()
+}
+
 func requestLogger(ctx *gin.Context) {
 	logging.GetLogger(ctx).WithField("event", "attaching_request_logger").Debug()
 
@@ -194,41 +274,9 @@ func requestLogger(ctx *gin.Context) {
 	// 	strBody = strings.Replace(strBody, "\t", "", -1)
 	// }
 
-	reqID, _ := uuid.NewV4()
-
-	entry := logging.GetLogger(ctx).WithField("request_id", reqID)
-	if len(ctx.ClientIP()) > 0 {
-		entry = entry.WithField("client_ip", ctx.ClientIP())
-	}
-
-	if len(ctx.Request.Method) > 0 {
-		entry = entry.WithField("method", ctx.Request.Method)
-	}
-
-	if len(ctx.Request.URL.Path) > 0 {
-		entry = entry.WithField("path", ctx.Request.URL.Path)
-	}
-
-	if len(ctx.Request.URL.RawQuery) > 0 {
-		entry = entry.WithField("query", ctx.Request.URL.RawQuery)
-	}
-
-	if len(ctx.Request.Referer()) > 0 {
-		entry = entry.WithField("refererr", ctx.Request.Referer())
-	}
-
-	if len(ctx.Request.UserAgent()) > 0 {
-		entry = entry.WithField("user_agent", ctx.Request.UserAgent())
-	}
-
 	// if len(strBody) > 0 {
 	// 	entry = entry.WithField("request_body", strBody)
 	// }
 
-	if len(ctx.Errors) > 0 {
-		entry = entry.WithField("errors", strings.TrimSpace(ctx.Errors.String()))
-	}
-
-	ctx.Set(string(keys.ContextLogger), entry)
 	ctx.Next()
 }
