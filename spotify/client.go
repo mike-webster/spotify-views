@@ -220,6 +220,8 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 		return nil, err
 	}
 
+	logger.WithField("external_request_response", resp.StatusCode).Debug()
+
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 401 {
 			logger.WithField("event", EventNeedsRefreshToken).Info()
