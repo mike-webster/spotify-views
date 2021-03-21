@@ -18,7 +18,7 @@ import (
 
 func loadContextValues(c *gin.Context) {
 	entry := logging.GetLogger(c)
-	entry.WithField("event", "attaching context values").Debug()
+	entry.WithField("event", "loading_env_vars").Debug()
 
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
@@ -26,6 +26,7 @@ func loadContextValues(c *gin.Context) {
 		return
 	}
 
+	entry.WithField("event", "loading_user_id").Debug()
 	uid, err := c.Cookie("svid")
 	if err != nil {
 		if c.Request.URL.Path != "/" {
@@ -52,16 +53,30 @@ func loadContextValues(c *gin.Context) {
 			key = string(kk)
 		}
 		c.Set(key, v)
+		entry.WithFields(logrus.Fields{"adding_value_key": key, "adding_value_value": v})
 		entry = entry.WithField(key, v)
 	}
-	tok, _ := c.Cookie(cookieKeyToken)
-	if len(tok) > 0 {
-		c.Set(string(keys.ContextSpotifyAccessToken), tok)
+
+	tok, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		entry.WithField("event", "err_retrieving_token").WithError(err).Error()
+	} else {
+		entry.WithField("loading_token", tok).Debug()
+		if len(tok) > 0 {
+			c.Set(string(keys.ContextSpotifyAccessToken), tok)
+		}
 	}
-	ref, _ := c.Cookie(cookieKeyRefresh)
-	if len(ref) > 0 {
-		c.Set(string(keys.ContextSpotifyRefreshToken), ref)
+
+	ref, err := c.Cookie(cookieKeyRefresh)
+	if err != nil {
+		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error()
+	} else {
+		entry.WithField("loading_refresh_token", "ref").Debug()
+		if len(ref) > 0 {
+			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
+		}
 	}
+
 	logging.SetRequestLogger(c, entry)
 	c.Next()
 }
