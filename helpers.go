@@ -164,6 +164,7 @@ func runServer(ctx context.Context) {
 	r.Use(loadContextValues)
 	r.Use(func(c *gin.Context) {
 		logging.GetLogger(c).Debug("testing to see if this passes context values")
+		c.Next()
 	})
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")

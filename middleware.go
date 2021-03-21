@@ -71,7 +71,7 @@ func loadContextValues(c *gin.Context) {
 	if err != nil {
 		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error()
 	} else {
-		entry.WithField("loading_refresh_token", "ref").Debug()
+		entry.WithField("loading_refresh_token", ref).Debug()
 		if len(ref) > 0 {
 			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 		}
