@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime/debug"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -19,9 +17,8 @@ import (
 )
 
 func loadContextValues(c *gin.Context) {
-	logger := logging.GetLogger(c)
-	logger.WithField("event", "attaching context values").Debug()
-	entry := logger.WithField("entry_create", time.Now().UTC())
+	entry := logging.GetLogger(c)
+	entry.WithField("event", "attaching context values").Debug()
 
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
@@ -31,8 +28,11 @@ func loadContextValues(c *gin.Context) {
 
 	uid, err := c.Cookie("svid")
 	if err != nil {
-		logger.WithError(err).Error("couldnt retrieve user id")
+		if c.Request.URL.Path != "/" {
+			entry.WithError(err).Error("couldnt retrieve user id")
+		}
 	} else {
+		entry = entry.WithField("spotify_id", uid)
 		c.Set(string(keys.ContextSpotifyUserID), uid)
 	}
 
@@ -41,7 +41,7 @@ func loadContextValues(c *gin.Context) {
 		if !ok {
 			kk, ok := k.(keys.ContextKey)
 			if !ok {
-				logger.WithFields(map[string]interface{}{
+				entry.WithFields(map[string]interface{}{
 					"event": "couldnt_parse_context_field",
 					"key":   k,
 					"value": v,
@@ -76,6 +76,7 @@ func authenticate(c *gin.Context) {
 		c.Next()
 	}
 
+	logging.GetLogger(c).WithField("event", "redirecting; found no token").WithError(err).Error("issue encountered in authenticate middleware")
 	c.Redirect(301, "/?noauth")
 	return
 }
@@ -135,51 +136,41 @@ func redisClient(c *gin.Context) {
 	c.Next()
 }
 
-func parseUserID(c *gin.Context) {
-	logging.GetLogger(c).WithField("event", "parsing_user_id").Debug()
-
-	uid, err := c.Cookie("svid")
-	if err == nil {
-		c.Set(string(keys.ContextSpotifyUserID), uid)
-	}
-	c.Next()
-}
-
 func requestLogger(ctx *gin.Context) {
 	logging.GetLogger(ctx).WithField("event", "attaching_request_logger").Debug()
 
 	// don't log requests to these paths when successful
-	quiet := []string{
-		"/healthcheck",
-		"/static",
-		"/clouds",
-		"/logos",
-		"/favicon.ico",
-	}
-	skip := false
-	for _, i := range quiet {
-		if strings.HasPrefix(ctx.Request.URL.Path, i) {
-			skip = true
-		}
-	}
-	if skip && ctx.Writer.Status() == 200 {
-		ctx.Next()
-		return
-	}
+	// quiet := []string{
+	// 	"/healthcheck",
+	// 	"/static",
+	// 	"/clouds",
+	// 	"/logos",
+	// 	"/favicon.ico",
+	// }
+	// skip := false
+	// for _, i := range quiet {
+	// 	if strings.HasPrefix(ctx.Request.URL.Path, i) {
+	// 		skip = true
+	// 	}
+	// }
+	// if skip && ctx.Writer.Status() == 200 {
+	// 	ctx.Next()
+	// 	return
+	// }
 
 	// log body if one is given]
-	strBody := ""
-	body, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
-	} else {
-		// write the body back into the request
-		ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	// strBody := ""
+	// body, err := ioutil.ReadAll(ctx.Request.Body)
+	// if err != nil {
+	// 	logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
+	// } else {
+	// 	// write the body back into the request
+	// 	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
-		strBody = string(body)
-		strBody = strings.Replace(strBody, "\n", "", -1)
-		strBody = strings.Replace(strBody, "\t", "", -1)
-	}
+	// 	strBody = string(body)
+	// 	strBody = strings.Replace(strBody, "\n", "", -1)
+	// 	strBody = strings.Replace(strBody, "\t", "", -1)
+	// }
 
 	reqID, _ := uuid.NewV4()
 
@@ -201,16 +192,16 @@ func requestLogger(ctx *gin.Context) {
 	}
 
 	if len(ctx.Request.Referer()) > 0 {
-		entry = entry.WithField("referer", ctx.Request.Referer)
+		entry = entry.WithField("refererr", ctx.Request.Referer)
 	}
 
 	if len(ctx.Request.UserAgent()) > 0 {
 		entry = entry.WithField("user_agent", ctx.Request.UserAgent())
 	}
 
-	if len(strBody) > 0 {
-		entry = entry.WithField("request_body", strBody)
-	}
+	// if len(strBody) > 0 {
+	// 	entry = entry.WithField("request_body", strBody)
+	// }
 
 	if len(ctx.Errors) > 0 {
 		entry = entry.WithField("errors", strings.TrimSpace(ctx.Errors.String()))
