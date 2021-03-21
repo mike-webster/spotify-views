@@ -192,7 +192,7 @@ func requestLogger(ctx *gin.Context) {
 	}
 
 	if len(ctx.Request.Referer()) > 0 {
-		entry = entry.WithField("refererr", ctx.Request.Referer)
+		entry = entry.WithField("refererr", ctx.Request.Referer())
 	}
 
 	if len(ctx.Request.UserAgent()) > 0 {
