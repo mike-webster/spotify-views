@@ -16,6 +16,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func loadToken(c *gin.Context) {
+	entry := logging.GetLogger(c)
+	entry.WithField("event", "loading_token").Debug()
+
+	tok, err := c.Cookie(cookieKeyToken)
+	if err != nil {
+		entry.WithField("event", "err_retrieving_token").WithError(err).Error("token not added to context")
+	} else {
+		entry.WithField("loading_token", tok).Debug()
+		if len(tok) > 0 {
+			c.Set(string(keys.ContextSpotifyAccessToken), tok)
+		}
+	}
+
+	ref, err := c.Cookie(cookieKeyRefresh)
+	if err != nil {
+		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error("refresh not added to context")
+	} else {
+		entry.WithField("loading_refresh_token", ref).Debug()
+		if len(ref) > 0 {
+			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
+		}
+	}
+
+	c.Next()
+}
+
 func loadContextValues(c *gin.Context) {
 	entry := logging.GetLogger(c)
 	entry.WithField("event", "loading_env_vars").Debug()
@@ -55,26 +82,6 @@ func loadContextValues(c *gin.Context) {
 		c.Set(key, v)
 		entry.WithFields(logrus.Fields{"adding_value_key": key, "adding_value_value": v})
 		entry = entry.WithField(key, v)
-	}
-
-	tok, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		entry.WithField("event", "err_retrieving_token").WithError(err).Error()
-	} else {
-		entry.WithField("loading_token", tok).Debug()
-		if len(tok) > 0 {
-			c.Set(string(keys.ContextSpotifyAccessToken), tok)
-		}
-	}
-
-	ref, err := c.Cookie(cookieKeyRefresh)
-	if err != nil {
-		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error()
-	} else {
-		entry.WithField("loading_refresh_token", ref).Debug()
-		if len(ref) > 0 {
-			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
-		}
 	}
 
 	logging.SetRequestLogger(c, entry)
