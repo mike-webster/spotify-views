@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -20,6 +21,7 @@ import (
 func loadContextValues(c *gin.Context) {
 	logger := logging.GetLogger(c)
 	logger.WithField("event", "attaching context values").Debug()
+	entry := logger.WithField("entry_create", time.Now().UTC())
 
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
@@ -50,6 +52,7 @@ func loadContextValues(c *gin.Context) {
 			key = string(kk)
 		}
 		c.Set(key, v)
+		entry = entry.WithField(key, v)
 	}
 	tok, _ := c.Cookie(cookieKeyToken)
 	if len(tok) > 0 {
@@ -59,7 +62,7 @@ func loadContextValues(c *gin.Context) {
 	if len(ref) > 0 {
 		c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 	}
-	logging.SetLogger(c, logger)
+	logging.SetRequestLogger(c, entry)
 	c.Next()
 }
 

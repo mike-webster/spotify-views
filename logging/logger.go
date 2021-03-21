@@ -27,33 +27,24 @@ func newLogger() *logrus.Logger {
 	return _logger
 }
 
-// GetLogger will either return the logger from the context or
-// it will return a new one with the default configuration.
-func GetLogger(ctx context.Context) *logrus.Logger {
-	if ctx == nil {
-		return newLogger()
+// GetLogger will return the context logger for the request
+func GetLogger(ctx context.Context) *logrus.Entry {
+	iEnt := keys.GetContextValue(ctx, keys.ContextLogger)
+	if iEnt != nil {
+		entry, ok := iEnt.(*logrus.Entry)
+		if ok {
+			return entry
+		}
 	}
 
-	var logger *logrus.Logger
-	l := keys.GetContextValue(ctx, keys.ContextLogger)
-	logger, ok := l.(*logrus.Logger)
-	if !ok {
-		return newLogger()
-	}
-
-	return logger
+	return newLogger().WithField("entry_create", time.Now().UTC())
 }
 
-// SetLogger will assign the given logger in the given context
-func SetLogger(ctx context.Context, logger *logrus.Logger) {
-	if ctx == nil {
+// SetRequestLogger will store the request log entry in the context
+func SetRequestLogger(ctx context.Context, entry *logrus.Entry) {
+	if ctx == nil || entry == nil {
 		return
 	}
 
-	if logger == nil {
-		ctx = context.WithValue(ctx, keys.ContextLogger, GetLogger(nil))
-		return
-	}
-
-	ctx = context.WithValue(ctx, keys.ContextLogger, logger)
+	ctx = context.WithValue(ctx, keys.ContextLogger, entry)
 }
