@@ -84,10 +84,10 @@ func authenticate(c *gin.Context) {
 func recovery(c *gin.Context) {
 	logging.GetLogger(c).WithField("event", "attaching_panic_recovery").Debug()
 
-	defer func() {
+	defer func(c *gin.Context) {
 		if r := recover(); r != nil {
 			b, _ := ioutil.ReadAll(c.Request.Body)
-			logging.GetLogger(nil).WithFields(logrus.Fields{
+			logging.GetLogger(c).WithFields(logrus.Fields{
 				"event":    "ErrPanicked",
 				"error":    r,
 				"stack":    string(debug.Stack()),
@@ -97,7 +97,7 @@ func recovery(c *gin.Context) {
 
 			c.HTML(500, "error.tmpl", nil)
 		}
-	}()
+	}(c)
 	c.Next() // execute all the handlers
 }
 
