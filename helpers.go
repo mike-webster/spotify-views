@@ -160,7 +160,6 @@ func runServer(ctx context.Context) {
 	r := gin.New()
 	r.Use(recovery)
 	r.Use(requestLogger)
-	r.Use(parseUserID)
 	//r.Use(redisClient)
 	r.Use(loadContextValues)
 
