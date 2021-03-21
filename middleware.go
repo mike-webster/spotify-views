@@ -182,25 +182,41 @@ func requestLogger(ctx *gin.Context) {
 	}
 
 	reqID, _ := uuid.NewV4()
-	logger := logging.GetLogger(nil).WithFields(logrus.Fields{
-		"client_ip":    ctx.ClientIP(),
-		"event":        "http.in",
-		"method":       ctx.Request.Method,
-		"path":         ctx.Request.URL.Path,
-		"query":        ctx.Request.URL.RawQuery,
-		"referer":      ctx.Request.Referer(),
-		"status":       ctx.Writer.Status(),
-		"user_agent":   ctx.Request.UserAgent(),
-		"request_body": strBody,
-		"request_id":   reqID,
-	})
-
-	if len(ctx.Errors) > 0 {
-		logger.Error(strings.TrimSpace(ctx.Errors.String()))
-	} else {
-		logger.Info()
+	var entry *logrus.Entry
+	if len(ctx.ClientIP()) > 0 {
+		entry = entry.WithField("client_ip", ctx.ClientIP())
 	}
 
-	ctx.Set(string(keys.ContextLogger), logger)
+	if len(ctx.Request.Method) > 0 {
+		entry = entry.WithField("method", ctx.Request.Method)
+	}
+
+	if len(ctx.Request.URL.Path) > 0 {
+		entry = entry.WithField("path", ctx.Request.URL.Path)
+	}
+
+	if len(ctx.Request.URL.RawQuery) > 0 {
+		entry = entry.WithField("query", ctx.Request.URL.RawQuery)
+	}
+
+	if len(ctx.Request.Referer()) > 0 {
+		entry = entry.WithField("referer", ctx.Request.Referer)
+	}
+
+	if len(ctx.Request.UserAgent()) > 0 {
+		entry = entry.WithField("user_agent", ctx.Request.UserAgent())
+	}
+
+	if len(strBody) > 0 {
+		entry = entry.WithField("request_body", strBody)
+	}
+
+	entry = entry.WithField("request_id", reqID)
+
+	if len(ctx.Errors) > 0 {
+		entry = entry.WithField("errors", strings.TrimSpace(ctx.Errors.String()))
+	}
+
+	ctx.Set(string(keys.ContextLogger), entry)
 	ctx.Next()
 }
