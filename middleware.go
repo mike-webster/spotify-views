@@ -182,7 +182,8 @@ func requestLogger(ctx *gin.Context) {
 	}
 
 	reqID, _ := uuid.NewV4()
-	var entry *logrus.Entry
+
+	entry := logging.GetLogger(ctx).WithField("request_id", reqID)
 	if len(ctx.ClientIP()) > 0 {
 		entry = entry.WithField("client_ip", ctx.ClientIP())
 	}
@@ -210,8 +211,6 @@ func requestLogger(ctx *gin.Context) {
 	if len(strBody) > 0 {
 		entry = entry.WithField("request_body", strBody)
 	}
-
-	entry = entry.WithField("request_id", reqID)
 
 	if len(ctx.Errors) > 0 {
 		entry = entry.WithField("errors", strings.TrimSpace(ctx.Errors.String()))
