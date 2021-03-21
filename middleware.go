@@ -178,6 +178,8 @@ func setClientIP(c *gin.Context) {
 	if len(c.ClientIP()) > 0 {
 		entry = entry.WithField("client_ip", c.ClientIP())
 		logging.SetRequestLogger(c, entry)
+	} else {
+		entry.Warn("couldnt find IP")
 	}
 
 	c.Next()
