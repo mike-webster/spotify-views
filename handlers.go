@@ -109,6 +109,7 @@ func handlerOauth(c *gin.Context) {
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
+	logger.Debug("loading user's top tracks")
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
