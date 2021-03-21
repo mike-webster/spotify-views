@@ -162,6 +162,9 @@ func runServer(ctx context.Context) {
 	r.Use(requestLogger)
 	//r.Use(redisClient)
 	r.Use(loadContextValues)
+	r.Use(func(c *gin.Context) {
+		logging.GetLogger(c).Debug("testing to see if this passes context values")
+	})
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")

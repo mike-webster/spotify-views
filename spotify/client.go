@@ -208,7 +208,7 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 		"url":      req.URL,
 		"event":    "external_request",
 		"duration": dur.String(),
-	}).Info()
+	}).Info("making external request")
 
 	if err != nil {
 		return nil, err
