@@ -29,11 +29,13 @@ func newLogger() *logrus.Logger {
 
 // GetLogger will return the context logger for the request
 func GetLogger(ctx context.Context) *logrus.Entry {
-	iEnt := keys.GetContextValue(ctx, keys.ContextLogger)
-	if iEnt != nil {
-		entry, ok := iEnt.(*logrus.Entry)
-		if ok {
-			return entry
+	if ctx != nil {
+		iEnt := keys.GetContextValue(ctx, keys.ContextLogger)
+		if iEnt != nil {
+			entry, ok := iEnt.(*logrus.Entry)
+			if ok {
+				return entry
+			}
 		}
 	}
 
