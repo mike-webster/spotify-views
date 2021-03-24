@@ -20,7 +20,7 @@ func setTokens(c *gin.Context) {
 
 	tok, err := c.Cookie(cookieKeyToken)
 	if err != nil {
-		entry.WithField("event", "err_retrieving_token").WithError(err).Error("token not added to context")
+		entry.WithField("event", "err_retrieving_token").WithError(err).Warn("token not added to context")
 	} else {
 		if len(tok) > 0 {
 			entry.Debug("found token")
@@ -30,7 +30,7 @@ func setTokens(c *gin.Context) {
 
 	ref, err := c.Cookie(cookieKeyRefresh)
 	if err != nil {
-		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Error("refresh not added to context")
+		entry.WithField("event", "err_retrieving_refresh_token").WithError(err).Warn("refresh not added to context")
 	} else {
 		if len(ref) > 0 {
 			entry.Debug("found refresh token")
