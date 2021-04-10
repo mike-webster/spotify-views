@@ -580,7 +580,9 @@ func handlerLogin(c *gin.Context) {
 		c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	}
 
-	logging.GetLogger(nil).Info(fmt.Sprint("redirecting for spotify auth: ", spotifyURL))
+	logging.GetLogger(c).WithFields(logrus.Fields{
+		"event": "redirect_for_oauth",
+		"url": spotifyURL}).Debug("auth redirect")
 
 	c.Redirect(http.StatusTemporaryRedirect, spotifyURL)
 }
