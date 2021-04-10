@@ -12,6 +12,14 @@
   padding: 0;
 }
 
+.navlinks a {
+  color: white;
+}
+
+.navlinks .sub-menu {
+  font-size: 14px;
+}
+
 .navlinks > li {
   display: inline-flex;
   justify-content: center;
