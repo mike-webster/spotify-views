@@ -1,5 +1,5 @@
 @import url("//fonts.googleapis.com/css?family=Ubuntu");
-@import url("/static/css/topnav2.css");
+@import url("/static/css/topnav.css");
 
 html {
     height: 100%;
@@ -32,12 +32,11 @@ h1 {
 
 .content {
     flex: 1 0 auto;
-    max-width: 800px;
-    min-width: 600px;
+    min-width: 300px;
     min-height: 400px;
-    margin: 0 auto;
+    margin: 0;
     background: linear-gradient(to bottom, #4CAF50, #89db8d) ;
-    padding: 0px 20px;
+    padding: 0px; /* 20px; */
     position:relative;
 }
 
@@ -129,6 +128,7 @@ a:hover {
 .home-banner {
     background-image: url('/images/human-headphones-back.jpg');
     background-size: cover;
+    background-position: center center;
     height: 600px;
     display: flex;
     flex-direction: column;
