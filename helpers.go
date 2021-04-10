@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kelseyhightower/envconfig"
@@ -53,12 +54,18 @@ func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}
 		return nil, errors.New("no host provided")
 	}
 	ret[keys.ContextHost] = e.Host
-	ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
 
 	if len(e.Port) < 1 {
 		return nil, errors.New("no port provided")
 	}
 	ret[keys.ContextPort] = e.Port
+
+	// fix for local dev
+	if strings.Contains(e.Host, "localhost") {
+		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("http://", e.Host, ":", e.Port, "/spotify/oauth")
+	} else {
+		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
+	}
 
 	// TODO: Do we need this in the context? or just set for the main package?
 	// consider: the main goal here is to be able to verify everything is working
