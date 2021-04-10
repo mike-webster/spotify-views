@@ -20,6 +20,7 @@ var (
 	ContextDatabase            = ContextKey("db_name")
 	ContextLyricsToken         = ContextKey("genius_access_token")
 	ContextLogger              = ContextKey("logger")
+	ContextLoggerFields 	   = ContextKey("logger_fields")
 	// ContextSpotifyReturnURL is the key to use for the ouath return url
 	ContextSpotifyReturnURL = ContextKey("return_url")
 	// ContextSpotifyClientIDContextSpotifyClientID is the key to use for the spotify client id

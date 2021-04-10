@@ -2,13 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"os"
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
@@ -40,22 +37,6 @@ func setTokens(c *gin.Context) {
 			entry.Debug("found refresh token")
 			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 		}
-	}
-
-	c.Next()
-}
-
-func setUserID(c *gin.Context) {
-	entry := logging.GetLogger(c).WithField("event", "loading_user_id")
-
-	uid, err := c.Cookie("svid")
-	if err != nil {
-		if c.Request.URL.Path != "/" {
-			entry.WithError(err).Error("couldnt retrieve user id")
-		}
-	} else {
-		entry.Debug("found user_id")
-		c.Set(string(keys.ContextSpotifyUserID), uid)
 	}
 
 	c.Next()
@@ -129,167 +110,24 @@ func recovery(c *gin.Context) {
 	c.Next() // execute all the handlers
 }
 
-func redisClient(c *gin.Context) {
-	if _redisDB != nil {
-		_, err := _redisDB.Ping(c).Result()
-		if err == nil {
-			c.Set("Redis", _redisDB)
-			logging.GetLogger(nil).WithField("event", "found_redis_client").Info()
-			c.Next()
-			return
-		}
-
-		logging.GetLogger(nil).WithField("event", "existing_redis_ping_error").Error(err.Error())
-	}
-
-	host := os.Getenv("REDIS_HOST")
-	port := os.Getenv("REDIS_PORT")
-	password := os.Getenv("REDIS_PASS")
-	addr := fmt.Sprintf("%v:%v", host, port)
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: fmt.Sprint(password),
-		DB:       0,
-	})
-
-	_, err := rdb.Ping(c).Result()
-	if err != nil {
-		logging.GetLogger(nil).WithField("event", "new_redis_ping_error").Error(err.Error())
-	} else {
-		c.Set("Redis", rdb)
-		_redisDB = rdb
-		logging.GetLogger(nil).WithField("event", "new_redis_client").Info()
-	}
-	c.Next()
-}
-
 func setContextLogger(c *gin.Context) {
+	lf := parseLoggerValues(c)
+	c.Set(string(keys.ContextLoggerFields), lf)
 	logging.SetRequestLogger(c, logging.GetLogger(c))
 	c.Next()
 }
 
-func setRequestID(c *gin.Context) {
+func parseLoggerValues(c * gin.Context) *logging.LoggerFields {
 	reqID, _ := uuid.NewV4()
-
-	entry := logging.GetLogger(c).WithField("request_id", reqID)
-	entry.Debug("set request id")
-	logging.SetRequestLogger(c, entry)
-	c.Next()
-}
-
-func setClientIP(c *gin.Context) {
-	entry := logging.GetLogger(c).WithField("event", "set_client_ip")
-
-	if len(c.ClientIP()) > 0 {
-		entry = entry.WithField("client_ip", c.ClientIP())
-		entry.Debug("found client_ip")
-		logging.SetRequestLogger(c, entry)
-	} else {
-		entry.Warn("couldnt find IP")
+	uid, _ := c.Cookie("svid")
+	return &logging.LoggerFields{
+		UserAgent: c.Request.UserAgent(),
+		Referer: c.Request.Referer(),
+		QueryString: c.Request.URL.RawQuery,
+		Path: c.Request.URL.Path,
+		Method: c.Request.Method,
+		ClientIP: c.ClientIP(),
+		RequestID: reqID.String(),
+		UserID: uid,
 	}
-
-	c.Next()
-}
-
-func setMethod(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
-	if len(c.Request.Method) > 0 {
-		entry = entry.WithField("method", c.Request.Method)
-		entry.Debug("found method")
-		logging.SetRequestLogger(c, entry)
-	}
-
-	c.Next()
-}
-
-func setRequestPath(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
-	if len(c.Request.URL.Path) > 0 {
-		entry = entry.WithField("path", c.Request.URL.Path)
-		entry.Debug("found path")
-		logging.SetRequestLogger(c, entry)
-	}
-
-	c.Next()
-}
-
-func setRequestQuery(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
-	if len(c.Request.URL.RawQuery) > 0 {
-		entry = entry.WithField("query", c.Request.URL.RawQuery)
-		entry.Debug("found query")
-		logging.SetRequestLogger(c, entry)
-	}
-
-	c.Next()
-}
-
-func setReferer(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
-	if len(c.Request.Referer()) > 0 {
-		entry = entry.WithField("referer", c.Request.Referer())
-		entry.Debug("found referer")
-		logging.SetRequestLogger(c, entry)
-	}
-
-	c.Next()
-}
-
-func setUserAgent(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
-	if len(c.Request.UserAgent()) > 0 {
-		entry = entry.WithField("user_agent", c.Request.UserAgent())
-		entry.Debug("found user agent")
-		logging.SetRequestLogger(c, entry)
-	}
-
-	c.Next()
-}
-
-func requestLogger(ctx *gin.Context) {
-	logging.GetLogger(ctx).WithField("event", "attaching_request_logger").Debug()
-
-	// don't log requests to these paths when successful
-	// quiet := []string{
-	// 	"/healthcheck",
-	// 	"/static",
-	// 	"/clouds",
-	// 	"/logos",
-	// 	"/favicon.ico",
-	// }
-	// skip := false
-	// for _, i := range quiet {
-	// 	if strings.HasPrefix(ctx.Request.URL.Path, i) {
-	// 		skip = true
-	// 	}
-	// }
-	// if skip && ctx.Writer.Status() == 200 {
-	// 	ctx.Next()
-	// 	return
-	// }
-
-	// log body if one is given]
-	// strBody := ""
-	// body, err := ioutil.ReadAll(ctx.Request.Body)
-	// if err != nil {
-	// 	logging.GetLogger(nil).WithField("error", err).Error("cant read request body")
-	// } else {
-	// 	// write the body back into the request
-	// 	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
-	// 	strBody = string(body)
-	// 	strBody = strings.Replace(strBody, "\n", "", -1)
-	// 	strBody = strings.Replace(strBody, "\t", "", -1)
-	// }
-
-	// if len(strBody) > 0 {
-	// 	entry = entry.WithField("request_body", strBody)
-	// }
-
-	ctx.Next()
 }
