@@ -87,7 +87,6 @@ func setEnv(c *gin.Context) {
 			key = string(kk)
 		}
 		c.Set(key, v)
-		entry.WithField("added_env_val", key).Debug()
 	}
 
 	c.Next()
