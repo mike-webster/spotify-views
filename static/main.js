@@ -49,3 +49,16 @@ document.ready(function(){
     // to show the thing.
     document.getElementById("cookie-banner").style.display = "block";
 });
+
+/* Toggle between adding and removing the "responsive" class to topnav when the user clicks on the icon */
+function myFunction() {
+    var x = document.getElementById("myTopnav");
+    for (let index = 1; index < x.children[0].children.length; index++) {
+        const element = x.children[0].children[index];
+        if (window.getComputedStyle(element).display === "none") {
+            x.children[0].children[index].style.display = "flex";
+        } else {
+            x.children[0].children[index].style.display = "none";
+        }
+    }
+  }
