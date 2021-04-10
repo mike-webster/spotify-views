@@ -55,7 +55,6 @@ func handlerOauth(c *gin.Context) {
 	}
 
 	accessTok, refreshTok, err := spotify.HandleOauth(c, code)
-	fmt.Println("Tokens: ", accessTok, " - ", refreshTok)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")
 		c.Status(500)
