@@ -63,7 +63,7 @@ func setUserID(c *gin.Context) {
 
 func setEnv(c *gin.Context) {
 	entry := logging.GetLogger(c).WithField("event", "loading_env_vars")
-
+	entry.Debug()
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
 		entry.WithError(err).Error("error encountered parsing env vars")
@@ -94,6 +94,7 @@ func setEnv(c *gin.Context) {
 
 func authenticate(c *gin.Context) {
 	entry := logging.GetLogger(c).WithField("event", "authenticating")
+	entry.Debug()
 	tok, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		entry.WithField("redirect_reason", "authenticate: found no token").WithError(err).Error("redirecting")
@@ -171,6 +172,7 @@ func setRequestID(c *gin.Context) {
 	reqID, _ := uuid.NewV4()
 
 	entry := logging.GetLogger(c).WithField("request_id", reqID)
+	entry.Debug("set request id")
 	logging.SetRequestLogger(c, entry)
 	c.Next()
 }
@@ -180,7 +182,7 @@ func setClientIP(c *gin.Context) {
 
 	if len(c.ClientIP()) > 0 {
 		entry = entry.WithField("client_ip", c.ClientIP())
-		entry.Info("found client_ip")
+		entry.Debug("found client_ip")
 		logging.SetRequestLogger(c, entry)
 	} else {
 		entry.Warn("couldnt find IP")
@@ -194,6 +196,7 @@ func setMethod(c *gin.Context) {
 
 	if len(c.Request.Method) > 0 {
 		entry = entry.WithField("method", c.Request.Method)
+		entry.Debug("found method")
 		logging.SetRequestLogger(c, entry)
 	}
 
@@ -205,6 +208,7 @@ func setRequestPath(c *gin.Context) {
 
 	if len(c.Request.URL.Path) > 0 {
 		entry = entry.WithField("path", c.Request.URL.Path)
+		entry.Debug("found path")
 		logging.SetRequestLogger(c, entry)
 	}
 
@@ -216,6 +220,7 @@ func setRequestQuery(c *gin.Context) {
 
 	if len(c.Request.URL.RawQuery) > 0 {
 		entry = entry.WithField("query", c.Request.URL.RawQuery)
+		entry.Debug("found query")
 		logging.SetRequestLogger(c, entry)
 	}
 
@@ -227,6 +232,7 @@ func setReferer(c *gin.Context) {
 
 	if len(c.Request.Referer()) > 0 {
 		entry = entry.WithField("referer", c.Request.Referer())
+		entry.Debug("found referer")
 		logging.SetRequestLogger(c, entry)
 	}
 
@@ -238,6 +244,7 @@ func setUserAgent(c *gin.Context) {
 
 	if len(c.Request.UserAgent()) > 0 {
 		entry = entry.WithField("user_agent", c.Request.UserAgent())
+		entry.Debug("found user agent")
 		logging.SetRequestLogger(c, entry)
 	}
 
