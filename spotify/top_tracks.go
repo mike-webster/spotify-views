@@ -157,7 +157,7 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 }
 
 func getUserLibraryTracks(ctx context.Context) (Tracks, error) {
-	logger := logging.GetLogger(nil)
+	logger := logging.GetLogger(ctx)
 	url := "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
 	more := true
 	ret := []Track{}
