@@ -17,6 +17,7 @@ import (
 	"github.com/mike-webster/spotify-views/logging"
 	sortablemap "github.com/mike-webster/spotify-views/sortablemap"
 	spotify "github.com/mike-webster/spotify-views/spotify"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -96,6 +97,12 @@ func handlerOauth(c *gin.Context) {
 	if len(refreshTok) < 1 {
 		logger.Error("no refresh token returned from spotify")
 	}
+
+	logger.WithFields(logrus.Fields{
+		"event": "user_login",
+		"id": info["id"],
+		"email": info["email"],
+	}).Info("user logged in successfully")
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(accessTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
