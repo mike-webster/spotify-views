@@ -13,8 +13,6 @@ import (
 )
 
 func setTokens(c *gin.Context) {
-	entry := logging.GetLogger(c)
-
 	tok, err := c.Cookie(cookieKeyToken)
 	if err == nil {
 		if len(tok) > 0 {
