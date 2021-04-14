@@ -1,0 +1,29 @@
+
+.flex-table {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap; 
+    text-align: center;
+}
+
+.flex-table-item {
+    flex: 1 0 26%; 
+    margin: 5px;
+    padding: 5px;
+}
+
+.flex-table-item > p {
+    margin: auto
+}
+
+[data-item] {
+    display: flex;
+}
+
+[data-item-invisible] {
+    display: none !important;
+}
+
+[data-item-visible] {
+    display: flex;
+}
