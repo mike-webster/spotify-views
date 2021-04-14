@@ -13,28 +13,18 @@ import (
 )
 
 func setTokens(c *gin.Context) {
-	entry := logging.GetLogger(c).WithField("event", "loading_token")
+	entry := logging.GetLogger(c)
 
 	tok, err := c.Cookie(cookieKeyToken)
-	if err != nil {
-		entry.WithFields(logrus.Fields{
-			"event": "err_retrieving_token",
-			"error": err}).Warn("token not added to context")
-	} else {
+	if err == nil {
 		if len(tok) > 0 {
-			entry.Debug("found token")
 			c.Set(string(keys.ContextSpotifyAccessToken), tok)
 		}
 	}
 
 	ref, err := c.Cookie(cookieKeyRefresh)
-	if err != nil {
-		entry.WithFields(logrus.Fields{
-			"event": "err_retrieving_refresh_token",
-			"error": err}).Warn("refresh not added to context")
-	} else {
+	if err == nil {
 		if len(ref) > 0 {
-			entry.Debug("found refresh token")
 			c.Set(string(keys.ContextSpotifyRefreshToken), ref)
 		}
 	}
@@ -43,7 +33,7 @@ func setTokens(c *gin.Context) {
 }
 
 func setEnv(c *gin.Context) {
-	entry := logging.GetLogger(c).WithField("event", "loading_env_vars")
+	entry := logging.GetLogger(c)
 	entry.Debug()
 	vals, err := parseEnvironmentVariables(c)
 	if err != nil {
@@ -74,7 +64,7 @@ func setEnv(c *gin.Context) {
 }
 
 func authenticate(c *gin.Context) {
-	entry := logging.GetLogger(c).WithField("event", "authenticating")
+	entry := logging.GetLogger(c)
 	entry.Debug()
 	tok, err := c.Cookie(cookieKeyToken)
 	if err != nil {
@@ -83,16 +73,12 @@ func authenticate(c *gin.Context) {
 		return
 	}
 
-	entry.Info("found token")
-
 	c.Set(string(keys.ContextSpotifyAccessToken), tok)
 	c.Next()
 }
 
 // consolidate stack on crahes
 func recovery(c *gin.Context) {
-	logging.GetLogger(c).WithField("event", "attaching_panic_recovery").Debug()
-
 	defer func(c *gin.Context) {
 		if r := recover(); r != nil {
 			b, _ := ioutil.ReadAll(c.Request.Body)
