@@ -47,7 +47,7 @@ func parseRequestValues(logger *logrus.Logger, lf *LoggerFields) *logrus.Entry {
 	entry = addNonEmptyField(lf.Path, "path", entry)
 	entry = addNonEmptyField(lf.Method, "method", entry)
 	entry = addNonEmptyField(lf.ClientIP, "client_ip", entry)
-	entry = addNonEmptyField(lf.UserAgent, "request_id", entry)
+	entry = addNonEmptyField(lf.RequestID, "request_id", entry)
 	entry = addNonEmptyField(lf.UserID, "user_id", entry)
 	return entry
 }
