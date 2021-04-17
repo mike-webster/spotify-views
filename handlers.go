@@ -684,11 +684,11 @@ func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int
 			return nil, ctx
 		}
 
-		for _, i := range *res {
-			iName := strings.ToLower(i.Name)
+		for _, j := range *res {
+			iName := strings.ToLower(j.Name)
 			if _, ok := artists[iName]; !ok {
 				artists[iName] = 1
-				artistCache[iName] = i.ID
+				artistCache[iName] = j.ID
 				continue
 			}
 			artists[iName]++
@@ -842,8 +842,8 @@ func getData(ctx context.Context) *[]string {
 	}
 
 	sumArtists := append(spotify.Artists{}, *topArtists1...)
-	sumArtists = append(spotify.Artists{}, *topArtists2...)
-	sumArtists = append(spotify.Artists{}, *topArtists3...)
+	sumArtists = append(sumArtists, *topArtists2...)
+	sumArtists = append(sumArtists, *topArtists3...)
 
 	artistCache := map[string]string{}
 	artistCache = addToCache(artistCache, &sumArtists)
