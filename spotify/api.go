@@ -2,8 +2,6 @@ package spotify
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/mike-webster/spotify-views/keys"
 )
@@ -71,50 +69,6 @@ func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, er
 		return nil, err
 	}
 
-	for _, i := range *artists {
-		for _, ii := range i.Genres {
-			if _, ok := ret[ii]; ok {
-				ret[ii]++
-			} else {
-				ret[ii] = 1
-			}
-		}
-	}
-
-	c := context.WithValue(ctx, keys.ContextSpotifyResults, getPairs(ret))
-	return c, nil
-}
-
-// GetGenresForTracks will perform a search for the provided track IDs
-// and then researches the genres associated with each one. A mapping
-// of genres to occurrences is returned.
-func GetGenresForTracks(ctx context.Context, ids []string) (context.Context, error) {
-	as := map[string]int32{}
-	aids := []string{}
-	tracks, err := getTracks(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range *tracks {
-		for _, ii := range i.Artists {
-			if _, ok := as[ii.Name]; !ok {
-				as[ii.Name] = 1
-				aids = append(aids, ii.ID)
-			}
-		}
-	}
-
-	if len(aids) < 1 {
-		return nil, errors.New(fmt.Sprint("no artists found for ", len(ids), "tracks"))
-	}
-
-	artists, err := getArtists(ctx, aids)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]int32{}
 	for _, i := range *artists {
 		for _, ii := range i.Genres {
 			if _, ok := ret[ii]; ok {

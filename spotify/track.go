@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/sortablemap"
 )
 
 const (
@@ -28,6 +29,10 @@ type Track struct {
 // Tracks is a collection of spotify Tracks
 type Tracks []Track
 
+// ----
+// API
+// ---
+
 func GetTopTracks(ctx context.Context, timeframe TimeFrame) (*Tracks, error) {
 	req, err := getTopTracksRequest(ctx, timeframe)
 	if err != nil {
@@ -41,6 +46,10 @@ func GetTopTracks(ctx context.Context, timeframe TimeFrame) (*Tracks, error) {
 
 	return parseTopTrackResponse(body)
 }
+
+// ----
+// Helpers
+// ----
 
 func getTopTracksRequest(ctx context.Context, timeframe TimeFrame) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
@@ -73,6 +82,49 @@ func parseTopTrackResponse(body *[]byte) (*Tracks, error) {
 	}
 
 	return &ret.Items, nil
+}
+
+// ----
+// Members
+// ----
+
+func (t *Tracks) GetGenres(ctx context.Context) (*sortablemap.Map, error) {
+	as := map[string]int32{}
+	aids := []string{}
+	ids := t.IDs()
+
+	// collect the artist ids from the tracks
+	for _, i := range *t {
+		for _, ii := range i.Artists {
+			if _, ok := as[ii.Name]; !ok {
+				as[ii.Name] = 1
+				aids = append(aids, ii.ID)
+			}
+		}
+	}
+
+	if len(aids) < 1 {
+		return nil, errors.New(fmt.Sprint("no artists found for ", len(ids), "tracks"))
+	}
+
+	// go through artists to collect genres
+	artists, err := getArtists(ctx, aids)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]int{}
+	for _, i := range *artists {
+		for _, ii := range i.Genres {
+			if _, ok := ret[ii]; ok {
+				ret[ii]++
+			} else {
+				ret[ii] = 1
+			}
+		}
+	}
+	retmap := sortablemap.GetSortableMap(ret)
+	return &retmap, nil
 }
 
 // EmbeddedPlayer will return the html to use for rendering the embedded spotify

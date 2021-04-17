@@ -398,31 +398,15 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	reqCtx, err := spotify.GetGenresForTracks(c, trax.IDs())
+	genres, err := trax.GetGenres(c)
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// If the error is due to the token being expired, we will have automatically attempted
-			// to get a refresh token for the user.  If  that was successful, it will be returned
-			// as the error value.  Set the cookie to the new value and redirect the user back to the
-			// same path  to start the process again with the new token.
-			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-				return
-			}
-
-			logging.GetLogger(c).Info("couldnt refresh token for user")
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
 		}
 
-		logger.WithError(err).Error("couldnt retreive top genres for top tracks from spotify")
-		c.Status(500)
-		return
-	}
-
-	reqGenres := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
-	genres, ok := reqGenres.(spotify.Pairs)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
@@ -444,7 +428,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 
 	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range genres {
+	for _, i := range *genres {
 		r = append(r, Result{
 			Key:   i.Key,
 			Value: fmt.Sprint("( ", i.Value, ")"),
