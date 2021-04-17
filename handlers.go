@@ -54,17 +54,18 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	accessTok, refreshTok, err := spotify.HandleOauth(c, code)
+	//accessTok, refreshTok, err := spotify.HandleOauth(c, code)
+	tok, err := spotify.ExchangeOauthCode(c, code)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")
 		c.Status(500)
 		return
 	}
 
-	c.Set(string(keys.ContextSpotifyAccessToken), fmt.Sprint(accessTok))
-	c.Set(string(keys.ContextSpotifyRefreshToken), fmt.Sprint(refreshTok))
+	c.Set(string(keys.ContextSpotifyAccessToken), tok.Access)
+	c.Set(string(keys.ContextSpotifyRefreshToken), tok.Refresh)
 
-	if len(accessTok) < 1 {
+	if len(tok.Access) < 1 {
 		logger.WithError(err).Error("no access token returned from spotify")
 		c.Status(500)
 		return
@@ -93,7 +94,7 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	if len(refreshTok) < 1 {
+	if len(tok.Refresh) < 1 {
 		logger.Error("no refresh token returned from spotify")
 	}
 
@@ -104,8 +105,8 @@ func handlerOauth(c *gin.Context) {
 	}).Info("user logged in successfully")
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(accessTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyRefresh, fmt.Sprint(refreshTok), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	val, err := c.Cookie("redirect_url")
 	if err == nil && len(val) > 0 {
 		c.Redirect(http.StatusTemporaryRedirect, val)

@@ -208,11 +208,19 @@ func refreshToken(ctx context.Context) (string, error) {
 	}
 
 	requestCtx := context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refreshToken)
-	newTok, err := spotify.RefreshToken(requestCtx)
+	tok := spotify.Token{
+		Access: fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)),
+		Refresh: fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)),
+	}
+	success, err := tok.RefreshMe(requestCtx)
 	if err != nil {
 		logging.GetLogger(ctx).WithError(err).Error("refresh token attempt failed")
 		return "", err
 	}
 
-	return newTok, nil
+	if !success {
+		return "", errors.New("token refresh unsuccessful")
+	}
+
+	return tok.Access, nil
 }

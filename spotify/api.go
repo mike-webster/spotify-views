@@ -186,23 +186,3 @@ func GetUserLibraryTracks(ctx context.Context) (Tracks, error) {
 
 	return t, nil
 }
-
-// HandleOauth is the handler to use for oauth returns from spotify
-func HandleOauth(ctx context.Context, code string) (string, string, error) {
-	tokens, err := requestTokens(ctx, code)
-	if err != nil {
-		return "", "", err
-	}
-
-	return tokens[0], tokens[1], nil
-}
-
-// RefreshToken attempts to get a new access token for the user
-func RefreshToken(ctx context.Context) (string, error) {
-	tok, err := refreshToken(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return tok, nil
-}

@@ -226,12 +226,7 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 401 {
 			logger.WithField("event", EventNeedsRefreshToken).Info()
-			tok, err := refreshToken(ctx)
-			if err != nil {
-				logging.GetLogger(ctx).WithError(err).Error("auto refreshing token failed")
-				return nil, ErrTokenExpired("")
-			}
-			return nil, ErrTokenExpired(tok)
+			return nil, ErrTokenExpired("")
 		} else if resp.StatusCode == 429 {
 			wait := 5
 			hdr := resp.Header["Retry-Afer"]

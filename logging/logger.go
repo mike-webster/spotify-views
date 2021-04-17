@@ -40,7 +40,7 @@ func newLogger() *logrus.Logger {
 }
 
 func parseRequestValues(logger *logrus.Logger, lf *LoggerFields) *logrus.Entry {
-	entry := logger.WithField("event", "parsing_request_values")
+	entry := logrus.NewEntry(logger)
 	entry = addNonEmptyField(lf.UserAgent, "user_agent", entry)
 	entry = addNonEmptyField(lf.Referer, "referer", entry)
 	entry = addNonEmptyField(lf.QueryString, "query_string", entry)
