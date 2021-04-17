@@ -592,14 +592,16 @@ func handlerHome(c *gin.Context) {
 }
 
 func handlerRecommendations(c *gin.Context) {
-	type vb struct {
-		Names []string
+	recs, err := getRecommendations(c)
+	if err != nil {
+		logging.GetLogger(c).WithField("event", "failed_recs").Error(err)
+		c.Status(http.StatusInternalServerError)
+		return
 	}
-	ret := vb{}
-	for _, i := range *getData(c) {
-		ret.Names = append(ret.Names, i)
-	}
-	c.HTML(200, "recommendations.tmpl", ret)
+
+	logging.GetLogger(c).WithField("event", "image_check" ).Info(recs.Tracks[0].Album.Images[0].URL)
+
+	c.HTML(200, "recommendations.tmpl", *recs)
 }
 
 func handlerTest(c *gin.Context) {
@@ -672,8 +674,10 @@ func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int
 
 	for _, i := range *seeds {
 		iName := strings.ToLower(i.Name)
+		// if this artist isn't in the return object already, initialize it at
 		if _, ok := artists[iName]; !ok {
 			artists[iName] = 1
+			// I don't know why we're continuing here and I'm guessing this is causing a bug
 			continue
 		}
 		artists[iName]++
@@ -734,32 +738,48 @@ func removeUsersKnownArtists(ctx context.Context, lib *map[string]int, recs *map
 }
 
 func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[string]int) *map[string]int {
+	// recs: the user's top spotify artists
+	// orderedRecs: all of the user's recommendations and how many times they were present in the process
+
 	// this method is fucked. I can't retrieve any additional info from spotify
 	// with the way I've been passing around this information.  I need the ids for
 	// api calls, and all I have is names.
+
+	// get the 5 most recommended names
 	rrArtists := map[string]int{}
 	sorted := sortablemap.GetSortableMap(*orderedRecs)
 	sort.Sort(sort.Reverse(sorted))
 	chunk := sorted.Take(5)
 	ids := []string{}
 
+	// getting the name/id artist map out of context
 	cache := *ctx.Value(keyArtistInfo).(*map[string]string)
 
+	// iterate through the top 5 recommended
 	for _, i := range chunk {
 		found := false
 		iName := ""
+
+		// iterate through the user's top artists
 		for _, j := range *recs {
 			iName = strings.ToLower(j.Name)
+
+			// if the current top artists is in the top 5 most recommended
 			if i.Key == iName {
+				// add this artist id to the seeds we're going the get recommendations for
 				ids = append(ids, j.ID)
 				found = true
 				break
 			}
 		}
+
+		// if we didn't find the current recommendation in the user's top 10 artists
 		if !found {
 			logging.GetLogger(nil).Error(fmt.Sprint("couldnt find artist id; ", iName))
 			if v, ok := cache[iName]; ok {
+				// check the cache for the information for the artist in the recommendation
 				logging.GetLogger(nil).Info("found artist in cache")
+				// add this artist id to the seeds we're going the get recommendations for
 				ids = append(ids, v)
 			}
 		}
@@ -772,7 +792,7 @@ func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[
 
 	for _, j := range res.Tracks {
 		for _, k := range j.Artists {
-			iName := strings.ToLower(k)
+			iName := strings.ToLower(k.Name)
 			if _, ok := rrArtists[iName]; !ok {
 				rrArtists[iName] = 1
 				continue
@@ -809,59 +829,121 @@ func addToCache(cache map[string]string, artists *spotify.Artists) map[string]st
 	return ret
 }
 
-func getData(ctx context.Context) *[]string {
-	// Leaving off:
-	//
-	//
-	// This is cool... I'm getting recs, and they seem accurate.
-	// however; the filtering does not seem to be working.  I'm seeing results of which I'm sure I have songs saved.
-	//
-	//
-	// Ideally, when I get recommendations they wouldn't contain any artists for which I have songs saved.  We're trying to
-	// surface new music.
+type Recommendation struct {
+	Seed string
+	SeedID string
+	SeedResults *spotify.Artists
+}
 
+type Recommendations []Recommendation
+
+func (r *Recommendations) GetSeeds() *map[string]int {
+	ids := map[string]int{}
+	for _, i := range *r {
+		if _, ok := ids[i.SeedID]; !ok {
+			ids[i.SeedID] = 1
+		} else {
+			ids[i.SeedID]++
+		}
+
+		// go through each reccomendation for each top artist
+		for _, j := range *i.SeedResults {
+			if _, ok := ids[j.ID]; !ok {
+				ids[j.ID] = 1
+			} else {
+				ids[j.ID]++
+			}
+		}
+	}
+
+	return &ids
+}
+
+func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
+	// Start by getting thier top artist from each time frame
 	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "short_term")
 	topArtists1, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		fmt.Println("fuck1: ", err)
-		return nil
+		logging.GetLogger(ctx).WithField("event", "rec_art_err_1").WithError(err).Error("couldnt get top artists")
+		return nil, err
 	}
 
 	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "medium_term")
 	topArtists2, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		fmt.Println("fuck2: ", err)
-		return nil
+		logging.GetLogger(ctx).WithField("event", "rec_art_err_2").WithError(err).Error("couldnt get top artists")
+		return nil, err
 	}
 
 	ctx = context.WithValue(ctx, keys.ContextSpotifyTimeRange, "long_term")
 	topArtists3, err := spotify.GetTopArtists(ctx)
 	if err != nil {
-		fmt.Println("fuck3: ", err)
-		return nil
+		logging.GetLogger(ctx).WithField("event", "rec_art_err_3").WithError(err).Error("couldnt get top artists")
+		return nil, err
 	}
 
+	// consolidate into one slice
 	sumArtists := append(spotify.Artists{}, *topArtists1...)
 	sumArtists = append(sumArtists, *topArtists2...)
 	sumArtists = append(sumArtists, *topArtists3...)
 
-	artistCache := map[string]string{}
-	artistCache = addToCache(artistCache, &sumArtists)
+	logging.GetLogger(ctx).WithField("top_artist_count", len(sumArtists)).Info()
 
-	ctx = context.WithValue(ctx, keyArtistInfo, &artistCache)
+	// iterate through list and find unique artists
+	// - if it's a new artist
+	// - - store it in the arr
+	// - - get related artists from spotify
+	// - - iterate through results
+	// - - - if it's a new artist
+	// - - - - store it in the arr
 
-	lvl1, ctx := getLevel1Recs(ctx, &sumArtists)
+	recs := Recommendations{}
+	// we're iterating through each of the user's top artists to
+	// get their related artists
+	for _, i := range sumArtists {
+		res, err := spotify.GetRelatedArtists(ctx, i.ID)
+		if err != nil {
+			fmt.Println("fuck3, ", err)
+			return nil, err
+		}
 
-	// this isn't going to work because I'll only have the top artist information, not their related artists
-	lvl2 := getLevel2Recs(ctx, &sumArtists, lvl1)
+		seriously := spotify.Artists{}
 
-	lib, err := spotify.GetUserLibraryTracks(ctx)
-	if err != nil {
-		panic(err)
+		for _, j := range *res {
+			seriously = append(seriously, j)
+		}
+
+		recs = append(recs, Recommendation{
+			Seed: i.Name,
+			SeedID: i.ID,
+			SeedResults: &seriously,
+		})
 	}
-	libMap := getArtistCountFromLib(&lib)
 
-	return removeUsersKnownArtists(ctx, libMap, lvl2)
+	logging.GetLogger(ctx).WithFields(logrus.Fields{
+		"recs_1": len(*recs[0].SeedResults),
+		"recs_2": len(*recs[1].SeedResults),
+		"recs_3": len(*recs[2].SeedResults),
+	}).Info("recommendation counts")
+
+	seeds := recs.GetSeeds()
+	sortedSeeds := sortablemap.GetSortableMap(*seeds)
+	sort.Sort(sort.Reverse(sortedSeeds))
+	topSeeds := sortedSeeds.Take(5)
+	seedIDs := []string{}
+
+	logging.GetLogger(ctx).WithField("top seeds", topSeeds).Info()
+	
+	for _, i := range topSeeds {
+		seedIDs = append(seedIDs, i.Key)
+	}
+
+	res, err := spotify.GetRecommendations(ctx, map[string][]string{spotify.KeySeedArtists: seedIDs})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func getArtistCountFromLib(lib *spotify.Tracks) *map[string]int {

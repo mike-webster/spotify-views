@@ -1,88 +1,26 @@
 <!DOCTYPE html>
 <html>
-    {{ template "header" }}
-    <script src="/static/css/sortable.min.js"></script>
-    <style>
-        body {
-            text-align: center;
-            margin: 0;
-        }
+    <head>
+        {{ template "header" }}
+        <script src="/static/css/sortable.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="/static/css/tracks.css" />
+        <style>
+            h1 {
+                text-align: center;
+            }
 
-        .row {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .col {
-            display: flex;
-            flex-direction: column;
-            flex-basis: 100%;
-            flex: 100%;
-        }
-
-        .col p {
-
-            padding: 2px 0px;
-        }
-
-        .flex-table p:nth-child(even) {
-            padding-right: 10px;
-        }
-
-        .flex-table p:nth-child(odd) {
-            padding-left: 10px;
-        }
-
-        .flex-table p {
-            margin: 0;
-        }
-
-        .row.header, .row.footer {
-            background-color: #1DB954;
-            margin: 0;
-            padding: 3px 0px;
-            color: #FFF;
-            min-height: 25px;
-        }
-
-        .flex-table .col:nth-child(even) {
-            text-align: left;
-        }
-
-        .flex-table input {
-            text-align: left;
-            color: inherit;
-            background-color: inherit;
-            border: none;
-            padding-left: 10px;
-            font-family: Ubuntu;
-        }
-
-        [data-item] {
-            display: flex;
-        }
-    </style>
+            p {
+                text-align: center;
+            }
+        </style>
+    </head>
     <body>
         {{ template "topnav" }}
         <div class="content">
-            <div style="width:100%; text-align:center;">
-                <h1>Recommendations</h1>
-                <br />
-                <div class="flex-table">
-                    <div class="row header">
-                        <div class="col"><p>Artist</p></div>
-                    </div>
-                    {{ range .Names }}
-                        <div class="row" data-item>
-                            <div class="col"><p>{{ . }}</p></div>
-                        </div>
-                    {{ end }}
-                </div>
-            </div>
+            <h1>Recommendations</h1>
+            <p>To receive fresh recommendations, reload the page.</p>
+            {{ template "tracks" . }}
         </div> 
         {{ template "footer" }}
     </body>
-    
 </html>

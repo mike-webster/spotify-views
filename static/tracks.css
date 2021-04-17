@@ -1,0 +1,39 @@
+.flex-table {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap; 
+    text-align: center;
+}
+
+.flex-table-item {
+    flex: 1 0 26%; 
+    margin: 5px;
+    padding: 5px;
+}
+
+.flex-table-item a {
+    color: black;
+}
+
+.album {
+    display: flex;
+    flex-direction: column;
+    border-color: #1DB954;
+    border-width: 5px;
+    border-style: solid;
+    height: 160px;
+    width: 160px;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-position: center center;
+    justify-content: center;
+    align-items: center;
+}
+
+.album-info {
+    width: 100%;
+}
+
+.album-info:last-child {
+    margin-top: 10px;
+}
