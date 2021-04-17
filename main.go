@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
@@ -92,5 +91,4 @@ func testMethod(ctx context.Context) {
 	// }
 
 	//fmt.Println(getData(ctx))
-	fmt.Println(strings.Join(*getData(ctx), ","))
 }
