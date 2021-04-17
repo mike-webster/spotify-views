@@ -21,6 +21,10 @@ h1 {
     font-size: 36px;
 }
 
+footer {
+    width: 100%;
+}
+
 .center-text {
     text-align: center;
     margin: auto;
