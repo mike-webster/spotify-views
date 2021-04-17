@@ -100,7 +100,7 @@ func handlerOauth(c *gin.Context) {
 
 	logger.WithFields(logrus.Fields{
 		"event": "user_login",
-		"id": info["id"],
+		"id":    info["id"],
 		"email": info["email"],
 	}).Info("user logged in successfully")
 
@@ -124,20 +124,12 @@ func handlerTopTracks(c *gin.Context) {
 		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// If the error is due to the token being expired, we will have automatically attempted
-			// to get a refresh token for the user.  If  that was successful, it will be returned
-			// as the error value.  Set the cookie to the new value and redirect the user back to the
-			// same path  to start the process again with the new token.
-			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-				return
-			}
-
-			logging.GetLogger(c).Info("couldnt refresh token for user")
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -145,20 +137,12 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	reqTracks := keys.GetContextValue(tracksResultsCtx, keys.ContextSpotifyResults)
-	if reqTracks == nil {
-		logger.Error("no tracks returned from spotify")
-		c.Status(500)
-		return
-	}
+	data := getTopTracksViewBag(trax)
 
-	tracks, ok := reqTracks.(spotify.Tracks)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks returned from spotify")
-		c.Status(500)
-		return
-	}
+	c.HTML(200, "newtops.tmpl", data)
+}
 
+func getTopTracksViewBag(trax *spotify.Tracks) interface{} {
 	type Result struct {
 		Key        string
 		Value      string
@@ -175,7 +159,7 @@ func handlerTopTracks(c *gin.Context) {
 	}
 
 	r := []Result{}
-	for _, i := range tracks {
+	for _, i := range *trax {
 		r = append(r, Result{
 			Key:        i.FindArtist(),
 			Value:      i.Name,
@@ -190,8 +174,7 @@ func handlerTopTracks(c *gin.Context) {
 		Opts:     []string{"Recent", "In Between", "Going Way Back"},
 		Results:  r,
 	}
-
-	c.HTML(200, "newtops.tmpl", data)
+	return data
 }
 
 func handlerTopArtists(c *gin.Context) {
@@ -396,23 +379,18 @@ func handlerTopArtistsGenres(c *gin.Context) {
 func handlerTopTracksGenres(c *gin.Context) {
 	logger := logging.GetLogger(c)
 
-	if tr := c.Query(queryStringTimeRange); len(tr) > 0 {
+	tr := c.Query(queryStringTimeRange)
+	if len(tr) > 0 {
 		mv := ddlOpts[tr]
 		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	reqCtx, err := spotify.GetTopTracks(c, topGenresTopTracksLimit)
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// If the error is due to the token being expired, we will have automatically attempted
-			// to get a refresh token for the user.  If  that was successful, it will be returned
-			// as the error value.  Set the cookie to the new value and redirect the user back to the
-			// same path  to start the process again with the new token.
-			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-				return
-			}
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
@@ -420,15 +398,7 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	reqTracks := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
-	tracks, ok := reqTracks.(spotify.Tracks)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
-		c.Status(500)
-		return
-	}
-
-	reqCtx, err = spotify.GetGenresForTracks(reqCtx, tracks.IDs())
+	reqCtx, err := spotify.GetGenresForTracks(c, trax.IDs())
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
 			// If the error is due to the token being expired, we will have automatically attempted
@@ -502,36 +472,21 @@ func handlerWordCloudData(c *gin.Context) {
 		c.Set(string(keys.ContextSpotifyTimeRange), tr)
 	}
 
-	reqCtx, err := spotify.GetTopTracks(c, wordCloudTopTracksLimit)
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
 	if err != nil {
 		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// If the error is due to the token being expired, we will have automatically attempted
-			// to get a refresh token for the user.  If  that was successful, it will be returned
-			// as the error value.  Set the cookie to the new value and redirect the user back to the
-			// same path  to start the process again with the new token.
-			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopTracks)
-				return
-			}
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
 		}
 
 		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
-	logger.Debug("got top tracks")
-
-	reqTracks := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
-	tracks, ok := reqTracks.(spotify.Tracks)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks from spotify")
-		c.Status(500)
-		return
-	}
 
 	searches := []genius.LyricSearch{}
-	for _, i := range tracks {
+	for _, i := range *trax {
 		searches = append(searches, genius.LyricSearch{
 			Artist: i.Artists[0].Name,
 			Track:  i.Name,
@@ -583,7 +538,7 @@ func handlerLogin(c *gin.Context) {
 
 	logging.GetLogger(c).WithFields(logrus.Fields{
 		"event": "redirect_for_oauth",
-		"url": spotifyURL}).Debug("auth redirect")
+		"url":   spotifyURL}).Debug("auth redirect")
 
 	c.Redirect(http.StatusTemporaryRedirect, spotifyURL)
 }
@@ -600,7 +555,7 @@ func handlerRecommendations(c *gin.Context) {
 		return
 	}
 
-	logging.GetLogger(c).WithField("event", "image_check" ).Info(recs.Tracks[0].Album.Images[0].URL)
+	logging.GetLogger(c).WithField("event", "image_check").Info(recs.Tracks[0].Album.Images[0].URL)
 
 	c.HTML(200, "recommendations.tmpl", *recs)
 }
@@ -612,23 +567,15 @@ func handlerTest(c *gin.Context) {
 		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	tracksResultsCtx, err := spotify.GetTopTracks(c, topTracksLimit)
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
 	if err != nil {
-		logging.GetLogger(c).WithError(err).Error()
-		c.Status(500)
-		return
-	}
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
+		}
 
-	reqTracks := keys.GetContextValue(tracksResultsCtx, keys.ContextSpotifyResults)
-	if reqTracks == nil {
-		logging.GetLogger(c).Error("no tracks returned from spotify")
-		c.Status(500)
-		return
-	}
-
-	tracks, ok := reqTracks.(spotify.Tracks)
-	if !ok {
-		logging.GetLogger(c).WithField("type", reflect.TypeOf(reqTracks)).Error("couldnt parse tracks returned from spotify")
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve top tracks from spotify")
 		c.Status(500)
 		return
 	}
@@ -649,7 +596,7 @@ func handlerTest(c *gin.Context) {
 	}
 
 	r := []Result{}
-	for _, i := range tracks {
+	for _, i := range *trax {
 		r = append(r, Result{
 			Key:        i.FindArtist(),
 			Value:      i.Name,
@@ -831,8 +778,8 @@ func addToCache(cache map[string]string, artists *spotify.Artists) map[string]st
 }
 
 type Recommendation struct {
-	Seed string
-	SeedID string
+	Seed        string
+	SeedID      string
 	SeedResults *spotify.Artists
 }
 
@@ -915,8 +862,8 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 		}
 
 		recs = append(recs, Recommendation{
-			Seed: i.Name,
-			SeedID: i.ID,
+			Seed:        i.Name,
+			SeedID:      i.ID,
 			SeedResults: &seriously,
 		})
 	}
@@ -934,7 +881,7 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	seedIDs := []string{}
 
 	logging.GetLogger(ctx).WithField("top seeds", topSeeds).Info()
-	
+
 	for _, i := range topSeeds {
 		seedIDs = append(seedIDs, i.Key)
 	}

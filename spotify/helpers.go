@@ -12,9 +12,9 @@ func getPairs(m map[string]int32) Pairs {
 type TimeFrame int
 
 const (
-    TFShort TimeFrame = iota
-    TFMedium
-    TFLong
+	TFShort TimeFrame = iota
+	TFMedium
+	TFLong
 )
 
 func (t TimeFrame) Value() string {
@@ -27,5 +27,16 @@ func (t TimeFrame) Value() string {
 		return "long_term"
 	default:
 		return ""
+	}
+}
+
+func GetTimeFrame(str string) TimeFrame {
+	switch str {
+	case "medium_term":
+		return TFMedium
+	case "long_term":
+		return TFLong
+	default:
+		return TFShort
 	}
 }

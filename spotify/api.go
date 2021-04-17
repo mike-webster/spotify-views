@@ -150,18 +150,6 @@ func GetRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	return getRelatedArtists(ctx, id)
 }
 
-// GetTopTracks will perform a search for the user's top tracks with the
-// provided limit.
-func GetTopTracks(ctx context.Context, limit int32) (context.Context, error) {
-	tracks, err := getTopTracks(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	c := context.WithValue(ctx, keys.ContextSpotifyResults, tracks)
-	return c, nil
-}
-
 // GetTopTracksForArtist will request the artist's most popular tracks from spotify
 func GetTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error) {
 	return getTopTracksForArtist(ctx, id)
