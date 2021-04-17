@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"time"
+	"strconv"
 
 	redis "github.com/go-redis/redis/v8"
 	"github.com/mike-webster/spotify-views/keys"
@@ -231,6 +232,19 @@ func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte
 				return nil, ErrTokenExpired("")
 			}
 			return nil, ErrTokenExpired(tok)
+		} else if resp.StatusCode == 429 {
+			wait := 5
+			hdr := resp.Header["Retry-Afer"]
+			if len(hdr) > 0 {
+				wait, err = strconv.Atoi(hdr[0])
+				if err != nil {
+					panic(err)
+				}
+			}
+			logger.WithField("event", "spotify_rate_limited").Error(fmt.Sprint("waiting ", wait, " seconds"))
+
+			time.Sleep(time.Duration(wait) * time.Second)
+			makeRequest(ctx, req, useCache)
 		}
 
 		logger.WithFields(logrus.Fields{

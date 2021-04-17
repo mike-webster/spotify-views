@@ -8,11 +8,7 @@ type Track struct {
 	Name    string            `json:"name"`
 	URI     string            `json:"uri"`
 	ID      string            `json:"id"`
-	Artists []struct {
-		Link string `json:"href"`
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"artists"`
+	Artists []Artist `json:"artists"`
 	Album Album `json:"album"`
 }
 
@@ -44,7 +40,8 @@ func (t *Track) FindArtist() string {
 
 func (t *Track) FindImage() *Image {
 	if len(t.Album.Images) < 1 {
-		return nil
+		//return nil
+		return &Image{URL: ""}
 	}
 
 	if len(t.Album.Images) == 1 {
@@ -52,4 +49,12 @@ func (t *Track) FindImage() *Image {
 	}
 
 	return &t.Album.Images[1]
+}
+
+func (t *Track) TrySpotifyURL() string {
+	if len(t.Links) > 0 {
+		return t.Links["spotify"]
+	}
+
+	return ""
 }

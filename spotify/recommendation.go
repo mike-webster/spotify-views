@@ -13,12 +13,7 @@ import (
 
 // Recommendation holds information about a track that spotify is recommending
 type Recommendation struct {
-	Tracks []struct {
-		ID      string   `json:"id"`
-		Name    string   `json:"name"`
-		Link    string   `json:"href"`
-		Artists []string `json:"artists"`
-	} `json:"tracks"`
+	Tracks []Track `json:"tracks"`
 	Seeds []struct {
 		ID   string `json:"id"`
 		Link string `json:"href"`
@@ -70,17 +65,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	}
 
 	type tApiResponse struct {
-		Tracks []struct {
-			Artists []struct {
-				Link string `json:"href"`
-				ID   string `json:"id"`
-				Name string `json:"name"`
-			} `json:"artists"`
-			Duration int64  `json:"duration_ms"`
-			Link     string `json:"href"`
-			ID       string `json:"id"`
-			Name     string `json:"name"`
-		} `json:"tracks"`
+		Tracks []Track `json:"tracks"`
 		Seeds []struct {
 			InitialPoolSize    int64  `json:"initialPoolSize"`
 			AfterFilteringSize int64  `json:"afterFilteringSize"`
@@ -96,24 +81,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 		return nil, err
 	}
 
-	ret := Recommendation{}
-	for _, i := range rsp.Tracks {
-		artists := []string{}
-		for _, j := range i.Artists {
-			artists = append(artists, j.Name)
-		}
-		ret.Tracks = append(ret.Tracks, struct {
-			ID      string   "json:\"id\""
-			Name    string   "json:\"name\""
-			Link    string   "json:\"href\""
-			Artists []string "json:\"artists\""
-		}{
-			ID:      i.ID,
-			Name:    i.Name,
-			Link:    i.Link,
-			Artists: artists,
-		})
-	}
+	ret := Recommendation{Tracks: rsp.Tracks}
 
 	for _, i := range rsp.Seeds {
 		ret.Seeds = append(ret.Seeds, struct {
