@@ -169,7 +169,7 @@ func (t *Tracks) GetGenres(ctx context.Context) (*sortablemap.Map, error) {
 	}
 
 	// go through artists to collect genres
-	artists, err := getArtists(ctx, aids)
+	artists, err := GetArtists(ctx, aids)
 	if err != nil {
 		return nil, err
 	}

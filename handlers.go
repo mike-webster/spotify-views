@@ -298,50 +298,20 @@ func handlerUserLibraryTempo(c *gin.Context) {
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
-	logger := logging.GetLogger(c)
-	var ctx context.Context
-
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
 		mv := ddlOpts[tr]
 		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	artists, err := spotify.GetTopArtists(ctx)
+	artists, err := spotify.GetTopArtists(c)
 	if err != nil {
-		logger.WithError(err).Error("couldnt retrieve top artists from spotify")
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve top artists from spotify")
 		c.Status(500)
 		return
 	}
 
-	reqCtx, err := spotify.GetGenresForArtists(ctx, artists.IDs())
-	if err != nil {
-		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
-			// If the error is due to the token being expired, we will have automatically attempted
-			// to get a refresh token for the user.  If  that was successful, it will be returned
-			// as the error value.  Set the cookie to the new value and redirect the user back to the
-			// same path  to start the process again with the new token.
-			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-				c.Redirect(http.StatusTemporaryRedirect, PathTopArtistGenres)
-				return
-			}
-
-			logging.GetLogger(c).Info("couldnt refresh token for user")
-		}
-
-		logger.WithError(err).Error("couldnt retrieve genres for artists from spotify")
-		c.Status(500)
-		return
-	}
-
-	reqGenres := keys.GetContextValue(reqCtx, keys.ContextSpotifyResults)
-	genres, ok := reqGenres.(spotify.Pairs)
-	if !ok {
-		logger.WithField("type", reflect.TypeOf(reqGenres)).Error("couldnt parse genres from spotify")
-		c.Status(500)
-		return
-	}
+	genres := artists.GetGenres(c)
 
 	type Result struct {
 		Key        string
@@ -360,7 +330,7 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range genres {
+	for _, i := range *genres {
 		r = append(r, Result{
 			Key:   i.Key,
 			Value: fmt.Sprint("( ", i.Value, ")"),

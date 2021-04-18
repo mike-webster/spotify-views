@@ -22,10 +22,6 @@ var (
 	EventNon200Response = "non_200_response"
 )
 
-func GetArtist(ctx context.Context, id string) (*Artist, error) {
-	return getArtist(ctx, id)
-}
-
 func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	if len(ids) > 100 {
 		// we need pagination
@@ -52,35 +48,6 @@ func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 	}
 
 	return af, nil
-}
-
-// GetGenres will retrieve a list of recognized genres from spotify
-func GetGenres(ctx context.Context) (interface{}, error) {
-	return getGenres(ctx)
-}
-
-// GetGenresForArtists will perform a search for the provided artists IDs
-// and then researches the genres assosciated with each one. A mapping
-// of genres to occurrences is returned.
-func GetGenresForArtists(ctx context.Context, ids []string) (context.Context, error) {
-	ret := map[string]int32{}
-	artists, err := getArtists(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range *artists {
-		for _, ii := range i.Genres {
-			if _, ok := ret[ii]; ok {
-				ret[ii]++
-			} else {
-				ret[ii] = 1
-			}
-		}
-	}
-
-	c := context.WithValue(ctx, keys.ContextSpotifyResults, getPairs(ret))
-	return c, nil
 }
 
 // GetTopArtists will perform a search for the user's top artists

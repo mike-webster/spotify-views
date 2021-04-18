@@ -10,6 +10,7 @@ import (
 
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
+	"github.com/mike-webster/spotify-views/sortablemap"
 )
 
 // Artist represents a spotify Artist
@@ -24,6 +25,39 @@ type Artist struct {
 
 // Artists is a collection of spotify Artist
 type Artists []Artist
+
+// ----
+// API
+// ----
+
+func GetArtist(ctx context.Context, id string) (*Artist, error) {
+	req, err := parseRequestForGetArtist(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseResponseForGetArtist(body)
+}
+
+func GetArtists(ctx context.Context, ids []string) (*Artists, error) {
+	req, err := parseRequestForGetArtists(ctx, ids)
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseResponseForGetArtists(body)
+}
+
+// ----
+// Members
+// ----
 
 // EmbeddedPlayer  will return the html to use for rendering the embedded spotify
 // player iframe
@@ -40,7 +74,71 @@ func (a *Artists) IDs() []string {
 	return ret
 }
 
-func getArtist(ctx context.Context, id string) (*Artist, error) {
+func (a *Artists) GetGenres(ctx context.Context) *sortablemap.Map {
+	ret := map[string]int{}
+
+	for _, i := range *a {
+		for _, ii := range i.Genres {
+			if _, ok := ret[ii]; ok {
+				ret[ii]++
+			} else {
+				ret[ii] = 1
+			}
+		}
+	}
+
+	sm := sortablemap.GetSortableMap(ret)
+	return &sm
+}
+
+// ----
+// Helpers
+// ----
+
+func parseRequestForGetArtists(ctx context.Context, ids []string) (*http.Request, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	return req, nil
+}
+
+func parseResponseForGetArtists(body *[]byte) (*Artists, error) {
+	type tempResp struct {
+		Items Artists `json:"artists"`
+	}
+
+	var ret tempResp
+
+	err := json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
+}
+
+func parseResponseForGetArtist(body *[]byte) (*Artist, error) {
+	var ret Artist
+
+	err := json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
+}
+
+func parseRequestForGetArtist(ctx context.Context, id string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -55,53 +153,7 @@ func getArtist(ctx context.Context, id string) (*Artist, error) {
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req, true)
-	if err != nil {
-		return nil, err
-	}
-
-	var ret Artist
-
-	err = json.Unmarshal(*body, &ret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ret, nil
-}
-
-func getArtists(ctx context.Context, ids []string) (*Artists, error) {
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return nil, errors.New("no access token provided")
-	}
-
-	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-
-	body, err := makeRequest(ctx, req, true)
-	if err != nil {
-		return nil, err
-	}
-
-	type tempResp struct {
-		Items Artists `json:"artists"`
-	}
-
-	var ret tempResp
-
-	err = json.Unmarshal(*body, &ret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ret.Items, nil
+	return req, nil
 }
 
 func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
