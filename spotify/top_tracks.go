@@ -101,24 +101,3 @@ func getTracks(ctx context.Context, ids []string) (*Tracks, error) {
 
 	return &ret.Items, nil
 }
-
-func getUserLibraryTracks(ctx context.Context) (Tracks, error) {
-	logger := logging.GetLogger(ctx)
-	url := "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
-	more := true
-	ret := []Track{}
-	for more {
-		t, newUrl, tot, err := getChunkOfUserLibraryTracks(ctx, url)
-		if err != nil {
-			logger.Warn(err.Error())
-			more = false
-		}
-		url = newUrl
-
-		ret = append(ret, t...)
-		if tot == len(ret) {
-			more = false
-		}
-	}
-	return ret, nil
-}

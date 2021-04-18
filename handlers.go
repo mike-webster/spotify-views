@@ -244,7 +244,6 @@ func handlerTopArtists(c *gin.Context) {
 
 func handlerUserLibraryTempo(c *gin.Context) {
 	logging.GetLogger(c).WithField("event", "webby_test").Debug()
-	//t, err := spotify.GetUserLibraryTracks(c)
 	t, err := spotify.GetSavedTracks(c)
 	if err != nil {
 		logging.GetLogger(c).WithError(err).Error()
