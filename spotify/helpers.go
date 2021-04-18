@@ -1,13 +1,20 @@
 package spotify
 
-func getPairs(m map[string]int32) Pairs {
-	ret := Pairs{}
-	for k, v := range m {
-		ret = append(ret, Pair{Key: k, Value: v})
-	}
+type ErrTokenExpired string
 
-	return ret
+func (e ErrTokenExpired) Error() string {
+	return string(e)
 }
+
+var (
+
+	// EventNeedsRefreshToken holds the key to log when a user needs a to
+	// refresh their session
+	EventNeedsRefreshToken = "token_needs_refresh"
+	// EventNon200Response holds the key to log when an external request
+	// comes back with a non-200 response
+	EventNon200Response = "non_200_response"
+)
 
 type TimeFrame int
 

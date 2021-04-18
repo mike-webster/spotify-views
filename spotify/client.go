@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"time"
 	"strconv"
+	"time"
 
 	redis "github.com/go-redis/redis/v8"
 	"github.com/mike-webster/spotify-views/keys"
@@ -145,39 +145,6 @@ func getGenres(ctx context.Context) ([]string, error) {
 	}
 
 	return rsp.Genres, nil
-}
-
-func getUserInfo(ctx context.Context) (map[string]string, error) {
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return map[string]string{}, errors.New("no access token provided")
-	}
-
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
-	if err != nil {
-		return map[string]string{}, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-
-	body, err := makeRequest(ctx, req, true)
-	if err != nil {
-		return map[string]string{}, err
-	}
-
-	type userResponse struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
-	}
-	ret := userResponse{}
-	err = json.Unmarshal(*body, &ret)
-	if err != nil {
-		return map[string]string{}, err
-	}
-	return map[string]string{
-		"id":    ret.ID,
-		"email": ret.Email,
-	}, nil
 }
 
 func makeRequest(ctx context.Context, req *http.Request, useCache bool) (*[]byte, error) {

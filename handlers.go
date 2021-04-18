@@ -71,25 +71,16 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	userResultCtx, err := spotify.GetUserInfo(c)
+	u, err := spotify.GetUser(c)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve userid from spotify")
 		c.Status(500)
 		return
 	}
 
-	ctxResults := keys.GetContextValue(userResultCtx, keys.ContextSpotifyResults)
-	if ctxResults == nil {
-		logger.Error("no id returned from query")
-		c.Status(500)
-		return
-	}
-
-	info := ctxResults.(map[string]string)
-
-	_, err = data.SaveUser(c, info["id"], info["email"])
+	_, err = data.SaveUser(c, u.ID, u.Email)
 	if err != nil {
-		logger.WithField("info", info).WithError(err).Error("couldnt save user")
+		logger.WithField("info", *u).WithError(err).Error("couldnt save user")
 		c.Status(500)
 		return
 	}
@@ -100,11 +91,11 @@ func handlerOauth(c *gin.Context) {
 
 	logger.WithFields(logrus.Fields{
 		"event": "user_login",
-		"id":    info["id"],
-		"email": info["email"],
+		"id":    u.ID,
+		"email": u.Email,
 	}).Info("user logged in successfully")
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(info["id"]), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	val, err := c.Cookie("redirect_url")
