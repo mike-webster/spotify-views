@@ -12,6 +12,10 @@ import (
 	"github.com/mike-webster/spotify-views/logging"
 )
 
+const (
+	audioFeaturesPageLimit = 100
+)
+
 type AudioFeature struct {
 	ID               string  `json:"id"`
 	URI              string  `json:"uri"`
@@ -32,6 +36,48 @@ type AudioFeature struct {
 
 type AudioFeatures []AudioFeature
 
+// ----
+// API
+// ----
+
+func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
+	ret := AudioFeatures{}
+
+	for i := 0; i < len(ids); i += audioFeaturesPageLimit {
+		begin, ending := chunkRangeAudioFeatures(i, &ids)
+		af, err := getAudioFeatures(ctx, ids[begin:ending])
+		if err != nil {
+			return nil, err
+		}
+
+		ret = append(ret, *af...)
+	}
+
+	return &ret, nil
+}
+
+// chunkRangeAudioFeatures helps determine the pagination to use
+// while iterating through ids to retrieve additional "audio feature"
+// information.
+// params:
+// - start: the beginning of the current iteration
+// - ids: a reference to the ids being iterated
+func chunkRangeAudioFeatures(start int, ids *[]string) (int, int) {
+	if len(*ids) <= audioFeaturesPageLimit {
+		return 0, len(*ids)
+	}
+
+	if start > audioFeaturesPageLimit {
+		return 0, len(*ids)
+	}
+
+	return start, start + audioFeaturesPageLimit
+}
+
+// ----
+// Members
+// ----
+
 func (af AudioFeature) String() string {
 	str, err := json.Marshal(af)
 	if err != nil {
@@ -47,6 +93,10 @@ func (af *AudioFeatures) String() []string {
 	}
 	return ret
 }
+
+// ----
+// Helpers
+// ----
 
 func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
 	logger := logging.GetLogger(ctx)

@@ -14,11 +14,30 @@ import (
 // Recommendation holds information about a track that spotify is recommending
 type Recommendation struct {
 	Tracks []Track `json:"tracks"`
-	Seeds []struct {
+	Seeds  []struct {
 		ID   string `json:"id"`
 		Link string `json:"href"`
 		Type string `json:"type"`
 	} `json:"seeds"`
+}
+
+// ----
+// API
+// ---
+
+// GetRecommendations will perform a request to  retrieve spotify's recommendations for the user
+func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
+	req, err := parseRecommendationsRequest(ctx, seeds)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseReommendationsResponse(body)
 }
 
 func getRecommendationsURL(ctx context.Context, seeds map[string][]string) string {
@@ -45,7 +64,7 @@ func getRecommendationsURL(ctx context.Context, seeds map[string][]string) strin
 	return fmt.Sprint("https://api.spotify.com/v1/recommendations", qs)
 }
 
-func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
+func parseRecommendationsRequest(ctx context.Context, seeds map[string][]string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
 		return nil, errors.New("no access token provided")
@@ -59,14 +78,13 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
 
-	body, err := makeRequest(ctx, req, false)
-	if err != nil {
-		return nil, err
-	}
+	return req, nil
+}
 
+func parseReommendationsResponse(body *[]byte) (*Recommendation, error) {
 	type tApiResponse struct {
 		Tracks []Track `json:"tracks"`
-		Seeds []struct {
+		Seeds  []struct {
 			InitialPoolSize    int64  `json:"initialPoolSize"`
 			AfterFilteringSize int64  `json:"afterFilteringSize"`
 			Link               string `json:"href"`
@@ -76,7 +94,7 @@ func getRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	}
 
 	var rsp tApiResponse
-	err = json.Unmarshal(*body, &rsp)
+	err := json.Unmarshal(*body, &rsp)
 	if err != nil {
 		return nil, err
 	}

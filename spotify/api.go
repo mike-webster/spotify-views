@@ -22,39 +22,6 @@ var (
 	EventNon200Response = "non_200_response"
 )
 
-func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
-	if len(ids) > 100 {
-		// we need pagination
-		ret := AudioFeatures{}
-		for i := 0; i < len(ids); i += 100 {
-			b := i
-			e := i + 100
-			if e > len(ids) {
-				e = len(ids)
-			}
-			cids := ids[b:e]
-			af, err := getAudioFeatures(ctx, cids)
-			if err != nil {
-				return nil, err
-			}
-			ret = append(ret, *af...)
-		}
-		return &ret, nil
-	}
-
-	af, err := getAudioFeatures(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	return af, nil
-}
-
-// GetRecommendations will perform a request to  retrieve spotify's recommendations for the user
-func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
-	return getRecommendations(ctx, seeds)
-}
-
 // GetUserInfo will perform a request to retrieve the user's ID and email.
 func GetUserInfo(ctx context.Context) (context.Context, error) {
 	info, err := getUserInfo(ctx)
