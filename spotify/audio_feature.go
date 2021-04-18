@@ -3,13 +3,11 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
-	"github.com/mike-webster/spotify-views/logging"
 )
 
 const (
@@ -56,6 +54,14 @@ func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 	return &ret, nil
 }
 
+// ----
+// Members
+// ----
+
+// ----
+// Helpers
+// ----
+
 // chunkRangeAudioFeatures helps determine the pagination to use
 // while iterating through ids to retrieve additional "audio feature"
 // information.
@@ -67,47 +73,31 @@ func chunkRangeAudioFeatures(start int, ids *[]string) (int, int) {
 		return 0, len(*ids)
 	}
 
-	if start > audioFeaturesPageLimit {
-		return 0, len(*ids)
+	if start > len(*ids) {
+		return 0, audioFeaturesPageLimit
 	}
 
 	return start, start + audioFeaturesPageLimit
 }
 
-// ----
-// Members
-// ----
-
-func (af AudioFeature) String() string {
-	str, err := json.Marshal(af)
-	if err != nil {
-		return ""
-	}
-	return string(str)
-}
-
-func (af *AudioFeatures) String() []string {
-	ret := []string{}
-	for _, i := range *af {
-		ret = append(ret, i.String())
-	}
-	return ret
-}
-
-// ----
-// Helpers
-// ----
-
 func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error) {
-	logger := logging.GetLogger(ctx)
+	req, err := parseRequestForAudioFeatures(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseResponseForAudioFeatures(body)
+}
+
+func parseRequestForAudioFeatures(ctx context.Context, ids []string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
-	}
-
-	if len(ids) > 100 {
-		logger.WithField("count", len(ids)).Warn("too many tracks passed, reducing to the first 100")
-		ids = ids[:100]
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := fmt.Sprint("https://api.spotify.com/v1/audio-features?ids=", strings.Join(ids, ","))
@@ -117,20 +107,17 @@ func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 	}
 
 	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	return req, nil
+}
 
-	body, err := makeRequest(ctx, req, true)
-	if err != nil {
-		return nil, err
-	}
-
+func parseResponseForAudioFeatures(body *[]byte) (*AudioFeatures, error) {
 	type tempResp struct {
 		Items AudioFeatures `json:"audio_features"`
 	}
 
 	ret := tempResp{}
-	err = json.Unmarshal(*body, &ret)
+	err := json.Unmarshal(*body, &ret)
 	if err != nil {
-		logger.WithField("body", string(*body)).Error(err.Error())
 		return nil, err
 	}
 

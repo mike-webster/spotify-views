@@ -78,6 +78,24 @@ func checkCache(ctx context.Context, key string) (*[]byte, error) {
 	return &bytes, nil
 }
 
+// TODO: cleanup
+type item struct {
+	DateSaved time.Time `json:"added_at"`
+	Track     Track     `json:"track"`
+}
+
+type items []item
+
+func (i items) Tracks() Tracks {
+	ret := Tracks{}
+	for _, j := range i {
+		ret = append(ret, j.Track)
+	}
+	return ret
+}
+
+// ENDTODO
+
 func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, string, int, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
