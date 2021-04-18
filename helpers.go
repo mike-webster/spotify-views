@@ -166,8 +166,6 @@ var (
 func runServer(ctx context.Context) {
 	r := gin.New()
 	r.Use(recovery)
-	//r.Use(requestLogger)
-	//r.Use(redisClient)
 	r.Use(setContextLogger)
 	r.Use(setTokens)
 	r.Use(setEnv)
@@ -209,7 +207,7 @@ func refreshToken(ctx context.Context) (string, error) {
 
 	requestCtx := context.WithValue(ctx, keys.ContextSpotifyRefreshToken, refreshToken)
 	tok := spotify.Token{
-		Access: fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)),
+		Access:  fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)),
 		Refresh: fmt.Sprint(keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)),
 	}
 	success, err := tok.RefreshMe(requestCtx)

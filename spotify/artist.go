@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -106,6 +105,7 @@ func (a *Artist) FindImage() *Image {
 		return nil
 	}
 
+	// why do I prefer the first one only when there's one?
 	if len(a.Images) == 1 {
 		return &a.Images[0]
 	}
@@ -134,7 +134,7 @@ func (a *Artist) GetRelatedArtists(ctx context.Context) (*Artists, error) {
 func parseRequestForGetTopArtists(ctx context.Context) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no tok")
 	}
 
 	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
@@ -173,7 +173,7 @@ func parseResponseForGetTopArtists(body *[]byte) (*Artists, error) {
 func parseRequestForGetArtists(ctx context.Context, ids []string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := fmt.Sprint("https://api.spotify.com/v1/artists?ids=", strings.Join(ids, ","))
@@ -216,7 +216,7 @@ func parseResponseForGetArtist(body *[]byte) (*Artist, error) {
 func parseRequestForGetArtist(ctx context.Context, id string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := fmt.Sprint("https://api.spotify.com/v1/artists/", id)
@@ -234,7 +234,7 @@ func parseRequestForGetArtist(ctx context.Context, id string) (*http.Request, er
 func parseRequestForRelatedArtists(ctx context.Context, id string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := "https://api.spotify.com/v1/artists/%v/related-artists"

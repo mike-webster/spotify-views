@@ -1,5 +1,7 @@
 package sortablemap
 
+import "errors"
+
 // Item represents an element in a SortableMap
 type Item struct {
 	Key   string
@@ -54,6 +56,15 @@ func (m Map) Take(limit int) Map {
 		ret = append(ret, Item{Key: ii.Key, Value: ii.Value})
 	}
 	return ret
+}
+
+func (m Map) Value(k string) (int, error) {
+	for _, i := range m {
+		if i.Key == k {
+			return int(i.Value), nil
+		}
+	}
+	return 0, errors.New("404")
 }
 
 // Item represents an element in a SortableMap
