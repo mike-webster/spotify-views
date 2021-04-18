@@ -584,7 +584,7 @@ func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int
 		}
 		artists[iName]++
 
-		res, err := spotify.GetRelatedArtists(ctx, i.ID)
+		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
 			fmt.Println("fuck3, ", err)
 			return nil, ctx
@@ -803,7 +803,7 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	// we're iterating through each of the user's top artists to
 	// get their related artists
 	for _, i := range sumArtists {
-		res, err := spotify.GetRelatedArtists(ctx, i.ID)
+		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
 			fmt.Println("fuck3, ", err)
 			return nil, err

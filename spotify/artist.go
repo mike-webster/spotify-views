@@ -101,6 +101,32 @@ func (a *Artists) GetGenres(ctx context.Context) *sortablemap.Map {
 	return &sm
 }
 
+func (a *Artist) FindImage() *Image {
+	if len(a.Images) < 1 {
+		return nil
+	}
+
+	if len(a.Images) == 1 {
+		return &a.Images[0]
+	}
+
+	return &a.Images[1]
+}
+
+func (a *Artist) GetRelatedArtists(ctx context.Context) (*Artists, error) {
+	req, err := parseRequestForRelatedArtists(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseResponseForRelatedArtists(body)
+}
+
 // ----
 // Helpers
 // ----
@@ -205,6 +231,57 @@ func parseRequestForGetArtist(ctx context.Context, id string) (*http.Request, er
 	return req, nil
 }
 
+func parseRequestForRelatedArtists(ctx context.Context, id string) (*http.Request, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := "https://api.spotify.com/v1/artists/%v/related-artists"
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(url, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	return req, nil
+}
+
+func parseResponseForRelatedArtists(body *[]byte) (*Artists, error) {
+	type tRes struct {
+		Artists []struct {
+			Followers struct {
+				Total int64 `json:"total"`
+			} `json:"followers"`
+			Genres     []string `json:"genres"`
+			Link       string   `json:"href"`
+			ID         string   `json:"id"`
+			Name       string   `json:"name"`
+			Popularity int32    `json:"popularity"`
+			Type       string   `json:"type"`
+		} `json:"artists"`
+	}
+
+	rsp := tRes{}
+	err := json.Unmarshal(*body, &rsp)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := Artists{}
+	for _, i := range rsp.Artists {
+		ret = append(ret, Artist{
+			Genres:     i.Genres,
+			ID:         i.ID,
+			Name:       i.Name,
+			Popularity: i.Popularity,
+		})
+	}
+
+	return &ret, nil
+}
+
 func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
@@ -256,16 +333,4 @@ func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	}
 
 	return &ret, nil
-}
-
-func (a *Artist) FindImage() *Image {
-	if len(a.Images) < 1 {
-		return nil
-	}
-
-	if len(a.Images) == 1 {
-		return &a.Images[0]
-	}
-
-	return &a.Images[1]
 }

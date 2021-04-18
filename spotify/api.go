@@ -55,12 +55,6 @@ func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return getRecommendations(ctx, seeds)
 }
 
-// GetRelatedArtists will  perform a request for artists  that spotify believes to be similar
-// to the  artist with  the provided ID
-func GetRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
-	return getRelatedArtists(ctx, id)
-}
-
 // GetUserInfo will perform a request to retrieve the user's ID and email.
 func GetUserInfo(ctx context.Context) (context.Context, error) {
 	info, err := getUserInfo(ctx)
