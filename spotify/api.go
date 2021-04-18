@@ -50,16 +50,6 @@ func GetAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 	return af, nil
 }
 
-// GetTopArtists will perform a search for the user's top artists
-func GetTopArtists(ctx context.Context) (*Artists, error) {
-	artists, err := getTopArtists(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return artists, nil
-}
-
 // GetRecommendations will perform a request to  retrieve spotify's recommendations for the user
 func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recommendation, error) {
 	return getRecommendations(ctx, seeds)

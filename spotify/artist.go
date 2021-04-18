@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
-	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/sortablemap"
 )
 
@@ -55,6 +54,17 @@ func GetArtists(ctx context.Context, ids []string) (*Artists, error) {
 	return parseResponseForGetArtists(body)
 }
 
+func GetTopArtists(ctx context.Context) (*Artists, error) {
+	req, err := parseRequestForGetTopArtists(ctx)
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseResponseForGetTopArtists(body)
+}
+
 // ----
 // Members
 // ----
@@ -94,6 +104,45 @@ func (a *Artists) GetGenres(ctx context.Context) *sortablemap.Map {
 // ----
 // Helpers
 // ----
+
+func parseRequestForGetTopArtists(ctx context.Context) (*http.Request, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
+	tframe := TFShort
+	if val, ok := tr.(string); ok {
+		tframe = GetTimeFrame(val)
+	}
+
+	// TODO: make this limit a param
+	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
+	url += fmt.Sprint("&time_range=", tframe.Value())
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	return req, nil
+}
+
+func parseResponseForGetTopArtists(body *[]byte) (*Artists, error) {
+	type tempResp struct {
+		Items Artists `json:"items"`
+	}
+
+	var ret tempResp
+	err := json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret.Items, nil
+}
 
 func parseRequestForGetArtists(ctx context.Context, ids []string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
@@ -207,57 +256,6 @@ func getRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	}
 
 	return &ret, nil
-}
-
-func getTopArtists(ctx context.Context) (*Artists, error) {
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return nil, errors.New("no access token provided")
-	}
-
-	tr := keys.GetContextValue(ctx, keys.ContextSpotifyTimeRange)
-	strRange := ""
-	if tr != nil {
-		castRange, ok := tr.(string)
-		if !ok {
-
-			if err, ok := tr.(error); ok {
-				// the value wasn't in the context as a string
-				logging.GetLogger(ctx).WithError(err).Info("couldnt find time range in context")
-			}
-		}
-		strRange = castRange
-	}
-
-	// TODO: make this limit a param
-	url := "https://api.spotify.com/v1/me/top/artists?limit=25"
-	if len(strRange) > 0 {
-		url += fmt.Sprint("&time_range=", strRange)
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-	body, err := makeRequest(ctx, req, true)
-	if err != nil {
-		return nil, err
-	}
-
-	type tempResp struct {
-		Items Artists `json:"items"`
-	}
-
-	var ret tempResp
-	err = json.Unmarshal(*body, &ret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ret.Items, nil
 }
 
 func (a *Artist) FindImage() *Image {
