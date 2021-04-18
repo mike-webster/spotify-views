@@ -40,6 +40,14 @@ func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 	return parseReommendationsResponse(body)
 }
 
+// ----
+// Members
+// ----
+
+// ----
+// Helpers
+// ----
+
 func getRecommendationsURL(ctx context.Context, seeds map[string][]string) string {
 	qs := "?"
 	if artists, ok := seeds[KeySeedArtists]; ok {
