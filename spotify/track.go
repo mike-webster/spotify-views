@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/mike-webster/spotify-views/keys"
+	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/sortablemap"
 )
 
@@ -47,6 +48,40 @@ func GetTopTracks(ctx context.Context, timeframe TimeFrame) (*Tracks, error) {
 	return parseTopTrackResponse(body)
 }
 
+func GetTopTracksForArtist(ctx context.Context, id string) (*Tracks, error) {
+	req, err := getTopTracksForArtistRequest(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := makeRequest(ctx, req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseTopTracksForArtistResponse(body)
+}
+
+func GetSavedTracks(ctx context.Context) (*Tracks, error) {
+	url := "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
+	more := true
+	ret := Tracks{}
+	for more {
+		t, newUrl, tot, err := getChunkOfUserLibraryTracks(ctx, url)
+		if err != nil {
+			logging.GetLogger(ctx).Warn(err.Error())
+			more = false
+		}
+		url = newUrl
+
+		ret = append(ret, t...)
+		if tot == len(ret) {
+			more = false
+		}
+	}
+	return &ret, nil
+}
+
 // ----
 // Helpers
 // ----
@@ -82,6 +117,32 @@ func parseTopTrackResponse(body *[]byte) (*Tracks, error) {
 	}
 
 	return &ret.Items, nil
+}
+
+func getTopTracksForArtistRequest(ctx context.Context, id string) (*http.Request, error) {
+	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
+	if token == nil {
+		return nil, errors.New("no access token provided")
+	}
+
+	url := fmt.Sprintf("https://api.spotify.com/v1/artists/%v/top-tracks?country=us", id)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
+	return req, nil
+}
+
+func parseTopTracksForArtistResponse(body *[]byte) (*Tracks, error) {
+	ret := Tracks{}
+	err := json.Unmarshal(*body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
 }
 
 // ----

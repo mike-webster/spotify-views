@@ -244,7 +244,8 @@ func handlerTopArtists(c *gin.Context) {
 
 func handlerUserLibraryTempo(c *gin.Context) {
 	logging.GetLogger(c).WithField("event", "webby_test").Debug()
-	t, err := spotify.GetUserLibraryTracks(c)
+	//t, err := spotify.GetUserLibraryTracks(c)
+	t, err := spotify.GetSavedTracks(c)
 	if err != nil {
 		logging.GetLogger(c).WithError(err).Error()
 		c.Status(500)
@@ -269,8 +270,8 @@ func handlerUserLibraryTempo(c *gin.Context) {
 	}
 
 	m := map[string]float32{}
-	for i := 0; i < len(t); i++ {
-		tr := t[i]
+	for i := 0; i < len(*t); i++ {
+		tr := (*t)[i]
 		for j := 0; j < len(*af); j++ {
 			ta := laf[j]
 			if tr.ID == ta.ID {

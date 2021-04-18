@@ -104,11 +104,6 @@ func GetRelatedArtists(ctx context.Context, id string) (*[]Artist, error) {
 	return getRelatedArtists(ctx, id)
 }
 
-// GetTopTracksForArtist will request the artist's most popular tracks from spotify
-func GetTopTracksForArtist(ctx context.Context, id string) (*[]TopTracks, error) {
-	return getTopTracksForArtist(ctx, id)
-}
-
 // GetUserInfo will perform a request to retrieve the user's ID and email.
 func GetUserInfo(ctx context.Context) (context.Context, error) {
 	info, err := getUserInfo(ctx)
@@ -118,13 +113,4 @@ func GetUserInfo(ctx context.Context) (context.Context, error) {
 
 	c := context.WithValue(ctx, keys.ContextSpotifyResults, info)
 	return c, nil
-}
-
-func GetUserLibraryTracks(ctx context.Context) (Tracks, error) {
-	t, err := getUserLibraryTracks(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
 }
