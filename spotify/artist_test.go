@@ -36,7 +36,7 @@ func TestIDs(t *testing.T) {
 	assert.Equal(t, exp, objs.IDs())
 }
 
-func TestGetGenres(t *testing.T) {
+func TestGetArtistGenres(t *testing.T) {
 	objs := Artists{
 		Artist{Genres: []string{"emo", "rock", "rap"}},
 		Artist{Genres: []string{"hip hop", "rap", "mumble"}},
@@ -74,12 +74,12 @@ func TestFindImage(t *testing.T) {
 	})
 
 	t.Run("FirstWhenOnlyOne", func(t *testing.T) {
-		a := Artist{Images: []Image{Image{URL: "test"}}}
+		a := Artist{Images: []Image{{URL: "test"}}}
 		assert.Equal(t, &a.Images[0], a.FindImage())
 	})
 
 	t.Run("SecondWhenMoreThanOne", func(t *testing.T) {
-		a := Artist{Images: []Image{Image{URL: "test"}, Image{URL: "test2"}}}
+		a := Artist{Images: []Image{{URL: "test"}, {URL: "test2"}}}
 		assert.Equal(t, &a.Images[1], a.FindImage())
 	})
 }

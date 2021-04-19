@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/mike-webster/spotify-views/keys"
-	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/sortablemap"
 )
 
@@ -62,26 +61,6 @@ func GetTopTracksForArtist(ctx context.Context, id string) (*Tracks, error) {
 	return parseTopTracksForArtistResponse(body)
 }
 
-func GetSavedTracks(ctx context.Context) (*Tracks, error) {
-	url := "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
-	more := true
-	ret := Tracks{}
-	for more {
-		t, newUrl, tot, err := getChunkOfUserLibraryTracks(ctx, url)
-		if err != nil {
-			logging.GetLogger(ctx).Warn(err.Error())
-			more = false
-		}
-		url = newUrl
-
-		ret = append(ret, t...)
-		if tot == len(ret) {
-			more = false
-		}
-	}
-	return &ret, nil
-}
-
 // ----
 // Helpers
 // ----
@@ -89,7 +68,7 @@ func GetSavedTracks(ctx context.Context) (*Tracks, error) {
 func getTopTracksRequest(ctx context.Context, timeframe TimeFrame) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := fmt.Sprint("https://api.spotify.com/v1/me/top/tracks?limit=", fetchLimitTopTracks)
@@ -122,7 +101,7 @@ func parseTopTrackResponse(body *[]byte) (*Tracks, error) {
 func getTopTracksForArtistRequest(ctx context.Context, id string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := fmt.Sprintf("https://api.spotify.com/v1/artists/%v/top-tracks?country=us", id)
@@ -136,13 +115,16 @@ func getTopTracksForArtistRequest(ctx context.Context, id string) (*http.Request
 }
 
 func parseTopTracksForArtistResponse(body *[]byte) (*Tracks, error) {
-	ret := Tracks{}
+	type tempResp struct {
+		Results Tracks `json:"tracks"`
+	}
+	ret := tempResp{}
 	err := json.Unmarshal(*body, &ret)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ret, nil
+	return &ret.Results, nil
 }
 
 // ----

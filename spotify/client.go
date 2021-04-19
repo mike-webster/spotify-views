@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -38,75 +36,6 @@ func (i items) Tracks() Tracks {
 }
 
 // ENDTODO
-
-func getChunkOfUserLibraryTracks(ctx context.Context, url string) (Tracks, string, int, error) {
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return nil, "", 0, errors.New("no access token provided")
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, "", 0, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-
-	body, err := makeRequest(ctx, req)
-	if err != nil {
-		return nil, "", 0, err
-	}
-
-	type tempResp struct {
-		Link   string `json:"href"`
-		Items  items  `json:"items"`
-		Limit  int    `json:"limit"`
-		Next   string `json:"next"`
-		Offset int    `json:"offset"`
-		Total  int    `json:"total"`
-	}
-
-	var ret tempResp
-	err = json.Unmarshal(*body, &ret)
-	if err != nil {
-		return nil, "", 0, err
-	}
-
-	return ret.Items.Tracks(), ret.Next, ret.Total, nil
-}
-
-func getGenres(ctx context.Context) ([]string, error) {
-	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
-	if token == nil {
-		return nil, errors.New("no access token provided")
-	}
-
-	url := "https://api.spotify.com/v1/recommendations/available-genre-seeds"
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprint("Bearer ", token))
-
-	body, err := makeRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	type tRes struct {
-		Genres []string `json:"genres"`
-	}
-
-	rsp := tRes{}
-	err = json.Unmarshal(*body, &rsp)
-	if err != nil {
-		return nil, err
-	}
-
-	return rsp.Genres, nil
-}
 
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
