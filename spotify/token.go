@@ -1,44 +1,57 @@
 package spotify
 
-import ( 
-	"errors"
-	"net/url"
-	"fmt"
-	"encoding/base64"
-	"strings"
+import (
 	"context"
-	"net/http"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
 )
 
 type Token struct {
-	Access string
+	Access  string
 	Refresh string
 }
 
+// ----
+// API
+// ----
+
 func ExchangeOauthCode(ctx context.Context, code string) (*Token, error) {
-	tokens, err := requestTokens(ctx, code)
+	req, err := getCodeSwapRequest(ctx, code)
 	if err != nil {
 		return nil, err
 	}
 
-	return tokens, nil
+	respBody, err := makeRequest(ctx, req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseTokensFromCodeSwapResponse(respBody)
 }
+
+// ----
+// Members
+// ----
 
 func (t *Token) RefreshMe(ctx context.Context) (bool, error) {
 	req, err := getRefreshRequest(ctx, t.Refresh)
 	if err != nil {
 		return false, err
 	}
-	
+
 	resp, err := makeRequest(ctx, req, false)
 	if err != nil {
 		return false, err
 	}
 
-	tok, err := parseTokenFromRefreshResponse(ctx, resp)
+	tok, err := parseTokenFromRefreshResponse(resp)
 	if err != nil {
 		return false, err
 	}
@@ -47,7 +60,11 @@ func (t *Token) RefreshMe(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func parseTokenFromRefreshResponse(ctx context.Context, body *[]byte) (string, error) {
+// ----
+// Helpers
+// ----
+
+func parseTokenFromRefreshResponse(body *[]byte) (string, error) {
 	type tempResp struct {
 		AccessToken string `json:"access_token"`
 	}
@@ -60,7 +77,11 @@ func parseTokenFromRefreshResponse(ctx context.Context, body *[]byte) (string, e
 	return b.AccessToken, nil
 }
 
-func getRefreshRequest(ctx context.Context, ref string) (*http.Request, error) {
+func getRefreshRequest(ctx context.Context, refTok string) (*http.Request, error) {
+	if len(refTok) < 1 {
+		return nil, errors.New("no refresh token provided")
+	}
+
 	tokURL := "https://accounts.spotify.com/api/token"
 	vals, err := getRefreshParams(ctx)
 	if err != nil {
@@ -69,7 +90,7 @@ func getRefreshRequest(ctx context.Context, ref string) (*http.Request, error) {
 
 	body := url.Values{}
 	body.Set("grant_type", "refresh_token")
-	body.Set("refresh_token", (*vals)["tok"])
+	body.Set("refresh_token", refTok)
 
 	req, err := http.NewRequest("POST", tokURL, strings.NewReader(body.Encode()))
 	if err != nil {
@@ -85,12 +106,6 @@ func getRefreshRequest(ctx context.Context, ref string) (*http.Request, error) {
 
 func getRefreshParams(ctx context.Context) (*map[string]string, error) {
 	ret := map[string]string{}
-	refTok := keys.GetContextValue(ctx, keys.ContextSpotifyRefreshToken)
-	if refTok == nil {
-		return &map[string]string{}, errors.New("no refresh token provided")
-	}
-	ret["tok"] = fmt.Sprint(refTok)
-
 	clientID := keys.GetContextValue(ctx, keys.ContextSpotifyClientID)
 	if clientID == nil {
 		return &map[string]string{}, errors.New("no client id provided")
@@ -147,7 +162,7 @@ func getCodeSwapParams(ctx context.Context) (*map[string]string, error) {
 func getCodeSwapRequest(ctx context.Context, code string) (*http.Request, error) {
 	vals, err := getCodeSwapParams(ctx)
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 
 	tokenURL := "https://accounts.spotify.com/api/token"
@@ -167,7 +182,7 @@ func getCodeSwapRequest(ctx context.Context, code string) (*http.Request, error)
 	return req, nil
 }
 
-func parseTokensFromCodeSwapResponse(ctx context.Context, resp *[]byte) (*Token, error) {
+func parseTokensFromCodeSwapResponse(resp *[]byte) (*Token, error) {
 	var r tokenResponse
 	err := json.Unmarshal(*resp, &r)
 	if err != nil {
@@ -175,18 +190,4 @@ func parseTokensFromCodeSwapResponse(ctx context.Context, resp *[]byte) (*Token,
 	}
 
 	return &Token{Access: r.AccessToken, Refresh: r.RefreshToken}, nil
-}
-
-func requestTokens(ctx context.Context, code string) (*Token, error) {
-	req, err := getCodeSwapRequest(ctx, code)
-	if err != nil {
-		return nil, err
-	}
-
-	respBody, err := makeRequest(ctx, req, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return parseTokensFromCodeSwapResponse(ctx, respBody)
 }

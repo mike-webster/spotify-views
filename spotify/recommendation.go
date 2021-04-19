@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -75,7 +74,7 @@ func getRecommendationsURL(ctx context.Context, seeds map[string][]string) strin
 func parseRecommendationsRequest(ctx context.Context, seeds map[string][]string) (*http.Request, error) {
 	token := keys.GetContextValue(ctx, keys.ContextSpotifyAccessToken)
 	if token == nil {
-		return nil, errors.New("no access token provided")
+		return nil, ErrNoToken("no access token provided")
 	}
 
 	url := getRecommendationsURL(ctx, seeds)
