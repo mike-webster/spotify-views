@@ -13,6 +13,14 @@ import (
 	"github.com/mike-webster/spotify-views/keys"
 )
 
+type tokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	Type         string `json:"token_type"`
+	Scope        string `json:"scope"`
+	Exp          int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 type Token struct {
 	Access  string
 	Refresh string
@@ -28,7 +36,7 @@ func ExchangeOauthCode(ctx context.Context, code string) (*Token, error) {
 		return nil, err
 	}
 
-	respBody, err := makeRequest(ctx, req, false)
+	respBody, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +54,7 @@ func (t *Token) RefreshMe(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	resp, err := makeRequest(ctx, req, false)
+	resp, err := makeRequest(ctx, req)
 	if err != nil {
 		return false, err
 	}

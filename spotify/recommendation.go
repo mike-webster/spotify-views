@@ -31,7 +31,7 @@ func GetRecommendations(ctx context.Context, seeds map[string][]string) (*Recomm
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, false)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}

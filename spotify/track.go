@@ -40,7 +40,7 @@ func GetTopTracks(ctx context.Context, timeframe TimeFrame) (*Tracks, error) {
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func GetTopTracksForArtist(ctx context.Context, id string) (*Tracks, error) {
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}

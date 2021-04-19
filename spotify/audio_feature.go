@@ -86,7 +86,7 @@ func getAudioFeatures(ctx context.Context, ids []string) (*AudioFeatures, error)
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}

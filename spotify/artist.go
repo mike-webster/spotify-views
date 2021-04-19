@@ -34,7 +34,7 @@ func GetArtist(ctx context.Context, id string) (*Artist, error) {
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func GetArtist(ctx context.Context, id string) (*Artist, error) {
 func GetArtists(ctx context.Context, ids []string) (*Artists, error) {
 	req, err := parseRequestForGetArtists(ctx, ids)
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func GetArtists(ctx context.Context, ids []string) (*Artists, error) {
 func GetTopArtists(ctx context.Context) (*Artists, error) {
 	req, err := parseRequestForGetTopArtists(ctx)
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (a *Artist) GetRelatedArtists(ctx context.Context) (*Artists, error) {
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}

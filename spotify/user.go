@@ -21,7 +21,7 @@ func GetUser(ctx context.Context) (*User, error) {
 		return nil, err
 	}
 
-	body, err := makeRequest(ctx, req, true)
+	body, err := makeRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
