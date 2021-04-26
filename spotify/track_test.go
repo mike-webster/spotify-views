@@ -44,6 +44,24 @@ func TestGetTopTracks(t *testing.T) {
 			assert.NotNil(t, err)
 		})
 	})
+
+	t.Run("TestMainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopTracks(ctx, TFShort)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopTracks(ctx, TFShort)
+			assert.NotEqual(t, nil, err)
+		})
+	})
 }
 
 func TestTopTracksForArtists(t *testing.T) {
@@ -80,10 +98,30 @@ func TestTopTracksForArtists(t *testing.T) {
 			assert.NotNil(t, err)
 		})
 	})
+
+	t.Run("TestMainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopTracksForArtist(ctx, "id")
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopTracksForArtist(ctx, "id")
+			assert.NotEqual(t, nil, err)
+		})
+	})
 }
 
 func TestGetTrackGenres(t *testing.T) {
-	// TODO: need to be able to mock call first
+	// TODO: this just needs some brain power to get through
+	// -- The getArtists call in the middle of the method will
+	//    need to be mocked so we can calculate the expected result
 }
 
 func TestEmbeddedPlayerTrack(t *testing.T) {

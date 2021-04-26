@@ -169,6 +169,7 @@ func runServer(ctx context.Context) {
 	r.Use(setContextLogger)
 	r.Use(setTokens)
 	r.Use(setEnv)
+	r.Use(setHttpClient)
 
 	r.StaticFile("/sitemap", "./static/sitemap.xml")
 	r.Static("/static/css", "./static")

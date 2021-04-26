@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
@@ -75,6 +76,11 @@ func authenticate(c *gin.Context) {
 	c.Next()
 }
 
+func setHttpClient(c *gin.Context) {
+	c.Set(string(keys.ContextDependencies), &keys.Dependencies{Client: &http.Client{}})
+	c.Next()
+}
+
 // consolidate stack on crahes
 func recovery(c *gin.Context) {
 	defer func(c *gin.Context) {
@@ -101,17 +107,17 @@ func setContextLogger(c *gin.Context) {
 	c.Next()
 }
 
-func parseLoggerValues(c * gin.Context) *logging.LoggerFields {
+func parseLoggerValues(c *gin.Context) *logging.LoggerFields {
 	reqID, _ := uuid.NewV4()
 	uid, _ := c.Cookie("svid")
 	return &logging.LoggerFields{
-		UserAgent: c.Request.UserAgent(),
-		Referer: c.Request.Referer(),
+		UserAgent:   c.Request.UserAgent(),
+		Referer:     c.Request.Referer(),
 		QueryString: c.Request.URL.RawQuery,
-		Path: c.Request.URL.Path,
-		Method: c.Request.Method,
-		ClientIP: c.ClientIP(),
-		RequestID: reqID.String(),
-		UserID: uid,
+		Path:        c.Request.URL.Path,
+		Method:      c.Request.Method,
+		ClientIP:    c.ClientIP(),
+		RequestID:   reqID.String(),
+		UserID:      uid,
 	}
 }

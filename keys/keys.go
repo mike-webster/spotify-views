@@ -2,6 +2,9 @@ package keys
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"reflect"
 )
 
 type ContextKey string
@@ -20,7 +23,7 @@ var (
 	ContextDatabase            = ContextKey("db_name")
 	ContextLyricsToken         = ContextKey("genius_access_token")
 	ContextLogger              = ContextKey("logger")
-	ContextLoggerFields 	   = ContextKey("logger_fields")
+	ContextLoggerFields        = ContextKey("logger_fields")
 	// ContextSpotifyReturnURL is the key to use for the ouath return url
 	ContextSpotifyReturnURL = ContextKey("return_url")
 	// ContextSpotifyClientIDContextSpotifyClientID is the key to use for the spotify client id
@@ -36,6 +39,7 @@ var (
 	// ContextSpotifyResults is the key to use to retrieve the results
 	ContextSpotifyResults = ContextKey("results")
 	ContextSpotifyUserID  = ContextKey("s_user_id")
+	ContextDependencies   = ContextKey("deps")
 )
 
 func GetContextValue(ctx context.Context, key ContextKey) interface{} {
@@ -50,4 +54,28 @@ func GetContextValue(ctx context.Context, key ContextKey) interface{} {
 	}
 
 	return nil
+}
+
+func GetDependencies(ctx context.Context) *Dependencies {
+	ideps := GetContextValue(ctx, ContextDependencies)
+	if ideps == nil {
+		fmt.Println("missing deps")
+		return nil
+	}
+
+	deps, ok := ideps.(*Dependencies)
+	if !ok {
+		fmt.Println("invalid deps", reflect.TypeOf(ideps))
+		return nil
+	}
+
+	return deps
+}
+
+type Dependencies struct {
+	Client HttpClient
+}
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }

@@ -93,6 +93,30 @@ func TestExchangeOauthCode(t *testing.T) {
 			assert.NotNil(t, err)
 		})
 	})
+
+	t.Run("TestMainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyReturnURL, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientID, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientSecret, "test")
+
+			_, err := ExchangeOauthCode(ctx, "code")
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyReturnURL, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientID, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientSecret, "test")
+
+			_, err := ExchangeOauthCode(ctx, "code")
+			assert.NotEqual(t, nil, err)
+		})
+	})
 }
 
 func TestRefreshMe(t *testing.T) {
@@ -158,7 +182,25 @@ func TestRefreshMe(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientID, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientSecret, "test")
 
+			tok := Token{Access: "test", Refresh: "test"}
+			_, err := tok.RefreshMe(ctx)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientID, "test")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyClientSecret, "test")
+
+			tok := Token{Access: "test", Refresh: "test"}
+			_, err := tok.RefreshMe(ctx)
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 

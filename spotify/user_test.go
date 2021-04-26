@@ -43,6 +43,24 @@ func TestGetUser(t *testing.T) {
 			assert.NotNil(t, err)
 		})
 	})
+
+	t.Run("TestMainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetUser(ctx)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetUser(ctx)
+			assert.NotEqual(t, nil, err)
+		})
+	})
 }
 
 func TestGetSavedTracks(t *testing.T) {
@@ -81,7 +99,7 @@ func TestGetSavedTracks(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		// TODO: this one needs a method in the middle mocked
 	})
 }
 

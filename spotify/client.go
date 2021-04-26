@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -41,8 +42,12 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(ctx)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	deps := keys.GetDependencies(ctx)
+	if deps == nil {
+		return nil, errors.New("couldnt find deps")
+	}
+
+	resp, err := deps.Client.Do(req)
 	dur := time.Since(s)
 
 	logger.WithFields(logrus.Fields{
@@ -88,7 +93,7 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 			"status": resp.StatusCode,
 			"body":   string(b),
 		}).Error()
-		return nil, errors.New(fmt.Sprint("non-200 response; ", resp.StatusCode))
+		return nil, ErrBadRequest(fmt.Sprint("response code: ", resp.StatusCode))
 	}
 
 	return &b, nil

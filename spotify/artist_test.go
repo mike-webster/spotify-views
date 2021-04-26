@@ -2,7 +2,10 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,6 +13,20 @@ import (
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/stretchr/testify/assert"
 )
+
+type TestHttpClient struct {
+	Response   *http.Response
+	ShouldErr  bool
+	ErrMessage string
+}
+
+func (c *TestHttpClient) Do(eq *http.Request) (*http.Response, error) {
+	if c.ShouldErr {
+		return nil, errors.New(c.ErrMessage)
+	}
+
+	return c.Response, nil
+}
 
 func TestEmbeddedPlayer(t *testing.T) {
 	t.Run("CheckURL", func(t *testing.T) {
@@ -19,7 +36,7 @@ func TestEmbeddedPlayer(t *testing.T) {
 	})
 }
 
-func TestIDs(t *testing.T) {
+func TestArtistIDs(t *testing.T) {
 	objs := Artists{
 		Artist{ID: "1234"},
 		Artist{ID: "2345"},
@@ -67,7 +84,7 @@ func TestGetArtistGenres(t *testing.T) {
 	}
 }
 
-func TestFindImage(t *testing.T) {
+func TestArtistFindImage(t *testing.T) {
 	t.Run("NilWhenEmpty", func(t *testing.T) {
 		a := Artist{}
 		assert.Nil(t, a.FindImage())
@@ -82,6 +99,19 @@ func TestFindImage(t *testing.T) {
 		a := Artist{Images: []Image{{URL: "test"}, {URL: "test2"}}}
 		assert.Equal(t, &a.Images[1], a.FindImage())
 	})
+}
+
+func getTestDependencies(ctx context.Context, code int, body string) context.Context {
+	deps := keys.Dependencies{
+		Client: &TestHttpClient{
+			Response: &http.Response{
+				StatusCode: code,
+				Body:       ioutil.NopCloser(strings.NewReader(body)),
+			},
+		},
+	}
+
+	return context.WithValue(ctx, keys.ContextDependencies, &deps)
 }
 
 func TestGetArtist(t *testing.T) {
@@ -120,7 +150,21 @@ func TestGetArtist(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetArtist(ctx, "test")
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetArtist(ctx, "test")
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 
@@ -160,7 +204,21 @@ func TestGetArtists(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetArtists(ctx, ids)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetArtists(ctx, ids)
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 
@@ -211,7 +269,21 @@ func TestGetTopArtists(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopArtists(ctx)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetTopArtists(ctx)
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 
@@ -251,7 +323,23 @@ func TestGetRelatedArtists(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+			as := &Artist{ID: "test"}
+
+			_, err := as.GetRelatedArtists(ctx)
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+			as := &Artist{ID: "test"}
+
+			_, err := as.GetRelatedArtists(ctx)
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 

@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/go-redis/redis/v8"
 	data "github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/keys"
 )
 
 var (
@@ -46,6 +48,7 @@ type ViewBag struct {
 
 func main() {
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, keys.ContextDependencies, keys.Dependencies{Client: &http.Client{}})
 	vals, err := parseEnvironmentVariables(ctx)
 	if err != nil {
 		panic(err)

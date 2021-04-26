@@ -1,12 +1,16 @@
 package spotify
 
 type ErrTokenExpired string
+type ErrBadRequest string
 type ErrNoToken string
 
 func (e ErrTokenExpired) Error() string {
 	return string(e)
 }
 func (e ErrNoToken) Error() string {
+	return string(e)
+}
+func (e ErrBadRequest) Error() string {
 	return string(e)
 }
 

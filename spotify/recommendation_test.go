@@ -47,7 +47,21 @@ func TestGetRecommendations(t *testing.T) {
 	})
 
 	t.Run("TestMainMethod", func(t *testing.T) {
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
 
+			_, err := GetRecommendations(ctx, map[string][]string{"test": {"test"}})
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetRecommendations(ctx, map[string][]string{"test": {"Test"}})
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 

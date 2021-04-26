@@ -46,7 +46,21 @@ func TestGetAudioFeatures(t *testing.T) {
 	})
 
 	t.Run("MainMethod", func(t *testing.T) {
-		// TODO
+		t.Run("HappyPath", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 200, "{}")
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetAudioFeatures(ctx, []string{"test"})
+			assert.Equal(t, nil, err)
+		})
+
+		t.Run("BadRequest", func(t *testing.T) {
+			ctx := getTestDependencies(context.Background(), 400, `{"err":"bad_request"}`)
+			ctx = context.WithValue(ctx, keys.ContextSpotifyAccessToken, "test")
+
+			_, err := GetAudioFeatures(ctx, []string{"test"})
+			assert.NotEqual(t, nil, err)
+		})
 	})
 }
 

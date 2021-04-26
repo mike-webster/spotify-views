@@ -16,6 +16,11 @@ func TestErrors(t *testing.T) {
 		err := ErrNoToken("missing")
 		assert.Equal(t, "missing", err.Error())
 	})
+
+	t.Run("badrequest", func(t *testing.T) {
+		err := ErrNoToken("badreq")
+		assert.Equal(t, "badreq", err.Error())
+	})
 }
 
 func TestTimeFrames(t *testing.T) {
