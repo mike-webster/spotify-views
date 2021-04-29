@@ -1,2 +1,1 @@
-release: spotify-views
-web: spotify-views
+web: bin/spotify-views
