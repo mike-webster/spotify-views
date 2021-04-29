@@ -2,6 +2,7 @@ package router
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime/debug"
@@ -11,6 +12,9 @@ import (
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
+
+	_ "github.com/go-sql-driver/mysql" // mysql driver
+	"github.com/jmoiron/sqlx"
 )
 
 func setTokens(c *gin.Context) {
@@ -75,8 +79,28 @@ func authenticate(c *gin.Context) {
 	c.Next()
 }
 
-func setHttpClient(c *gin.Context) {
-	c.Set(string(keys.ContextDependencies), &keys.Dependencies{Client: &http.Client{}})
+func setDependencies(c *gin.Context) {
+	var db *sqlx.DB
+	host := keys.GetContextValue(c, keys.ContextDbHost)
+	user := keys.GetContextValue(c, keys.ContextDbUser)
+	pass := keys.GetContextValue(c, keys.ContextDbPass)
+	dbname := keys.GetContextValue(c, keys.ContextDatabase)
+
+	if host == nil || user == nil || pass == nil || dbname == nil {
+		logging.GetLogger(c).Warn("missing connection string info")
+	}
+
+	conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)
+	db, err := sqlx.Connect("mysql", conStr)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("missing connection string info")
+	}
+
+	c.Set(string(keys.ContextDependencies),
+		&keys.Dependencies{
+			Client: &http.Client{},
+			DB:     db,
+		})
 	c.Next()
 }
 

@@ -3,8 +3,10 @@ package spotify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
@@ -13,6 +15,55 @@ import (
 type User struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
+}
+
+var (
+	ErrNoContext      = "no context provided"
+	ErrFieldTooShort  = "field too short: "
+	ErrMissingDeps    = "no dependencies in context"
+	ErrNoRowsAffected = "no rows affected"
+)
+
+func (u *User) Save(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New(ErrNoContext)
+	}
+
+	deps := keys.GetDependencies(ctx)
+	if deps == nil {
+		return errors.New(ErrMissingDeps)
+	}
+
+	if len(u.ID) < 1 {
+		return errors.New(fmt.Sprint(ErrFieldTooShort, "ID"))
+	}
+
+	if len(u.Email) < 1 {
+		return errors.New(fmt.Sprint(ErrFieldTooShort, "Email"))
+	}
+
+	query := `INSERT INTO users	(spotify_id, email) VALUES (?, ?)`
+	res, err := deps.DB.Exec(query, u.ID, u.Email)
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062: Duplicate entry") {
+			logging.GetLogger(ctx).WithFields(map[string]interface{}{
+				"event": "duplicate_user_insert",
+				"email": u.Email,
+			}).Error()
+			return nil
+		}
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows > 0 {
+		return nil
+	}
+
+	return errors.New(ErrNoRowsAffected)
 }
 
 func GetUser(ctx context.Context) (*User, error) {

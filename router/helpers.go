@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kelseyhightower/envconfig"
-	data "github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
@@ -178,11 +177,6 @@ func Run(ctx context.Context) {
 		return
 	}
 
-	err = data.Ping(ctx)
-	if err != nil {
-		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
-	}
-
 	runServer(ctx)
 }
 
@@ -192,7 +186,7 @@ func runServer(ctx context.Context) {
 	r.Use(setContextLogger)
 	r.Use(setTokens)
 	r.Use(setEnv)
-	r.Use(setHttpClient)
+	r.Use(setDependencies)
 
 	r.StaticFile("/sitemap", "./web/sitemap.xml")
 	r.Static("/web/css", "./web")

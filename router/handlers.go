@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	data "github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/genius"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
@@ -78,7 +77,8 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	_, err = data.SaveUser(c, u.ID, u.Email)
+	//_, err = data.SaveUser(c, u.ID, u.Email)
+	err = u.Save(c)
 	if err != nil {
 		logger.WithField("info", *u).WithError(err).Error("couldnt save user")
 		c.Status(500)

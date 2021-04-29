@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type ContextKey string
@@ -74,6 +76,7 @@ func GetDependencies(ctx context.Context) *Dependencies {
 
 type Dependencies struct {
 	Client HttpClient
+	DB     *sqlx.DB
 }
 
 type HttpClient interface {
