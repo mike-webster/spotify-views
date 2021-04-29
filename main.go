@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/go-redis/redis/v8"
-	data "github.com/mike-webster/spotify-views/data"
 )
 
 var (
@@ -46,25 +43,7 @@ type ViewBag struct {
 
 func main() {
 	ctx := context.Background()
-	vals, err := parseEnvironmentVariables(ctx)
-	if err != nil {
-		panic(err)
-	}
-	for k, v := range vals {
-		ctx = context.WithValue(ctx, k, v)
-	}
-
-	if os.Getenv("GO_ENV") == "test" {
-		testMethod(ctx)
-		return
-	}
-
-	err = data.Ping(ctx)
-	if err != nil {
-		panic(fmt.Sprint("couldnt connect to database; ", err.Error()))
-	}
-
-	runServer(ctx)
+	Run(ctx)
 }
 
 func testMethod(ctx context.Context) {
