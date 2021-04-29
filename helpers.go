@@ -124,7 +124,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 
 	w := wordclouds.NewWordcloud(
 		wordCounts,
-		wordclouds.FontFile("fonts/Ubuntu-L.ttf"),
+		wordclouds.FontFile("static/fonts/Ubuntu-L.ttf"),
 		wordclouds.Height(2048),
 		wordclouds.Width(2048),
 		wordclouds.Debug(),
