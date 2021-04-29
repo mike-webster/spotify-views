@@ -64,7 +64,6 @@ func setEnv(c *gin.Context) {
 
 func authenticate(c *gin.Context) {
 	entry := logging.GetLogger(c)
-	entry.Debug()
 	tok, err := c.Cookie(cookieKeyToken)
 	if err != nil {
 		entry.WithField("redirect_reason", "authenticate: found no token").WithError(err).Error("redirecting")
