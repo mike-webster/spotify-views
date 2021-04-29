@@ -1,7 +1,0 @@
-{{ define "player" }}
-    <div width="300" width="{{ .Width }}" style="text-algin:center">
-        <p id="h{{ .ID }}"> {{ .Name }} </p>
-        <iframe id="i{{.ID}}" style="display:none;" src="https://open.spotify.com/embed/{{ .Resource }}/{{ .ID }}" width="{{.Width}}" height="{{ .Height }}" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
-    </div>
-{{ end }}
-
