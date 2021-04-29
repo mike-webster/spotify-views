@@ -124,7 +124,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 
 	w := wordclouds.NewWordcloud(
 		wordCounts,
-		wordclouds.FontFile("static/fonts/Ubuntu-L.ttf"),
+		wordclouds.FontFile("web/fonts/Ubuntu-L.ttf"),
 		wordclouds.Height(2048),
 		wordclouds.Width(2048),
 		wordclouds.Debug(),
@@ -136,7 +136,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 	)
 
 	img := w.Draw()
-	directory := "static/clouds/"
+	directory := "web/clouds/"
 	of, err := os.Create(fmt.Sprint(directory, filename))
 	if err != nil {
 		return err
@@ -194,13 +194,13 @@ func runServer(ctx context.Context) {
 	r.Use(setEnv)
 	r.Use(setHttpClient)
 
-	r.StaticFile("/sitemap", "./static/sitemap.xml")
-	r.Static("/static/css", "./static")
-	r.Static("/static/js", "./static")
-	r.Static("/logos/", "./static/logos")
-	r.Static("/images/", "./static/images")
-	r.StaticFile("/favicon.ico", "./static/logos/favicon.ico")
-	r.LoadHTMLGlob("static/templates/*")
+	r.StaticFile("/sitemap", "./web/sitemap.xml")
+	r.Static("/web/css", "./web")
+	r.Static("/web/js", "./web")
+	r.Static("/logos/", "./web/logos")
+	r.Static("/images/", "./web/images")
+	r.StaticFile("/favicon.ico", "./web/logos/favicon.ico")
+	r.LoadHTMLGlob("web/templates/*")
 
 	r.GET(PathHome, handlerHome)
 	r.GET(PathSpotifyOauth, handlerOauth)

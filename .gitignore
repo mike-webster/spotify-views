@@ -1,4 +1,4 @@
-static/clouds/*
+web/clouds/*
 spotify-views
 
 # this was for a redis visualization tool
