@@ -55,6 +55,9 @@ func GetArtists(ctx context.Context, ids []string) (*Artists, error) {
 
 func GetTopArtists(ctx context.Context) (*Artists, error) {
 	req, err := parseRequestForGetTopArtists(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	body, err := makeRequest(ctx, req)
 	if err != nil {
