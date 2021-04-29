@@ -2,6 +2,8 @@ module github.com/mike-webster/spotify-views
 
 go 1.14
 
+// +heroku install ./cmd/spotify-views
+
 require (
 	github.com/bbalet/stopwords v1.0.0
 	github.com/gin-gonic/gin v1.6.3
