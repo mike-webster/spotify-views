@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    {{ template "header" }}
+    <script src="/static/css/sortable.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/library.css" />
+    <script type="text/javascript" src="/static/js/library.js"></script>
+    <body>
+        {{ template "topnav" }}
+        <div class="content">
+            <div style="width:100%; text-align:center;">
+                <h1>Library</h1>
+                <p>Sorted By: Tempo <a id="toggle"></a></p>
+                <br />
+
+                <div class="blurry-back-white flex-table">
+                    <div class="flex-table-item"><p>Artist</p></div>
+                    <div class="flex-table-item"><p>Song</p></div>
+                    <div class="flex-table-item"><p>Tempo</p></div>
+                    {{ range .Items }}
+                        <div class="flex-table-item" data-item><p>{{ .Artist }}</p></div>
+                        <div class="flex-table-item" data-item><p>{{ .Title }}</p></div>
+                        <div class="flex-table-item" data-item><p>{{ .Tempo }}</p></div>
+                    {{ end }}
+                    <div class="flex-table-item" id="prev"><p><<</p></div>
+                    <div class="flex-table-item"><input id="page" type="text" size="3" readonly value="0"></input></div>
+                    <div class="flex-table-item" id="next"><p>>></p></div>
+                </div>
+            </div>
+        </div> 
+        {{ template "footer" }}
+    </body>
+    
+</html>

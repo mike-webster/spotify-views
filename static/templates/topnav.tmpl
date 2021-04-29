@@ -1,0 +1,36 @@
+{{ define "topnav" }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <div class="topnav" id="myTopnav">
+            <ul class="navlinks">
+                <li class="menu-btn">
+                    <a href="javascript:void(0);" onclick="myFunction()">
+                    <i class="fa fa-bars"></i>
+                </a>
+                </li>
+                <li>
+                    <a href="/wordcloud">Word Cloud</a>
+                </li>
+                <li>
+                    <a href="/library/tempo">Library</a>
+                </li>
+                <li>
+                    <div class="hov" style="display: flex; flex-direction: column;">
+                        <div>Artists</div>
+                        <a class="hide sub-menu" href="/artists/top">Top</a>
+                        <a class="hide sub-menu" href="/tracks/genres">Genres</a>
+                        <a class="hide sub-menu" href="/tracks/recommendations">Recommendations</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="hov" style="display: flex; flex-direction: column;">
+                        <div>Tracks</div>
+                        <a class="hide sub-menu" href="/tracks/top">Top</a>
+                        <a class="hide sub-menu" href="/tracks/genres">Genres</a>
+                    </div>
+                </li>
+            </ul>
+            <div style="flex-direction: row; margin-left: auto; ">
+                <img class="logo" src="/logos/default.png" style="height: 45px; width: 45px; background-position: center center;" />
+            </div>
+    </div>
+{{ end }}

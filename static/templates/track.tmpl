@@ -1,0 +1,14 @@
+{{ define "tracks" }}
+    <div class="flex-table blurry-back-white">
+        {{ range .Tracks }}
+            <div class="flex-table-item">
+                <a href="{{ .TrySpotifyURL }}">
+                    <div class="album" style="background-image: url('{{ .FindImage.URL }}');">
+                        <span class="album-info blurry-back-white">{{ .FindArtist }}</span>
+                        <span class="album-info blurry-back-white">{{ .Name }}</span>
+                    </div>
+                </a>
+            </div>
+        {{ end }}
+    <div>
+{{ end }}

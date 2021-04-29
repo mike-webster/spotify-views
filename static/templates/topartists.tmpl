@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        {{ template "header" }}
+        <script src="/static/js/player.js"></script>
+    </head>
+    <body>
+        {{ template "topnav" }}
+        <div class="content">
+            <div style="width:100%; text-align:center;">
+                <h1>Top Artists</h1>
+                <a style="width:33%" href="/artists/top?time_range=long_term">Long Term</a><br />
+                <a style="width:33%" href="/artists/top?time_range=medium_term">Medium Term</a><br />
+                <a style="width:33%" href="/artists/top?time_range=short_term">Short Term</a><br /><br />
+                {{ range . }}
+                    <div style="width:100%">
+                        {{ template "player" . }}
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+        {{ template "footer" }}
+    </body>
+</html>
