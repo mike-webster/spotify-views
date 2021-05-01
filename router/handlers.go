@@ -77,7 +77,6 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	//_, err = data.SaveUser(c, u.ID, u.Email)
 	err = u.Save(c)
 	if err != nil {
 		logger.WithField("info", *u).WithError(err).Error("couldnt save user")
