@@ -1,5 +1,5 @@
 web/clouds/*
-spotify-views
+/spotify-views
 
 # this was for a redis visualization tool
 rv.yml
