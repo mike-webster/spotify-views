@@ -4,3 +4,11 @@ start:
 .PHONY: tail_prod
 tail_prod: 
 	heroku logs --tail -a spotify-views
+
+.PHONY: serve_prod
+serve_prod:
+	nohup ./spotify-views > spotify-views.log 2>&1 &
+
+.PHONY: find_pid
+find_pid:
+	pgrep -a spotify-views
