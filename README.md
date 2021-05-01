@@ -9,3 +9,6 @@ This is live [here](http://www.spotify-views.com)
 - Top Tracks
 - Top Genres By Artist
 - Top Genres By Track
+
+# Release Note
+- I used nohup to keep the process running on the server
