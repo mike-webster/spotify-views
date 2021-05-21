@@ -1,5 +1,7 @@
 web/clouds/*
 /spotify-views
+/enc
+/secrets.yaml
 
 # this was for a redis visualization tool
 rv.yml
