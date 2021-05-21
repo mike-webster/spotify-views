@@ -41,6 +41,7 @@ var (
 	// ContextSpotifyResults is the key to use to retrieve the results
 	ContextSpotifyResults = ContextKey("results")
 	ContextSpotifyUserID  = ContextKey("s_user_id")
+	ContextMasterKey      = ContextKey("master_key")
 	ContextDependencies   = ContextKey("deps")
 )
 

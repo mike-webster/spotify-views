@@ -1,14 +1,16 @@
 package router
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
+	"github.com/mike-webster/spotify-views/env"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
@@ -38,29 +40,37 @@ func setTokens(c *gin.Context) {
 func setEnv(c *gin.Context) {
 	entry := logging.GetLogger(c)
 	entry.Debug()
-	vals, err := parseEnvironmentVariables(c)
+	c.Set(string(keys.ContextMasterKey), os.Getenv("MASTER_KEY"))
+	// vals, err := parseEnvironmentVariables(c)
+
+	secrets, err := env.ParseSecrets(c)
 	if err != nil {
-		entry.WithError(err).Error("error encountered parsing env vars")
+		entry.WithError(err).Error("error encountered parsing secrets")
 		c.AbortWithError(500, err)
 		return
 	}
 
-	for k, v := range vals {
-		key, ok := k.(string)
-		if !ok {
-			kk, ok := k.(keys.ContextKey)
-			if !ok {
-				entry.WithFields(logrus.Fields{
-					"event": "couldnt_parse_context_field",
-					"key":   k,
-					"value": v,
-				}).Error("problem adding an environment variable to the context - aborting")
-				c.AbortWithError(500, errors.New("couldnt parse context values"))
-				return
-			}
-			key = string(kk)
-		}
-		c.Set(key, v)
+	env, err := env.ParseEnv()
+	if err != nil {
+		entry.WithError(err).Error("error encountered env vars")
+		c.AbortWithError(500, err)
+		return
+	}
+
+	c.Set(string(keys.ContextSpotifyClientID), secrets.ClientID)
+	c.Set(string(keys.ContextSpotifyClientSecret), secrets.ClientSecret)
+	c.Set(string(keys.ContextDatabase), secrets.DBName)
+	c.Set(string(keys.ContextDbHost), secrets.DBHost)
+	c.Set(string(keys.ContextDbUser), secrets.DBUser)
+	c.Set(string(keys.ContextDbPass), secrets.DBPass)
+	c.Set(string(keys.ContextLyricsToken), secrets.LyricsKey)
+	c.Set(string(keys.ContextSecurityKey), secrets.SecurityKey)
+
+	// fix for local dev
+	if strings.Contains(env.Host, "localhost") {
+		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://", env.Host, ":", env.Port, "/spotify/oauth"))
+	} else {
+		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://www.", env.Host, "/spotify/oauth"))
 	}
 
 	c.Next()

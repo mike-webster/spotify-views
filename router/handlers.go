@@ -463,6 +463,7 @@ func handlerWordCloudData(c *gin.Context) {
 
 func handlerLogin(c *gin.Context) {
 	returl := keys.GetContextValue(c, keys.ContextSpotifyReturnURL)
+	logging.GetLogger(c).Warn(returl)
 	if returl == nil {
 		//c.HTML(500, "error.tmpl", nil)
 		c.Status(500)
