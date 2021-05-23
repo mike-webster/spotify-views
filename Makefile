@@ -63,4 +63,4 @@ test:
 
 .PHONY: convey
 convey:
-	sudo goconvey -excludedDirs="web,cmd" -port=8888
+	sudo goconvey -excludedDirs="web,cmd,client" -port=8888

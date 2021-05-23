@@ -10,13 +10,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
+	"github.com/mike-webster/spotify-views/data"
 	"github.com/mike-webster/spotify-views/env"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
+	spotify "github.com/mike-webster/spotify-views/spotify"
 	"github.com/sirupsen/logrus"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
-	"github.com/jmoiron/sqlx"
 )
 
 func setTokens(c *gin.Context) {
@@ -90,7 +91,7 @@ func authenticate(c *gin.Context) {
 }
 
 func setDependencies(c *gin.Context) {
-	var db *sqlx.DB
+	//var db *sqlx.DB
 	host := keys.GetContextValue(c, keys.ContextDbHost)
 	user := keys.GetContextValue(c, keys.ContextDbUser)
 	pass := keys.GetContextValue(c, keys.ContextDbPass)
@@ -101,13 +102,13 @@ func setDependencies(c *gin.Context) {
 	}
 
 	conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)
-	db, err := sqlx.Connect("mysql", conStr)
+	db, err := data.GetLiveDB(conStr)
 	if err != nil {
 		logging.GetLogger(c).WithError(err).Error("missing connection string info")
 	}
 
 	c.Set(string(keys.ContextDependencies),
-		&keys.Dependencies{
+		&spotify.Dependencies{
 			Client: &http.Client{},
 			DB:     db,
 		})

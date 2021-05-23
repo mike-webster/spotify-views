@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -42,7 +41,7 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(ctx)
 
-	deps := keys.GetDependencies(ctx)
+	deps := GetDependencies(ctx)
 	if deps == nil {
 		return nil, errors.New("couldnt find deps")
 	}

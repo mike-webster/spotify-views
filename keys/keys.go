@@ -2,11 +2,6 @@ package keys
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"reflect"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type ContextKey string
@@ -57,29 +52,4 @@ func GetContextValue(ctx context.Context, key ContextKey) interface{} {
 	}
 
 	return nil
-}
-
-func GetDependencies(ctx context.Context) *Dependencies {
-	ideps := GetContextValue(ctx, ContextDependencies)
-	if ideps == nil {
-		fmt.Println("missing deps")
-		return nil
-	}
-
-	deps, ok := ideps.(*Dependencies)
-	if !ok {
-		fmt.Println("invalid deps", reflect.TypeOf(ideps))
-		return nil
-	}
-
-	return deps
-}
-
-type Dependencies struct {
-	Client HttpClient
-	DB     *sqlx.DB
-}
-
-type HttpClient interface {
-	Do(req *http.Request) (*http.Response, error)
 }

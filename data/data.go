@@ -28,9 +28,6 @@ func DBInit(ctx context.Context, user, pass string) error {
 		return err
 	}
 
-	s := strings.Split(string(f), ";")
-	fmt.Println("lines: ", len(s))
-
 	for _, i := range strings.Split(string(f), ";") {
 		if len(strings.TrimSpace(i)) < 1 {
 			continue
