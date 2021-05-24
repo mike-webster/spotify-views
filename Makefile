@@ -103,3 +103,11 @@ test:
 .PHONY: convey
 convey:
 	sudo goconvey -excludedDirs="web,cmd,client" -port=8888
+
+## Release
+.PHONY: release
+release: 
+	git pull 
+	go build ./cmd/spotify-views
+	$(MAKE) kill_prod
+	$(MAKE) serve_prod
