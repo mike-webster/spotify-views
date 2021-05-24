@@ -20,6 +20,7 @@ else
     if [[ "$installed" == *"$version"* ]]; 
     then 
         echo "found $version"; 
+        echo "go success!"
     else 
         echo "incorrect go version, have: $installed; need: $version"; 
         echo "use `gvm list` to see if you have $version";
@@ -27,3 +28,29 @@ else
         exit;
     fi
 fi
+
+echo "checking for mysql..."
+if ! command -v mysql  &> /dev/null
+then 
+    # missing
+    echo 'missing mysql; please install mysql 5.7';
+    exit;
+else 
+    # check version
+    version=$(cat .mysql-version)
+    installed=$(echo $(mysql --version) | sed  's/^.*Ver \([0-9]\.[0-9]\.[0-9].*\) for.*/\1/')
+
+    if [[ "$installed" == *"$version"* ]]; 
+    then 
+        echo "found myql $version"; 
+        echo "mysql success!"
+    else 
+        echo "incorrect go version, have: $installed; need: $version"; 
+        echo "use `gvm list` to see if you have $version";
+        echo "use `gvm install ${version#$rmv}` to install correct version";
+        exit;
+    fi
+fi
+
+echo 'building app...'
+make dev
