@@ -40,7 +40,6 @@ func setTokens(c *gin.Context) {
 
 func setEnv(c *gin.Context) {
 	entry := logging.GetLogger(c)
-	entry.Debug()
 	c.Set(string(keys.ContextMasterKey), os.Getenv("MASTER_KEY"))
 	// vals, err := parseEnvironmentVariables(c)
 
@@ -98,7 +97,8 @@ func setDependencies(c *gin.Context) {
 	dbname := keys.GetContextValue(c, keys.ContextDatabase)
 
 	if host == nil || user == nil || pass == nil || dbname == nil {
-		logging.GetLogger(c).Warn("missing connection string info")
+		report := fmt.Sprintf("%v:%v:%v:%v", host == nil, user == nil, pass == nil, dbname == nil)
+		logging.GetLogger(c).Warn(fmt.Sprint("missing connection string info: ", report))
 	}
 
 	conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)

@@ -43,17 +43,23 @@ clear:
 
 .PHONY: build
 build: 
-	docker build . -t $(APP_NAME) --no-cache \
+	docker build . -t $(APP_NAME) \
 	--build-arg HOST=$(HOST) \
-	--build-arg PORT=$(PORT)
+	--build-arg PORT=$(PORT) \
+	--build-arg MASTER_KEY="$(MASTER_KEY)" \
+	--build-arg GO_ENV=development 
 	
 .PHONY: run
 run: clear build
 	docker run \
-	-p 8080:8080 \
+	-it \
+	-p 8081:8081 \
 	--name sv-dev \
-	-v ~/mike-webster/spotify-views:/app \
-	spotify-views 
+	$(APP_NAME) 
+
+.PHONY: in
+in:
+	docker exec -it sv-dev sh
 
 ## Testing
 
