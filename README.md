@@ -1,14 +1,15 @@
-# spotify-views
+# [spotify-views](http://www.spotify-views.com)
 Exposing some functionality that is provided by the [Spotify](https://www.spotify.com/us/) [API](https://developer.spotify.com/documentation/web-api/)
 
-# URL
-This is live [here](http://www.spotify-views.com)
+## Installation
+run: `./bootstrap.sh`
 
-# Views
-- Top Artists
-- Top Tracks
-- Top Genres By Artist
-- Top Genres By Track
+Note: Docker is optional
+#### With Docker
+- This will pull a mysql image and then configure it as needed
+- The image uses a volume so data is persisted beyond the life of one container
 
-# Release Note
-- I used nohup to keep the process running on the server
+#### Without Docker
+- Dependencies:
+- mysql v8.0.23
+- go v1.15.7

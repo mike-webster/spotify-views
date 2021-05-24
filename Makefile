@@ -2,6 +2,7 @@ HOST := localhost
 PORT := 8081
 GO_ENV := development
 APP_NAME := spotify-views
+USER := webby
 
 ## Encryption Util
 .PHONY: build_enc
@@ -37,29 +38,61 @@ find_pid:
 
 ## Docker tools
 
-.PHONY: clear
+.PHONY: clear_app
 clear:
 	docker container rm sv-dev -f
 
 .PHONY: build
 build: 
 	docker build . -t $(APP_NAME) \
-	--build-arg HOST=$(HOST) \
-	--build-arg PORT=$(PORT) \
-	--build-arg MASTER_KEY="$(MASTER_KEY)" \
-	--build-arg GO_ENV=development 
+		--build-arg HOST=$(HOST) \
+		--build-arg PORT=$(PORT) \
+		--build-arg MASTER_KEY="$(MASTER_KEY)" \
+		--build-arg GO_ENV=development 
 	
 .PHONY: run
-run: clear build
+run: clear_app build
 	docker run \
-	-it \
-	-p 8081:8081 \
-	--name sv-dev \
-	$(APP_NAME) 
+		-it \
+		-p 8081:8081 \
+		--name sv-dev \
+		--network sv-net \
+		$(APP_NAME) 
 
 .PHONY: in
 in:
 	docker exec -it sv-dev sh
+
+.PHONY: clear_db
+clear_db:
+	docker volume prune -f
+
+.PHONY: clear_network
+clear_network:
+	docker network rm sv-net
+
+.PHONY: clear
+clear: clear_db clear_network clear_app
+
+.PHONY: start_db
+start_db:
+	docker network create sv-net
+	docker container rm sv-db -f
+	docker pull mysql
+	docker run \
+		-p 3306:3306 \
+		--name sv-db \
+		--volume=/Users/$(USER)/storage/docker/mysql-data:/var/lib/mysql \
+		--network sv-net \
+		-e MYSQL_ROOT_PASSWORD=pass \
+		-d \
+		mysql
+	@sleep 15s
+	
+.PHONY: init_db
+init_db: clear_db start_db
+	@docker exec -i sv-db \
+		mysql -uroot -ppass --protocol=tcp -h localhost -P 3306 < ./data/create_db.sql
 
 ## Testing
 

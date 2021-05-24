@@ -104,7 +104,7 @@ func setDependencies(c *gin.Context) {
 	conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)
 	db, err := data.GetLiveDB(conStr)
 	if err != nil {
-		logging.GetLogger(c).WithError(err).Error("missing connection string info")
+		logging.GetLogger(c).WithError(err).Error("couldnt connect to database")
 	}
 
 	c.Set(string(keys.ContextDependencies),
