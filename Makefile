@@ -111,3 +111,16 @@ release:
 	go build ./cmd/spotify-views
 	$(MAKE) kill_prod
 	$(MAKE) serve_prod
+
+## Client
+.PHONY: client_build
+client_build:
+	docker build -f ./client/Dockerfile ./client/ -t sv-client
+
+.PHONY: client_clear
+client_clear:
+	docker container rm sv-client -f
+
+.PHONY: client_start
+client_start: client_build client_clear
+	docker run -i -p 3000:3000 sv-client
