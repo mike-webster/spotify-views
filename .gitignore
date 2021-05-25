@@ -2,6 +2,7 @@ web/clouds/*
 /spotify-views
 /enc
 /secrets.yaml
+/client/node_modules/*
 
 # this was for a redis visualization tool
 rv.yml
