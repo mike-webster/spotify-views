@@ -9,6 +9,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/mike-webster/spotify-views/data"
+	"github.com/mike-webster/spotify-views/env"
 	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/router"
 )
@@ -16,10 +17,30 @@ import (
 func main() {
 	ctx := context.WithValue(context.Background(), keys.ContextMasterKey, os.Getenv("MASTER_KEY"))
 	args := os.Args
-	if len(args) > 1 && args[1] == "-db_init" {
-		dbInit(ctx, args)
-		return
+	if len(args) > 1 {
+		if args[1] == "-db_init" {
+			dbInit(ctx, args)
+			return
+		} else if args[1] == "-check" {
+			s, err := env.ParseSecrets(ctx)
+			if err != nil {
+				fmt.Println("ERR: ", err)
+				return
+			}
+			fmt.Printf("e: %v, id: %v, s: %v, h: %v, n: %v, u: %v, p: %v, l: %v, s: %v",
+				os.Getenv("GO_ENV"),
+				s.ClientID,
+				s.ClientSecret,
+				s.DBHost,
+				s.DBName,
+				s.DBUser,
+				len(s.DBPass) > 1,
+				s.LyricsKey,
+				s.SecurityKey)
+			return
+		}
 	}
+
 	router.Run(context.Background())
 }
 
