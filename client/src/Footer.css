@@ -1,0 +1,21 @@
+.footer {
+    width: 100%;
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: row;
+    background-color: #333;
+    color: #FFF;
+    min-height: 50px;
+    align-items: center;
+}
+
+a {
+    text-decoration: none;
+    color: #FFF;
+    padding: 0;
+    margin: 5px 10px;
+}
+
+.blank {
+    flex-grow: 1;
+}

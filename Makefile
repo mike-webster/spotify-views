@@ -123,4 +123,9 @@ client_clear:
 
 .PHONY: client_start
 client_start: client_build client_clear
-	docker run -i -p 3000:3000 sv-client
+	docker run \
+		--network sv-net \
+		-i \
+		-p 3000:3000 \
+		-v /Users/webby/Code/spotify-views/client:/app \
+		sv-client
