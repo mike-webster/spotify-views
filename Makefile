@@ -61,6 +61,14 @@ find_pid:
 .PHONY: start
 start: clear build init_db run client_start
 
+.PHONY: client_logs
+client_logs:
+	docker logs $(CLIENT_NAME)
+
+.PHONY: api_logs
+api_logs:
+	docker logs $(API_NAME)
+
 .PHONY: clear_app
 clear_app:
 	docker container rm $(API_NAME) -f

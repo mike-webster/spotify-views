@@ -16,99 +16,6 @@ import (
 	"github.com/psykhi/wordclouds"
 )
 
-// TODO: put together a yaml config to parse these for me
-// TODO: these context keys should all be the same type, not unique per package. abstract
-//       the keys package
-// func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}, error) {
-// 	type env struct {
-// 		ClientID     string `envconfig:"CLIENT_ID"`
-// 		ClientSecret string `envconfig:"CLIENT_SECRET"`
-// 		Host         string `envconfig:"HOST"`
-// 		Port         string `envconfig:"PORT"`
-// 		LyricsKey    string `envconfig:"LYRICS_KEY"`
-// 		DbHost       string `envconfig:"DB_HOST"`
-// 		DbUser       string `envconfig:"DB_USER"`
-// 		DbPass       string `envconfig:"DB_PASS"`
-// 		DbName       string `envconfig:"DB_NAME"`
-// 		SecKey       string `envconfig:"SEC_KEY"`
-// 		RedisHost    string `envconfig:"REDIS_HOST"`
-// 		RedisPort    string `envconfig:"REDIS_PORT"`
-// 		RedisPass    string `envconfig:"REDIS_PASS"`
-// 	}
-// 	e := env{}
-// 	envconfig.MustProcess("", &e)
-
-// 	ret := map[interface{}]interface{}{}
-// 	if len(e.ClientID) < 1 {
-// 		return nil, errors.New("no client id provided1")
-// 	}
-// 	ret[keys.ContextSpotifyClientID] = e.ClientID
-
-// 	if len(e.ClientSecret) < 1 {
-// 		return nil, errors.New("no client secret provided")
-// 	}
-// 	ret[keys.ContextSpotifyClientSecret] = e.ClientSecret
-
-// 	if len(e.Host) < 1 {
-// 		return nil, errors.New("no host provided")
-// 	}
-// 	ret[keys.ContextHost] = e.Host
-
-// 	if len(e.Port) < 1 {
-// 		return nil, errors.New("no port provided")
-// 	}
-// 	ret[keys.ContextPort] = e.Port
-
-// 	// fix for local dev
-// 	if strings.Contains(e.Host, "localhost") {
-// 		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("http://", e.Host, ":", e.Port, "/spotify/oauth")
-// 	} else {
-// 		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
-// 	}
-
-// 	// TODO: Do we need this in the context? or just set for the main package?
-// 	// consider: the main goal here is to be able to verify everything is working
-// 	// on app start using the context returned from this method.
-
-// 	if len(e.LyricsKey) < 1 {
-// 		return nil, errors.New("no lyrics key provided")
-// 	}
-// 	ret[keys.ContextLyricsToken] = e.LyricsKey
-
-// 	if len(e.DbHost) < 1 {
-// 		return nil, errors.New("no db host provided")
-// 	}
-// 	ret[keys.ContextDbHost] = e.DbHost
-
-// 	if len(e.DbUser) < 1 {
-// 		return nil, errors.New("no db user provided")
-// 	}
-// 	ret[keys.ContextDbUser] = e.DbUser
-
-// 	if len(e.DbPass) < 1 {
-// 		return nil, errors.New("no db pass provided")
-// 	}
-// 	ret[keys.ContextDbPass] = e.DbPass
-
-// 	if len(e.DbName) < 1 {
-// 		return nil, errors.New("no db name provided")
-// 	}
-// 	ret[keys.ContextDatabase] = e.DbName
-
-// 	if len(e.SecKey) < 1 {
-// 		return nil, errors.New("no sec key provided")
-// 	}
-// 	ret[keys.ContextSecurityKey] = e.SecKey
-
-// 	ret["port"] = e.Port
-
-// 	ret["redis-host"] = os.Getenv("REDIS_HOST")
-// 	ret["redis-port"] = os.Getenv("REDIS_PORT")
-// 	ret["redis-pass"] = os.Getenv("REDIS_PASS")
-
-// 	return ret, nil
-// }
-
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
 	colors := []color.RGBA{
 		//{0x17, 0xA5, 0x54, 0xff},
@@ -165,14 +72,6 @@ var (
 func Run(ctx context.Context) {
 	ctx = context.WithValue(ctx, keys.ContextMasterKey, os.Getenv("MASTER_KEY"))
 
-	// vals, err := parseEnvironmentVariables(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// for k, v := range vals {
-	// 	ctx = context.WithValue(ctx, k, v)
-	// }
-
 	if os.Getenv("GO_ENV") == "test" {
 		//testMethod(ctx)
 		return
@@ -189,6 +88,7 @@ func runServer(ctx context.Context) {
 	r.Use(setEnv)
 	r.Use(setDependencies)
 
+	// TODO: remove this once we're done migrating to the react app
 	r.StaticFile("/sitemap", "./web/sitemap.xml")
 	r.Static("/web/css", "./web")
 	r.Static("/web/js", "./web")
@@ -198,7 +98,7 @@ func runServer(ctx context.Context) {
 	r.LoadHTMLGlob("web/templates/*")
 
 	r.GET(PathHome, handlerHome)
-	r.GET(PathSpotifyOauth, handlerOauth)
+	r.GET(PathSpotifyOauth, handlerOauth) // leave this one
 	r.GET(PathLogin, handlerLogin)
 
 	r.GET(PathTopTracks, authenticate, handlerTopTracks)
@@ -210,6 +110,12 @@ func runServer(ctx context.Context) {
 	r.GET(PathUserLibraryTempo, authenticate, handlerUserLibraryTempo)
 	r.GET(PathRecommendations, authenticate, handlerRecommendations)
 	r.GET(PathTest, authenticate, handlerTest)
+	// TODOEND
+
+	api := r.Group("/api/v1")
+	{
+		api.GET(PathLogin, handlerLogin)
+	}
 
 	env, err := env.ParseEnv()
 	if err != nil {

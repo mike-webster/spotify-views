@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -97,9 +98,26 @@ func handlerOauth(c *gin.Context) {
 	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	val, err := c.Cookie("redirect_url")
-	if err == nil && len(val) > 0 {
-		c.Redirect(http.StatusTemporaryRedirect, val)
+	// val, err := c.Cookie("redirect_url")
+	// if err == nil && len(val) > 0 {
+	// 	c.Redirect(http.StatusTemporaryRedirect, val)
+	// }
+
+	// EXP_REACT is a feature flag that will be used to toggle new behavior
+	// without breaking the existing stuff.
+	if len(os.Getenv("EXP_REACT")) > 0 {
+		host := c.Request.Referer()
+		path := ""
+		for k, v := range c.Request.URL.Query() {
+			if k == "return" {
+				path = v[0]
+			}
+		}
+		if len(path) > 0 {
+			host = fmt.Sprint(host, path)
+		}
+		c.Redirect(http.StatusTemporaryRedirect, host)
+		return
 	}
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
 }
