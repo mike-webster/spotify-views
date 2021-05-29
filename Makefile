@@ -23,6 +23,11 @@ dev:
 	go build -o $(APP_NAME) ./cmd/spotify-views/main.go 
 	HOST=$(HOST) PORT=$(PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME)
 
+.PHONY: check
+check:
+	go build -o $(APP_NAME) ./cmd/spotify-views/main.go
+	HOST=$(HOST) PORT=$(PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME) -check
+
 ## Production tools
 .PHONY: serve_prod
 serve_prod:
