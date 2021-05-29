@@ -4,6 +4,9 @@ import Button from './Button.js';
 import CookieBanner from './CookieBanner.js';
 
 export default class Home extends React.Component {
+    componentDidMount(){
+    };
+
     render(){
         return (
             <div className="container">
@@ -14,7 +17,7 @@ export default class Home extends React.Component {
                     </div>
                     <div className="fix"></div>
                     <div className="blurry-back-white large-pad-v large-marg-top">
-                        <Button text="LOG IN WITH SPOTIFY" css="btn half-width center-text" />
+                        <Button path="/login" text="LOG IN WITH SPOTIFY" css="btn half-width center-text" />
                     </div>
                 </div>
                 <p className="white-back small-marg med-pad-v large-pad-h">
