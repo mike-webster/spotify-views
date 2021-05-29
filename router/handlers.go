@@ -519,6 +519,11 @@ func handlerRecommendations(c *gin.Context) {
 
 	logging.GetLogger(c).WithField("event", "image_check").Info(recs.Tracks[0].Album.Images[0].URL)
 
+	if os.Getenv("EXP_REACT") == "1" {
+		c.JSON(200, *recs)
+		return
+	}
+
 	c.HTML(200, "recommendations.tmpl", *recs)
 }
 
