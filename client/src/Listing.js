@@ -2,6 +2,7 @@ import React from 'react';
 import './Listing.css';
 import Footer from './Footer.js';
 import Result from './Result.js';
+import Nav from './Nav.js';
 
 export default class Listing extends React.Component {
     constructor(props){
@@ -35,38 +36,61 @@ export default class Listing extends React.Component {
                     error
                 });
                 console.log(error);
+                console.log("redirecting");
+                window.location.href = "/";
             }
         )
     };
 
     render(){
         let ret = [];
-        
-        // adding page title copy
-        ret.push(<h1>Recommendations</h1>)
-        ret.push(<p>To receive fresh recommendations, refresh the page.</p>)
+        // top nav
+        ret.push(
+            <React.Fragment>
+                <h1>Recommendations</h1>
+                <p>To receive fresh recommendations, refresh the page.</p>
+            </React.Fragment>
+        );
 
         // show the state of the page and footer while we're loading
         if (!this.state.items.length) {
-            ret.push(<div>{this.state.state}</div>);
-            ret.push(<Footer />);
-            return (ret)
+            // TODO: make this better
+            return <React.Fragment>
+                <Nav />
+                <div class="body">
+                    <h1>Recommendations</h1>
+                    <p>To receive fresh recommendations, refresh the page.</p>
+                    <div>state: {this.state.state}</div>
+                </div>
+                <Footer />
+            </React.Fragment>
         }
 
         // iterate through items received and 
         const items = this.state.items.map((i) => {
-            return (<Result url={i.external_urls.spotify} image={i.album.images[0].url} artist={i.artists[0].name} name={i.name} />);
+            return <Result 
+                        url={i.external_urls.spotify} 
+                        image={i.album.images[0].url} 
+                        artist={i.artists[0].name} 
+                        name={i.name} 
+                    />;
         });
 
         let recs = []
         for (var i = 0; i < items.length; i++) {
             recs.push(items[i]);
         }
-        {console.log("adding table")}
-        ret.push(<React.Fragment><div className="flex-table">{recs}</div></React.Fragment>)
 
-        ret.push(<Footer />);
+        ret.push(
+            <React.Fragment>
+                <div className="flex-table">{recs}</div>
+            </React.Fragment>
+        );
 
-        return ret
+        return <React.Fragment>
+                <Nav />
+                <div className="body">{ret}</div>
+                <Footer />
+            </React.Fragment>
     };
 };

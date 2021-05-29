@@ -1,0 +1,53 @@
+.nav {
+    background-color: #333;
+    color: white;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 10px;
+    height: 5vh;
+  }
+  
+  .links {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .links a {
+    color: white;
+  }
+
+ .links > .menu-btn {
+    display: none;
+  }
+  
+  .links .logo {
+    height: 45px;
+  }
+  
+  .hov .hide {
+    display: none;
+  }
+  
+  .hov:hover .hide, .hov:active .hide {
+    display: inline-flex;
+  }
+  
+  /* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topnav (.icon) */
+  @media screen and (max-width: 600px) {
+    .links > li {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      zoom: 1; 
+      padding: 0 5px;
+    }
+  
+    .links > .menu-btn {
+      display: flex;
+    }    
+    
+    .logo {
+      display:none;
+    }
+  }

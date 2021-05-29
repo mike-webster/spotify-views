@@ -5,7 +5,7 @@
     flex-direction: row;
     background-color: #333;
     color: #FFF;
-    min-height: 50px;
+    height: 5vh;
     align-items: center;
 }
 

@@ -3,6 +3,7 @@ import './Home.css';
 import './Shared.css';
 import Button from './Button.js';
 import CookieBanner from './CookieBanner.js';
+import Footer from './Footer.js';
 import { Redirect } from "react-router-dom";
 
 export default class Home extends React.Component {
@@ -60,6 +61,7 @@ export default class Home extends React.Component {
                     Spotify account and learn about your top tracks, artists and genres, get recommendations for new artists, and more!
                 </p>
                 <CookieBanner />
+                <Footer />
             </div>
         );
     };
