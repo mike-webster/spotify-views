@@ -105,7 +105,7 @@ func handlerOauth(c *gin.Context) {
 
 	// EXP_REACT is a feature flag that will be used to toggle new behavior
 	// without breaking the existing stuff.
-	if len(os.Getenv("EXP_REACT")) > 0 {
+	if os.Getenv("EXP_REACT") == "1" {
 		host := c.Request.Referer()
 		path := ""
 		for k, v := range c.Request.URL.Query() {
