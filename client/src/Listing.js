@@ -1,17 +1,24 @@
 import React from 'react';
 import './Listing.css';
 import Footer from './Footer.js';
-import Result from './Result.js';
 import Nav from './Nav.js';
+import Recommendations from './Recommendations.js'
 
 export default class Listing extends React.Component {
     constructor(props){
         super(props);
         this.state = {
             items: [],
-            state: "loading"
+            action: "recommendations"
         };
+
+        this.changeAction = this.changeAction.bind(this);
     };
+
+    changeAction = (e) => {
+        this.setState({action: e.target.value});
+    };
+
     componentDidMount(){
         fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
             credentials: 'include'
@@ -43,53 +50,18 @@ export default class Listing extends React.Component {
     };
 
     render(){
-        let ret = [];
-        // top nav
-        ret.push(
-            <React.Fragment>
-                <h1>Recommendations</h1>
-                <p>To receive fresh recommendations, refresh the page.</p>
-            </React.Fragment>
-        );
-
-        // show the state of the page and footer while we're loading
-        if (!this.state.items.length) {
-            // TODO: make this better
-            return <React.Fragment>
-                <Nav />
-                <div class="body">
-                    <h1>Recommendations</h1>
-                    <p>To receive fresh recommendations, refresh the page.</p>
-                    <div>state: {this.state.state}</div>
-                </div>
-                <Footer />
-            </React.Fragment>
-        }
-
-        // iterate through items received and 
-        const items = this.state.items.map((i) => {
-            return <Result 
-                        url={i.external_urls.spotify} 
-                        image={i.album.images[0].url} 
-                        artist={i.artists[0].name} 
-                        name={i.name} 
-                    />;
-        });
-
-        let recs = []
-        for (var i = 0; i < items.length; i++) {
-            recs.push(items[i]);
-        }
-
-        ret.push(
-            <React.Fragment>
-                <div className="flex-table">{recs}</div>
-            </React.Fragment>
-        );
-
         return <React.Fragment>
                 <Nav />
-                <div className="body">{ret}</div>
+                <div className="body">
+                    <p>What would you like to see?</p>
+                    <select value={this.state.action} onChange={this.changeAction} id="action">
+                        <option value="recommendations">Recommendations</option>
+                        <option value="tracks">Top Tracks</option>
+                        <option value="artists">Top Artists</option>
+                        <option value="genres">Top Genres</option>
+                    </select>
+                    <Recommendations />
+                </div>
                 <Footer />
             </React.Fragment>
     };

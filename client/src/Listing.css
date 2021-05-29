@@ -1,9 +1,4 @@
-.flex-table {
-    display: flex; 
-    flex-direction: row; 
-    flex-wrap: wrap; 
-    text-align: center;
-}
+
 
 .body {
     height: 90vh;
@@ -14,10 +9,6 @@
 
 .content {
     flex: 1;
-}
-
-h1 {
-    text-align: center;
 }
 
 p {
