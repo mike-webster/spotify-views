@@ -1,6 +1,7 @@
 import React from 'react';
 import './Home.css';
 import Button from './Button.js';
+import CookieBanner from './CookieBanner.js';
 
 export default class Home extends React.Component {
     render(){
@@ -20,7 +21,7 @@ export default class Home extends React.Component {
                     Using Spotify Views, you can take a dive into your music taste to discover more about the music you love! Log in with your existing
                     Spotify account and learn about your top tracks, artists and genres, get recommendations for new artists, and more!
                 </p>
-
+                <CookieBanner />
             </div>
         );
     };
