@@ -87,6 +87,7 @@ func runServer(ctx context.Context) {
 	r.Use(setTokens)
 	r.Use(setEnv)
 	r.Use(setDependencies)
+	r.Use(CORSMiddleware)
 
 	// TODO: remove this once we're done migrating to the react app
 	r.StaticFile("/sitemap", "./web/sitemap.xml")
