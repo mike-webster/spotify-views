@@ -1,0 +1,6 @@
+.flex-table {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap; 
+    text-align: center;
+}
