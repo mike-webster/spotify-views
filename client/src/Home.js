@@ -5,6 +5,7 @@ import CookieBanner from './CookieBanner.js';
 
 export default class Home extends React.Component {
     componentDidMount(){
+        // check for cookie, if it exists we want to switch to something else
     };
 
     render(){
