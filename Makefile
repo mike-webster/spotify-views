@@ -1,8 +1,21 @@
 HOST := localhost
-PORT := 8081
-GO_ENV := development
+
+GO_ENV ?= development
+
 APP_NAME := spotify-views
 USER := webby
+
+NET_NAME := sv-net
+
+CLIENT_NAME := sv-client
+CLIENT_PORT := 3000
+
+DB_NAME := sv-db
+DB_PORT := 3306
+
+API_NAME := sv-api
+API_PORT := 3001
+
 
 ## Encryption Util
 .PHONY: build_enc
@@ -21,21 +34,21 @@ refresh_secrets: build_enc
 .PHONY: dev
 dev:
 	go build -o $(APP_NAME) ./cmd/spotify-views/main.go 
-	HOST=$(HOST) PORT=$(PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME)
+	HOST=$(HOST) PORT=$(API_PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME)
 
 .PHONY: check
 check:
 	go build -o $(APP_NAME) ./cmd/spotify-views/main.go
-	HOST=$(HOST) PORT=$(PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME) -check
+	HOST=$(HOST) PORT=$(API_PORT) GO_ENV=$(GO_ENV) ./$(APP_NAME) -check
 
 ## Production tools
 .PHONY: serve_prod
 serve_prod:
-	nohup ./$(APP_NAME) > $(APP_NAME).log 2>&1 &
+	nohup PORT=$(API_PORT) ./$(APP_NAME) > $(APP_NAME).log 2>&1 &
 
 .PHONY: kill_prod
 kill_prod:
-	kill -9 $(lsof -i tcp:3000 | tail -n +2 | awk '{print $2}')
+	kill -9 $(lsof -i tcp:$(API_PORT) | tail -n +2 | awk '{print $2}')
 
 .PHONY: find_pid
 find_pid:
@@ -43,52 +56,61 @@ find_pid:
 
 ## Docker tools
 
+## ## ## start - this will clear any existing containers, build the app,
+## ## ##         start the db container, and start the react app.
+.PHONY: start
+start: clear build init_db run client_start
+
 .PHONY: clear_app
-clear:
-	docker container rm sv-dev -f
+clear_app:
+	docker container rm $(API_NAME) -f
 
 .PHONY: build
 build: 
 	docker build . -t $(APP_NAME) \
 		--build-arg HOST=$(HOST) \
-		--build-arg PORT=$(PORT) \
+		--build-arg PORT=$(API_PORT) \
 		--build-arg MASTER_KEY="$(MASTER_KEY)" \
-		--build-arg GO_ENV=development 
+		--build-arg GO_ENV=$(GO_ENV) 
 	
 .PHONY: run
 run: clear_app build
 	docker run \
-		-it \
-		-p 8081:8081 \
-		--name sv-dev \
-		--network sv-net \
+		-d \
+		-p $(API_PORT):$(API_PORT) \
+		--name $(API_NAME) \
+		--network $(NET_NAME) \
 		$(APP_NAME) 
 
-.PHONY: in
-in:
-	docker exec -it sv-dev sh
+.PHONY: in_api
+in_api:
+	docker exec -it $(API_NAME) sh
 
 .PHONY: clear_db
 clear_db:
 	docker volume prune -f
+	docker container rm $(DB_NAME) -f
 
 .PHONY: clear_network
 clear_network:
-	docker network rm sv-net
+	docker network rm $(NET_NAME)
+
+.PHONY: create_network
+create_network: 
+	docker network create $(NET_NAME)
 
 .PHONY: clear
-clear: clear_db clear_network clear_app
+clear: clear_app clear_db client_clear clear_network 
 
 .PHONY: start_db
-start_db:
-	docker network create sv-net
-	docker container rm sv-db -f
+start_db: create_network
+	docker container rm $(DB_NAME) -f
 	docker pull mysql
 	docker run \
-		-p 3306:3306 \
-		--name sv-db \
+		-p $(DB_PORT):$(DB_PORT) \
+		--name $(DB_NAME) \
 		--volume=/Users/$(USER)/storage/docker/mysql-data:/var/lib/mysql \
-		--network sv-net \
+		--network $(NET_NAME) \
 		-e MYSQL_ROOT_PASSWORD=pass \
 		-d \
 		mysql
@@ -96,8 +118,8 @@ start_db:
 	
 .PHONY: init_db
 init_db: clear_db start_db
-	@docker exec -i sv-db \
-		mysql -uroot -ppass --protocol=tcp -h localhost -P 3306 < ./data/create_db.sql
+	@docker exec -i $(DB_NAME) \
+		mysql -uroot -ppass --protocol=tcp -h localhost -P $(DB_PORT) < ./data/create_db.sql
 
 ## Testing
 
@@ -120,17 +142,18 @@ release:
 ## Client
 .PHONY: client_build
 client_build:
-	docker build -f ./client/Dockerfile ./client/ -t sv-client
+	docker build -f ./client/Dockerfile ./client/ -t $(CLIENT_NAME)
 
 .PHONY: client_clear
 client_clear:
-	docker container rm sv-client -f
+	docker container rm $(CLIENT_NAME) -f
 
 .PHONY: client_start
 client_start: client_build client_clear
 	docker run \
-		--network sv-net \
-		-i \
-		-p 3000:3000 \
+		--network $(NET_NAME) \
+		--name $(CLIENT_NAME) \
+		-d \
+		-p $(CLIENT_PORT):$(CLIENT_PORT) \
 		-v /Users/webby/Code/spotify-views/client:/app \
-		sv-client
+		$(CLIENT_NAME)

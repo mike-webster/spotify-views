@@ -69,8 +69,5 @@ else
     echo 'docker success!'
 fi
 
-echo 'starting database...'
-make init_db
-
-echo 'starting app...'
-make run
+echo 'starting containers...'
+make start
