@@ -5,9 +5,9 @@ export default class Footer extends React.Component {
     render(){
         return (
             <footer>
-                <div class="footer">
+                <div className="footer">
                     <a href="mailto:spotify-views@webstercode.com">Contact</a>
-                    <div class="blank"></div>
+                    <div className="blank"></div>
                     <a href="https://www.spotify.com">Spotify</a>
                 </div>
             </footer>
