@@ -107,14 +107,9 @@ func handlerOauth(c *gin.Context) {
 	// without breaking the existing stuff.
 	if os.Getenv("EXP_REACT") == "1" {
 		host := c.Request.Referer()
-		path := ""
-		for k, v := range c.Request.URL.Query() {
-			if k == "return" {
-				path = v[0]
-			}
-		}
-		if len(path) > 0 {
-			host = fmt.Sprint(host, path)
+		red, _ := c.Cookie("redirect_url")
+		if len(red) > 0 {
+			host = fmt.Sprint(host, red)
 		}
 		c.Redirect(http.StatusTemporaryRedirect, host)
 		return
@@ -516,8 +511,6 @@ func handlerRecommendations(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
-	logging.GetLogger(c).WithField("event", "image_check").Info(recs.Tracks[0].Album.Images[0].URL)
 
 	if os.Getenv("EXP_REACT") == "1" {
 		c.JSON(200, *recs)
