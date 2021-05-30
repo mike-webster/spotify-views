@@ -26,7 +26,7 @@ export default class Home extends React.Component {
     checkCookie = () => {
         let cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
-            if (cookies[i].includes("sv-authed=")) {
+            if (cookies[i].includes("sv-authed=1")) {
                 console.log("found authed: ", cookies[i]);
                 // token will still work, no need to auth
                 window.location = "/discover";

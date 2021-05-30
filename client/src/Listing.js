@@ -42,8 +42,9 @@ export default class Listing extends React.Component {
                     state: "error",
                     error
                 });
-                console.log(error);
-                console.log("redirecting");
+                
+                alert("There was an error with the request, your session has probably expired.");
+                document.cookie = "sv-authed=";
                 window.location.href = "/";
             }
         )
