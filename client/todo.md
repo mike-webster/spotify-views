@@ -45,9 +45,14 @@
 ## Monitoring For Errors
 - Really need a way to get this back
 
-## Handle Redirect Loop
-- When `sv-authed` is set but the cookies are missing, we'll end up in a
-  redirect loop between / and /discover because we think we're logged in
-  but when we try to make a request we get an error.
-  - Maybe be a little smarter on the redirect? Delete the cookie, if it exists,
-    before sending the user back to /?
+## Handle 429s
+- We're getting a lot of 429s to the point that it's disrupting development
+    - Sure, it makes quite a few calls, but I can't even get recommendations to
+      work before it 429s.
+- Options
+    - Mock calls in development
+        - This would potentially make it harder to find bugs until prod
+    - Stand up request cache
+        - I tried this before with Redis before I had my own server stood up.
+            - At the time, negatives were: paying for a host and paying for storage
+        - Redis alternatives?
