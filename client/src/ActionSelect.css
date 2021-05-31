@@ -1,0 +1,10 @@
+.action-select {
+    border-width: 2px;
+    border-bottom-style: ridge;
+    text-align: center;
+}
+
+#action {
+    margin:auto;
+    margin-bottom: 16px;
+}

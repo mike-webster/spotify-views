@@ -50,8 +50,6 @@ export default class Recommendations extends React.Component {
             // TODO: make this better
             return <React.Fragment>
                 <div class="body">
-                    <h1>Recommendations</h1>
-                    <p>To receive fresh recommendations, refresh the page.</p>
                     <div>state: {this.state.state}</div>
                 </div>
             </React.Fragment>

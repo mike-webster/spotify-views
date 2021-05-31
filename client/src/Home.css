@@ -1,9 +1,3 @@
-@import url("//fonts.googleapis.com/css?family=Ubuntu");
-
-:root {
-    --green: #1DB954;
-}
-
 .container {
     display: flex;
     flex-direction: column;

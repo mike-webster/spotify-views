@@ -3,7 +3,7 @@
     display: flex;
     flex-shrink: 0;
     flex-direction: row;
-    background-color: #333;
+    background-color: var(--gray);
     color: #FFF;
     height: 5vh;
     align-items: center;

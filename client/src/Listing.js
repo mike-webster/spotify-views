@@ -1,22 +1,17 @@
 import React from 'react';
 import './Listing.css';
+import './Shared.css';
 import Footer from './Footer.js';
 import Nav from './Nav.js';
-import Recommendations from './Recommendations.js'
-
+import Recommendations from './Recommendations.js';
+import ActionSelect from './ActionSelect.js';
 export default class Listing extends React.Component {
     constructor(props){
         super(props);
         this.state = {
             items: [],
-            action: "recommendations"
         };
 
-        this.changeAction = this.changeAction.bind(this);
-    };
-
-    changeAction = (e) => {
-        this.setState({action: e.target.value});
     };
 
     componentDidMount(){
@@ -54,13 +49,7 @@ export default class Listing extends React.Component {
         return <React.Fragment>
                 <Nav />
                 <div className="body">
-                    <p>What would you like to see?</p>
-                    <select value={this.state.action} onChange={this.changeAction} id="action">
-                        <option value="recommendations">Recommendations</option>
-                        <option value="tracks">Top Tracks</option>
-                        <option value="artists">Top Artists</option>
-                        <option value="genres">Top Genres</option>
-                    </select>
+                    <ActionSelect />
                     <Recommendations />
                 </div>
                 <Footer />
