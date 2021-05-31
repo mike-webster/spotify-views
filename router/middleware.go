@@ -183,3 +183,14 @@ func CORSMiddleware(c *gin.Context) {
 
 	c.Next()
 }
+
+func setSpotifyUserID(c *gin.Context) {
+	uid, err := c.Cookie(cookieKeyID)
+	if err == nil {
+		if len(uid) > 0 {
+			c.Set(string(keys.ContextSpotifyUserID), uid)
+		}
+	}
+
+	c.Next()
+}

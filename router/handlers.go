@@ -48,13 +48,12 @@ func handlerOauth(c *gin.Context) {
 	// TODO: query state verification
 	qErr := c.Query(queryStringError)
 	if len(qErr) > 0 {
-		// the user is a fucker and they denied access
+		// the user denied access
 		logger.WithError(errors.New(qErr)).Error("user did not grant access")
 		c.Status(500)
 		return
 	}
 
-	//accessTok, refreshTok, err := spotify.HandleOauth(c, code)
 	tok, err := spotify.ExchangeOauthCode(c, code)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")

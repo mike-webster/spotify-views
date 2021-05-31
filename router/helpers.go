@@ -85,6 +85,7 @@ func runServer(ctx context.Context) {
 	r.Use(recovery)
 	r.Use(setContextLogger)
 	r.Use(setTokens)
+	r.Use(setSpotifyUserID)
 	r.Use(setEnv)
 	r.Use(setDependencies)
 	r.Use(CORSMiddleware)
