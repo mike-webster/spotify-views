@@ -13,6 +13,9 @@ CLIENT_PORT := 3000
 DB_NAME := sv-db
 DB_PORT := 3306
 
+RED_NAME := redis
+REDIS_PORT := 6379
+
 API_NAME := sv-api
 API_PORT := 3001
 
@@ -111,7 +114,7 @@ create_network:
 clear: clear_app clear_db client_clear clear_network 
 
 .PHONY: start_db
-start_db: create_network
+start_db: 
 	docker container rm $(DB_NAME) -f
 	docker pull mysql
 	docker run \
@@ -128,6 +131,18 @@ start_db: create_network
 init_db: clear_db start_db
 	@docker exec -i $(DB_NAME) \
 		mysql -uroot -ppass --protocol=tcp -h localhost -P $(DB_PORT) < ./data/create_db.sql
+
+.PHONY: start_redis
+start_redis:
+	docker container rm $(RED_NAME) -f
+	docker pull redis
+	docker run \
+		--name $(RED_NAME) \
+		--volume /Users/$(USER)/storage/redis/redis-data:/data \
+		--network $(NET_NAME) \
+		-p $(REDIS_PORT):$(REDIS_PORT) \
+		-d \
+		redis
 
 ## Testing
 

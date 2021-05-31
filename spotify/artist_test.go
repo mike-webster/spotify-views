@@ -102,7 +102,7 @@ func TestArtistFindImage(t *testing.T) {
 }
 
 func getTestDependencies(ctx context.Context, code int, body string) context.Context {
-	deps := keys.Dependencies{
+	deps := Dependencies{
 		Client: &TestHttpClient{
 			Response: &http.Response{
 				StatusCode: code,

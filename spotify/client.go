@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mike-webster/spotify-views/keys"
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/sirupsen/logrus"
 )
@@ -40,10 +41,24 @@ func (i items) Tracks() Tracks {
 func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	s := time.Now()
 	logger := logging.GetLogger(ctx)
+	id := keys.GetContextValue(ctx, keys.ContextSpotifyUserID)
+	url := req.URL.String()
+	cacheKey := fmt.Sprint(id, "-", url)
 
 	deps := GetDependencies(ctx)
 	if deps == nil {
 		return nil, errors.New("couldnt find deps")
+	}
+
+	if deps.Cache != nil {
+		val, err := deps.Cache.Get(ctx, cacheKey)
+		if err != nil {
+			logger.WithError(err).Error("error checking cache")
+		} else {
+			b := []byte(val)
+			logger.WithField("cached_value", val).Debug("using cache")
+			return &b, nil
+		}
 	}
 
 	resp, err := deps.Client.Do(req)
@@ -66,15 +81,13 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 		return nil, err
 	}
 
-	logger.WithField("external_request_response", resp.StatusCode).Debug()
-
 	if resp.StatusCode != 200 {
 		if resp.StatusCode == 401 {
 			logger.WithField("event", EventNeedsRefreshToken).Info()
 			return nil, ErrTokenExpired("")
 		} else if resp.StatusCode == 429 {
-			wait := 5
-			hdr := resp.Header["Retry-Afer"]
+			wait := 10
+			hdr := resp.Header["Retry-After"]
 			if len(hdr) > 0 {
 				wait, err = strconv.Atoi(hdr[0])
 				if err != nil {
@@ -93,6 +106,13 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 			"body":   string(b),
 		}).Error()
 		return nil, ErrBadRequest(fmt.Sprint("response code: ", resp.StatusCode))
+	}
+
+	if deps.Cache != nil {
+		err := deps.Cache.Set(ctx, cacheKey, string(b))
+		if err != nil {
+			logger.WithError(err).Error("error setting cache record")
+		}
 	}
 
 	return &b, nil

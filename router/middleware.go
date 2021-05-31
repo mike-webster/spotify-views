@@ -107,11 +107,21 @@ func setDependencies(c *gin.Context) {
 		logging.GetLogger(c).WithError(err).Error("couldnt connect to database")
 	}
 
+	deps := spotify.Dependencies{
+		Client: &http.Client{},
+		DB:     db,
+	}
+
+	if os.Getenv("GO_ENV") == "development" {
+		ca, err := data.GetLiveCache(c)
+		if err != nil {
+			logging.GetLogger(c).WithError(err).Error("couldnt get redis cache")
+		}
+		deps.Cache = ca
+	}
+
 	c.Set(string(keys.ContextDependencies),
-		&spotify.Dependencies{
-			Client: &http.Client{},
-			DB:     db,
-		})
+		&deps)
 	c.Next()
 }
 
