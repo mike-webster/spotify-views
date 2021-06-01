@@ -1,7 +1,7 @@
 import React from 'react';
 import './Nav.css';
 import './Shared.css';
-import { Redirect } from "react-router-dom";
+import img from './logo.png';
 
 export default class Nav extends React.Component {
     constructor(){
@@ -44,29 +44,32 @@ export default class Nav extends React.Component {
             header.style.height = "15vh"
             nav.setAttribute("data-expanded", "true")
         } else {
-            body.style.height = "90vh"
-            header.style.height = "5vh"
+            body.style.height = "88vh"
+            header.style.height = "7vh"
             nav.setAttribute("data-expanded", "false");
         }
     };
     render(){
         return(
-            <div className="nav" id="nav" data-expanded="false">
-                <ul className="links">
-                    <li className="navLink menu-btn">
-                        <a href="javascript:void(0);" onClick={this.expand} ><i className="fa fa-bars"></i></a>
-                    </li>
-                    <li className="navLink">
-                        <a href="/">Word Cloud</a>
-                    </li>
-                    <li className="navLink">
-                        <a href="/">Tops</a>
-                    </li>
-                    <li className="navLink">
-                        <a href="/">Library</a>
-                    </li>
-                </ul>
-            </div>
+                <div className="nav" id="nav" data-expanded="false">
+                    <ul className="links">
+                        <li className="navLink menu-btn">
+                            <a href="javascript:void(0);" onClick={this.expand} ><i className="fa fa-bars"></i></a>
+                        </li>
+                        <li className="navLink">
+                            <a href="/">Word Cloud</a>
+                        </li>
+                        <li className="navLink">
+                            <a href="/">Tops</a>
+                        </li>
+                        <li className="navLink">
+                            <a href="/">Library</a>
+                        </li>
+                    </ul>
+                    <div className="logo">
+                        <div className="img" style={{ backgroundImage: `url(${img})` }}></div>
+                    </div>
+                </div>
         );
     };
 }

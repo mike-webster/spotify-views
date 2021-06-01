@@ -5,7 +5,7 @@
     flex-direction: row;
     align-items: center;
     padding: 0 10px;
-    height: 5vh;
+    height: 7vh;
   }
   
   .links {
@@ -32,6 +32,25 @@
   .hov:hover .hide, .hov:active .hide {
     display: inline-flex;
   }
+
+  .logo {
+    position: absolute;
+    width: 100%;
+    height: 25px;
+    top: 0;
+    left: 0;
+    text-align: center;
+  }
+
+  .img {
+    margin:auto;
+    height: 50px;
+    width: 50px;
+    
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
   
   /* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topnav (.icon) */
   @media screen and (max-width: 600px) {
@@ -45,9 +64,5 @@
   
     .links > .menu-btn {
       display: flex;
-    }    
-    
-    .logo {
-      display:none;
     }
   }
