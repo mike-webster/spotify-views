@@ -1,20 +1,30 @@
 import React from 'react';
 import './Shared.css';
-import Footer from './Footer.js';
 import Result from './Result.js';
-import Nav from './Nav.js';
 
-export default class Recommendations extends React.Component {
+export default class Tops extends React.Component {
     constructor(props){
         super(props);
         this.state = {
             items: [],
-            state: "loading"
+            state: "loading",
+            sort: "short_term"
         };
+
+        this.changeSort = this.changeSort.bind(this);
+        this.fetchData = this.fetchData.bind(this);
     };
 
-    componentDidMount(){
-        fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
+    changeSort = (e) => {
+        let cur = this.state.sort;
+        let upd = e.target.value;
+        this.setState({sort: upd});
+        this.fetchData();
+    };
+
+    fetchData = () => {
+        let url = process.env.REACT_APP_API_BASE_URL + "/tracks/top" + "?time_range=" + this.state.sort;
+        fetch(url, {
             credentials: 'include'
         })
         .then(res => res.json())
@@ -22,8 +32,8 @@ export default class Recommendations extends React.Component {
             (result) => {
                 // add the results to the state as 'items'
                 let tmp = [];
-                for (var i = 0; i < result.tracks.length; i++) {
-                    tmp.push(result.tracks[i])
+                for (var i = 0; i < result.length; i++) {
+                    tmp.push(result[i])
                 }
 
                 this.setState({
@@ -35,13 +45,19 @@ export default class Recommendations extends React.Component {
                 // TODO: something in this error state
                 this.setState({
                     state: "error",
-                    error
+                    error: error,
+                    items: []
                 });
                 console.log(error);
                 console.log("redirecting");
-                window.location.href = "/";
+                //window.location.href = "/";
             }
-        )
+        );
+    };
+
+    componentDidMount(){
+        console.log("rendering")
+        this.fetchData();
     };
 
     render(){
@@ -72,11 +88,16 @@ export default class Recommendations extends React.Component {
         }
 
         return <React.Fragment>
-                <div className="body">
-                    <div className="flex-table">
-                        {recs}
-                    </div>
+            <div className="body">
+                <select value={this.state.sort} onChange={this.changeSort}>
+                    <option value="Recent">Recent</option>
+                    <option value="In Between">In Between</option>
+                    <option value="Going Way Back">Going Way Back</option>
+                </select>
+                <div className="flex-table">
+                    {recs}
                 </div>
-            </React.Fragment>
+            </div>
+        </React.Fragment>
     }
 }

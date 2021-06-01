@@ -8,41 +8,6 @@ import ActionSelect from './ActionSelect.js';
 export default class Listing extends React.Component {
     constructor(props){
         super(props);
-        this.state = {
-            items: [],
-        };
-
-    };
-
-    componentDidMount(){
-        fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
-            credentials: 'include'
-        })
-        .then(res => res.json())
-        .then(
-            (result) => {
-                console.log(result.tracks)
-                let tmp = [];
-                for (var i = 0; i < result.tracks.length; i++) {
-                    tmp.push(result.tracks[i])
-                }
-                this.setState({
-                    state: "success",
-                    items: tmp
-                });
-            },
-            (error) => {
-                // TODO: something in this error state
-                this.setState({
-                    state: "error",
-                    error
-                });
-                
-                alert("There was an error with the request, your session has probably expired.");
-                document.cookie = "sv-authed=";
-                window.location.href = "/";
-            }
-        )
     };
 
     render(){
@@ -50,7 +15,6 @@ export default class Listing extends React.Component {
                 <Nav />
                 <div className="body">
                     <ActionSelect />
-                    <Recommendations />
                 </div>
                 <Footer />
             </React.Fragment>

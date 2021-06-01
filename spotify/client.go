@@ -59,7 +59,6 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 				logger.WithError(err).Error("error checking cache")
 			} else {
 				b := []byte(val)
-				logger.WithField("cached_value", val).Debug("using cache")
 				return &b, nil
 			}
 		}

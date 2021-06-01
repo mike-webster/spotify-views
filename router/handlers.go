@@ -118,7 +118,6 @@ func handlerOauth(c *gin.Context) {
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	logger.Debug("loading user's top tracks")
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
@@ -139,9 +138,14 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	data := getTopTracksViewBag(trax)
+	//data := getTopTracksViewBag(trax)
 
-	c.HTML(200, "newtops.tmpl", data)
+	if os.Getenv("EXP_REACT") == "1" {
+		c.JSON(200, trax)
+		return
+	}
+
+	c.HTML(200, "newtops.tmpl", trax)
 }
 
 func getTopTracksViewBag(trax *spotify.Tracks) interface{} {
@@ -474,9 +478,7 @@ func handlerWordCloudData(c *gin.Context) {
 
 func handlerLogin(c *gin.Context) {
 	returl := keys.GetContextValue(c, keys.ContextSpotifyReturnURL)
-	logging.GetLogger(c).Warn(returl)
 	if returl == nil {
-		//c.HTML(500, "error.tmpl", nil)
 		c.Status(500)
 		return
 	}
@@ -839,8 +841,6 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	topSeeds := sortedSeeds.Take(5)
 	seedIDs := []string{}
 
-	logging.GetLogger(ctx).WithField("top seeds", topSeeds).Info()
-
 	for _, i := range topSeeds {
 		seedIDs = append(seedIDs, i.Key)
 	}
@@ -849,6 +849,7 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("got recommendations")
 
 	return res, nil
 }

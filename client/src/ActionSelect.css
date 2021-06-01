@@ -8,3 +8,10 @@
     margin:auto;
     margin-bottom: 16px;
 }
+
+.body {
+    height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+}

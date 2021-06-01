@@ -24,8 +24,6 @@ export default class Nav extends React.Component {
             action = "collapse";
         }
 
-        console.log("action: " + action);
-
         // iterating throuhg each li in the nav
         for (let index = 1; index < nav.children[0].children.length; index++) {
             const element = nav.children[0].children[index];

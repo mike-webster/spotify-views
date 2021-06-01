@@ -103,7 +103,7 @@ func runServer(ctx context.Context) {
 	r.GET(PathSpotifyOauth, handlerOauth) // leave this one
 	r.GET(PathLogin, handlerLogin)        // remove
 
-	r.GET(PathTopTracks, authenticate, handlerTopTracks)
+	//r.GET(PathTopTracks, authenticate, handlerTopTracks)
 	r.GET(PathTopArtists, authenticate, handlerTopArtists)
 	r.GET(PathTopArtistGenres, authenticate, handlerTopArtistsGenres)
 	r.GET(PathTopTracksGenres, authenticate, handlerTopTracksGenres)
@@ -118,6 +118,7 @@ func runServer(ctx context.Context) {
 	{
 		api.GET(PathLogin, handlerLogin)
 		api.GET(PathRecommendations, handlerRecommendations)
+		api.GET(PathTopTracks, authenticate, handlerTopTracks)
 	}
 
 	env, err := env.ParseEnv()

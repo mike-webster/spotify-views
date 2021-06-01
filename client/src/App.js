@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import Home from './Home';
-import Listing from './Listing';
+import ActionSelect from './ActionSelect';
 import {Route, Switch } from 'react-router-dom';
 
 export default function App() {
@@ -10,7 +10,7 @@ export default function App() {
     <main>
       <Switch>
         <Route exact path="/" component={Home} />
-        <Route exact path="/discover" component={Listing} />
+        <Route exact path="/discover" component={ActionSelect} />
       </Switch>
     </main>
   );
