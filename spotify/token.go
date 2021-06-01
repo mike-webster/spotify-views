@@ -36,7 +36,7 @@ func ExchangeOauthCode(ctx context.Context, code string) (*Token, error) {
 		return nil, err
 	}
 
-	respBody, err := makeRequest(ctx, req)
+	respBody, err := makeRequest(context.WithValue(ctx, keys.ContextSkipCache, true), req)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (t *Token) RefreshMe(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	resp, err := makeRequest(ctx, req)
+	resp, err := makeRequest(context.WithValue(ctx, keys.ContextSkipCache, true), req)
 	if err != nil {
 		return false, err
 	}

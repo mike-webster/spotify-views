@@ -1,7 +1,7 @@
 
 
 .body {
-    height: 90vh;
+    height: 88vh;
     display: flex;
     flex-direction: column;
     overflow-y: scroll;

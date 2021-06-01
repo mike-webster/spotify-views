@@ -38,6 +38,7 @@ var (
 	ContextSpotifyUserID  = ContextKey("s_user_id")
 	ContextMasterKey      = ContextKey("master_key")
 	ContextDependencies   = ContextKey("deps")
+	ContextSkipCache      = ContextKey("skip_cache")
 )
 
 func GetContextValue(ctx context.Context, key ContextKey) interface{} {

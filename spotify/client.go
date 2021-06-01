@@ -50,14 +50,18 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 		return nil, errors.New("couldnt find deps")
 	}
 
-	if deps.Cache != nil {
-		val, err := deps.Cache.Get(ctx, cacheKey)
-		if err != nil {
-			logger.WithError(err).Error("error checking cache")
-		} else {
-			b := []byte(val)
-			logger.WithField("cached_value", val).Debug("using cache")
-			return &b, nil
+	// when this key is provided with a value of true we want to skip
+	skip := keys.GetContextValue(ctx, keys.ContextSkipCache)
+	if skip != true && deps.Cache != nil {
+		if deps.Cache != nil {
+			val, err := deps.Cache.Get(ctx, cacheKey)
+			if err != nil {
+				logger.WithError(err).Error("error checking cache")
+			} else {
+				b := []byte(val)
+				logger.WithField("cached_value", val).Debug("using cache")
+				return &b, nil
+			}
 		}
 	}
 
@@ -108,7 +112,7 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 		return nil, ErrBadRequest(fmt.Sprint("response code: ", resp.StatusCode))
 	}
 
-	if deps.Cache != nil {
+	if skip != true && deps.Cache != nil {
 		err := deps.Cache.Set(ctx, cacheKey, string(b))
 		if err != nil {
 			logger.WithError(err).Error("error setting cache record")

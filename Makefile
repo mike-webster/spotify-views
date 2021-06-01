@@ -70,7 +70,7 @@ client_logs:
 
 .PHONY: api_logs
 api_logs:
-	docker logs $(API_NAME)
+	docker logs $(API_NAME) -n 1000
 
 .PHONY: clear_app
 clear_app:
