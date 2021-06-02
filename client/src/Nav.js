@@ -64,9 +64,8 @@ export default class Nav extends React.Component {
                             <a href="/">Library</a>
                         </li>
                     </ul>
-                    <div className="logo">
-                        <div className="img" style={{ backgroundImage: `url(${img})` }}></div>
-                    </div>
+                    <div className="img" style={{ backgroundImage: `url(${img})` }}></div>
+
                 </div>
         );
     };

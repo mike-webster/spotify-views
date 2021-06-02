@@ -12,6 +12,10 @@
     list-style: none;
     padding: 0;
   }
+
+  .links li {
+    display: inline;
+  }
   
   .links a {
     color: white;
@@ -50,6 +54,10 @@
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
+
+    position: absolute;
+    left:0;
+    right: 0;
   }
   
   /* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topnav (.icon) */
@@ -64,5 +72,10 @@
   
     .links > .menu-btn {
       display: flex;
+    }
+  }
+  @media screen and (min-width: 599px) {
+    .links > li {
+      display: inline;
     }
   }
