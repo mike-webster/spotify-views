@@ -37,7 +37,3 @@
 ## Monitoring For Errors
 - Really need a way to get this back
 
-## Fix Menu On Large Screens
-- When on non-mobile displays, the menu expands by default, but it is in all in
-  one stacked column.
-     - Maybe this should just get changed to being a row?
