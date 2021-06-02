@@ -13,12 +13,13 @@ import (
 
 // Artist represents a spotify Artist
 type Artist struct {
-	Genres     []string `json:"genres"`
-	Name       string   `json:"name"`
-	Popularity int32    `json:"popularity"`
-	URI        string   `json:"uri"`
-	ID         string   `json:"ID"`
-	Images     []Image  `json:"images"`
+	Links      map[string]string `json:"external_urls"`
+	Genres     []string          `json:"genres"`
+	Name       string            `json:"name"`
+	Popularity int32             `json:"popularity"`
+	URI        string            `json:"uri"`
+	ID         string            `json:"ID"`
+	Images     []Image           `json:"images"`
 }
 
 // Artists is a collection of spotify Artist

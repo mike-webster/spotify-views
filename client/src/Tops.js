@@ -16,14 +16,25 @@ export default class Tops extends React.Component {
     };
 
     changeSort = (e) => {
-        let cur = this.state.sort;
         let upd = e.target.value;
-        this.setState({sort: upd});
-        this.fetchData();
+        this.setState({sort: upd}, ()=>{
+            // do this in the callback to make sure we wait
+            // for the state to change
+            this.fetchData();
+        });
+    };
+
+    getTrackRow(track) {
+
+    };
+
+    getArtistRow(artist) {
+
     };
 
     fetchData = () => {
-        let url = process.env.REACT_APP_API_BASE_URL + "/tracks/top" + "?time_range=" + this.state.sort;
+        let url = process.env.REACT_APP_API_BASE_URL;
+        url += "/" + this.props.focus + "/top?time_range=" + this.state.sort;
         fetch(url, {
             credentials: 'include'
         })
@@ -73,12 +84,24 @@ export default class Tops extends React.Component {
 
         // iterate through items received and 
         const items = this.state.items.map((i) => {
-            return <Result 
-                url={i.external_urls.spotify} 
-                image={i.album.images[0].url} 
-                artist={i.artists[0].name} 
-                name={i.name} 
-            />;
+            if (this.props.focus === "tracks") {
+                return <Result 
+                    url={i.external_urls.spotify} 
+                    image={i.album.images[0].url} 
+                    artist={i.artists[0].name} 
+                    name={i.name} 
+                />;
+            } else if (this.props.focus === "artists") {
+                console.log(i)
+                return <Result 
+                    url={i.external_urls.spotify} 
+                    image={i.images[0].url} 
+                    artist={i.name} 
+                />;
+            } else if (this.props.focus === "genres") {
+
+            }
+            
         });
 
         // TODO: why am I doing this?

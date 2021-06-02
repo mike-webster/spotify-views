@@ -25,7 +25,9 @@ export default class ActionSelect extends React.Component {
         if (this.state.action === "recommendations") {
             content = <Recommendations />;
         } else if (this.state.action === "tracks") {
-            content = <Tops />;
+            content = <Tops focus="tracks"/>;
+        } else if (this.state.action === "artists") {
+            content = <Tops focus="artists"/>;
         }
 
         return <React.Fragment>

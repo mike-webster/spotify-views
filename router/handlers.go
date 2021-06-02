@@ -213,39 +213,44 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
+	// type Result struct {
+	// 	Key        string
+	// 	Value      string
+	// 	Background string
+	// 	Width      int
+	// 	Height     int
+	// }
+
+	// type tempBag struct {
+	// 	Category string
+	// 	Type     string
+	// 	Opts     []string
+	// 	Results  []Result
+	// }
+
+	// r := []Result{}
+	// for _, i := range *artists {
+	// 	r = append(r, Result{
+	// 		Key:        "",
+	// 		Value:      i.Name,
+	// 		Background: i.FindImage().URL,
+	// 		Height:     i.FindImage().Height,
+	// 		Width:      i.FindImage().Width,
+	// 	})
+	// }
+	// data := tempBag{
+	// 	Category: "Artists",
+	// 	Type:     "",
+	// 	Opts:     []string{"Recent", "In Between", "Going Way Back"},
+	// 	Results:  r,
+	// }
+
+	if os.Getenv("EXP_REACT") == "1" {
+		c.JSON(200, *artists)
+		return
 	}
 
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
-	for _, i := range *artists {
-		r = append(r, Result{
-			Key:        "",
-			Value:      i.Name,
-			Background: i.FindImage().URL,
-			Height:     i.FindImage().Height,
-			Width:      i.FindImage().Width,
-		})
-	}
-	data := tempBag{
-		Category: "Artists",
-		Type:     "",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
-	}
-
-	c.HTML(200, "newtops.tmpl", data)
+	c.HTML(200, "newtops.tmpl", artists)
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
