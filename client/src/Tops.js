@@ -13,26 +13,65 @@ export default class Tops extends React.Component {
 
         this.changeSort = this.changeSort.bind(this);
         this.fetchData = this.fetchData.bind(this);
+        this.fetchGenreData = this.fetchGenreData.bind(this);
     };
 
     changeSort = (e) => {
-        let upd = e.target.value;
-        this.setState({sort: upd}, ()=>{
+        this.setState({sort: e.target.value}, ()=>{
             // do this in the callback to make sure we wait
             // for the state to change
             this.fetchData();
         });
     };
 
-    getTrackRow(track) {
+    fetchGenreData = () => {
+        let url = process.env.REACT_APP_API_BASE_URL;
+        url += "/genres?time_range=" + this.state.sort;
+        let totals = {};
 
-    };
+        fetch(url, {credentials: 'include'})
+        .then(res => res.json())
+        .then(
+            (result) => {
+                console.log(result);
+                // add the results to the state as 'items'
+                let tmp = [];
+                for (var i = 0; i < result.length; i++) {
+                    tmp.push(result[i].Key);
+                    if (totals[result[i].Key] == null) {
+                        // new key
+                        totals[result[i].Key] = result[i].Value
+                    } else {
+                        // add to existing key
+                        totals[result[i].Key] += result[i].Value
+                    }
+                }
 
-    getArtistRow(artist) {
+                let r1 = tmp;
 
+                this.setState({
+                    state: "success",
+                    items: tmp
+                });
+            },
+            (error) => {
+                this.setState({
+                    state: "error",
+                    error: error,
+                    items: []
+                });
+                console.log(error);
+            }
+        );
     };
 
     fetchData = () => {
+        if (this.props.focus === "genres") {
+            this.fetchGenreData();
+            return
+        }
+
+
         let url = process.env.REACT_APP_API_BASE_URL;
         url += "/" + this.props.focus + "/top?time_range=" + this.state.sort;
         fetch(url, {
@@ -92,14 +131,20 @@ export default class Tops extends React.Component {
                     name={i.name} 
                 />;
             } else if (this.props.focus === "artists") {
-                console.log(i)
+                console.log(i);
                 return <Result 
                     url={i.external_urls.spotify} 
-                    image={i.images[0].url} 
+                    image={ (i.images != null) ? i.images[0].url : i.album.images[0].url } 
                     artist={i.name} 
                 />;
             } else if (this.props.focus === "genres") {
-
+                return <Result 
+                    artist={i} 
+                />;
+            } else {
+                return <React.Fragment>
+                    <div>What happened?</div>
+                </React.Fragment>
             }
             
         });

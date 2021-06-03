@@ -60,6 +60,7 @@ var (
 	PathTopArtists       = "/artists/top"
 	PathTopArtistGenres  = "/artists/genres"
 	PathTopTracksGenres  = "/tracks/genres"
+	PathCombinedGenres   = "/genres"
 	PathLogin            = "/login"
 	PathHome             = "/"
 	PathWordCloud        = "/wordcloud"
@@ -104,8 +105,6 @@ func runServer(ctx context.Context) {
 	r.GET(PathLogin, handlerLogin)        // remove
 
 	//r.GET(PathTopTracks, authenticate, handlerTopTracks)
-	r.GET(PathTopArtistGenres, authenticate, handlerTopArtistsGenres)
-	r.GET(PathTopTracksGenres, authenticate, handlerTopTracksGenres)
 	r.GET(PathWordCloud, authenticate, handlerWordCloud)
 	r.GET(PathWordCloudData, authenticate, handlerWordCloudData)
 	r.GET(PathUserLibraryTempo, authenticate, handlerUserLibraryTempo)
@@ -119,6 +118,9 @@ func runServer(ctx context.Context) {
 		api.GET(PathRecommendations, handlerRecommendations)
 		api.GET(PathTopTracks, authenticate, handlerTopTracks)
 		api.GET(PathTopArtists, authenticate, handlerTopArtists)
+		// api.GET(PathTopArtistGenres, authenticate, handlerTopArtistsGenres)
+		// api.GET(PathTopTracksGenres, authenticate, handlerTopTracksGenres)
+		api.GET(PathCombinedGenres, authenticate, handlerCombinedGenres)
 	}
 
 	env, err := env.ParseEnv()

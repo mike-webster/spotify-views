@@ -5,18 +5,6 @@
 - Create the new component, but remember to move the route to the api group too
 - Adjust listing drop down handler
 
-## Implement Top Artists
-- make request
-- move route in service
-- new component
-- adjust listing drop down handler
-
-## Implement Top Genres
-- make request
-- move route in service
-- new component
-- adjust listing drop down handler
-
 ## Implement Library
 - Is this actually helpful in any way?
     - If not, could it be?

@@ -28,6 +28,8 @@ export default class ActionSelect extends React.Component {
             content = <Tops focus="tracks"/>;
         } else if (this.state.action === "artists") {
             content = <Tops focus="artists"/>;
+        }else if (this.state.action === "genres") {
+            content = <Tops focus="genres"/>;
         }
 
         return <React.Fragment>

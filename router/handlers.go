@@ -323,37 +323,68 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 	genres := artists.GetGenres(c)
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
-	}
-
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range *genres {
-		r = append(r, Result{
-			Key:   i.Key,
-			Value: fmt.Sprint("( ", i.Value, ")"),
-		})
-	}
-	data := tempBag{
-		Category: "Genres",
-		Type:     "artists",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
+	c.JSON(200, *genres)
+	return
+}
+
+func handlerCombinedGenres(c *gin.Context) {
+	logger := logging.GetLogger(c)
+	tr := c.Query(queryStringTimeRange)
+	if len(tr) > 0 {
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	c.HTML(200, "newtops.tmpl", data)
+	artists, err := spotify.GetTopArtists(c)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve top artists from spotify")
+		c.Status(500)
+		return
+	}
+
+	genres := artists.GetGenres(c)
+
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
+	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
+		}
+
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
+		c.Status(500)
+		return
+	}
+
+	genres2, err := trax.GetGenres(c)
+	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
+		}
+
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
+		c.Status(500)
+		return
+	}
+
+	for _, g := range *genres2 {
+		i := genres.Contains(g.Key)
+		if i < 0 {
+			// doesn't exist yet
+			(*genres) = append((*genres), g)
+			continue
+		}
+
+		(*genres)[i].Value += g.Value
+	}
+
+	sort.Sort(sort.Reverse(genres))
+	c.JSON(200, *genres)
+	return
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
@@ -391,37 +422,9 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
-	}
-
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range *genres {
-		r = append(r, Result{
-			Key:   i.Key,
-			Value: fmt.Sprint("( ", i.Value, ")"),
-		})
-	}
-	data := tempBag{
-		Category: "Genres",
-		Type:     "tracks",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
-	}
-
-	c.HTML(200, "newtops.tmpl", data)
+	c.JSON(200, *genres)
+	return
 }
 
 func handlerWordCloud(c *gin.Context) {
