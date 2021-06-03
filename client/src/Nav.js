@@ -58,7 +58,7 @@ export default class Nav extends React.Component {
                             <a href="/">Word Cloud</a>
                         </li>
                         <li className="navLink">
-                            <a href="/">Tops</a>
+                            <a href="/discover">Tops</a>
                         </li>
                         <li className="navLink">
                             <a href="/">Library</a>
