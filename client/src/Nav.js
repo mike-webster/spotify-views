@@ -15,10 +15,9 @@ export default class Nav extends React.Component {
             return;
         }
 
-        let btn = document.getElementsByClassName("menu-btn")[0];
         let action = "";
         let state = nav.getAttribute("data-expanded");
-        if (state == null || state == "false") {
+        if (state == null || state === "false") {
             action = "expand";
         } else {
             action = "collapse";
@@ -37,7 +36,7 @@ export default class Nav extends React.Component {
         let body = document.getElementsByClassName("body")[0];
         let header = document.getElementsByClassName("nav")[0];
 
-        if (action == "expand") {
+        if (action === "expand") {
             body.style.height = "80vh"
             header.style.height = "15vh"
             nav.setAttribute("data-expanded", "true")
@@ -55,7 +54,7 @@ export default class Nav extends React.Component {
                             <a href="javascript:void(0);" onClick={this.expand} ><i className="fa fa-bars"></i></a>
                         </li>
                         <li className="navLink">
-                            <a href="/">Word Cloud</a>
+                            <a href="/wordcloud">Word Cloud</a>
                         </li>
                         <li className="navLink">
                             <a href="/discover">Tops</a>

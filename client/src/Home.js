@@ -4,7 +4,6 @@ import './Shared.css';
 import Button from './Button.js';
 import CookieBanner from './CookieBanner.js';
 import Footer from './Footer.js';
-import { Redirect } from "react-router-dom";
 
 export default class Home extends React.Component {
     constructor(){

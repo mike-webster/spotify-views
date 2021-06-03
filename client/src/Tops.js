@@ -47,8 +47,6 @@ export default class Tops extends React.Component {
                     }
                 }
 
-                let r1 = tmp;
-
                 this.setState({
                     state: "success",
                     items: tmp

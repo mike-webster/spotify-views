@@ -95,7 +95,7 @@ func handlerOauth(c *gin.Context) {
 	}).Info("user logged in successfully")
 
 	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
 	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	// val, err := c.Cookie("redirect_url")
 	// if err == nil && len(val) > 0 {

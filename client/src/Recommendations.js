@@ -1,8 +1,6 @@
 import React from 'react';
 import './Shared.css';
-import Footer from './Footer.js';
 import Result from './Result.js';
-import Nav from './Nav.js';
 
 export default class Recommendations extends React.Component {
     constructor(props){
