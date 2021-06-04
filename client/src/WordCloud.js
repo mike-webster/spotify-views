@@ -2,6 +2,9 @@
     // <script src="/web/css/sortable.min.js"></script>
 
 import React from "react"
+import ComingSoon from './ComingSoon.js'
+import Nav from './Nav.js'
+import Footer from './Footer.js'
 
 export default class WordCloud extends React.Component {
     constructor(){
@@ -91,17 +94,22 @@ export default class WordCloud extends React.Component {
     render(){
         return(
             <React.Fragment>
-                <script src="/web/css/wordcloud2.js"></script>
-                <div className="content">
-                    <div style={{width:"100%", textAlign:"center"}}>
-                        <h1>Word Cloud</h1>
-                        <p>We use the lyrics from your most popular songs and find the 50 most common words to generate this for you.</p>
-                        <div id="loader" className="loader"></div>
-                        <br />
-                        <div id="newcloud" style={{width: "500px", height: "500px", display: "inline-block"}}></div>
-                    </div>
-                </div> 
+                <Nav />
+                <ComingSoon />
+                <Footer />
             </React.Fragment>
+            // <React.Fragment>
+            //     <script src="/web/css/wordcloud2.js"></script>
+            //     <div className="content">
+            //         <div style={{width:"100%", textAlign:"center"}}>
+            //             <h1>Word Cloud</h1>
+            //             <p>We use the lyrics from your most popular songs and find the 50 most common words to generate this for you.</p>
+            //             <div id="loader" className="loader"></div>
+            //             <br />
+            //             <div id="newcloud" style={{width: "500px", height: "500px", display: "inline-block"}}></div>
+            //         </div>
+            //     </div> 
+            // </React.Fragment>
         )
     };
 }
