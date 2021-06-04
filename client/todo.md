@@ -4,6 +4,7 @@
 - This should be pretty easy, since it's already a client -> service call
 - Create the new component, but remember to move the route to the api group too
 - Adjust listing drop down handler
+- This seems it may be broken at the service layer... This will take some troubleshooting
 
 ## Implement Library
 - Is this actually helpful in any way?
@@ -21,7 +22,3 @@
     - We'll need to move it to 3001
     - Probably need to adjust nginx
 - Add site enabled for the new app
-
-## Monitoring For Errors
-- Really need a way to get this back
-
