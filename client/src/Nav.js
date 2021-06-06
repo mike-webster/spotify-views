@@ -60,7 +60,7 @@ export default class Nav extends React.Component {
                             <a href="/discover">Tops</a>
                         </li>
                         <li className="navLink">
-                            <a href="/">Library</a>
+                            <a href="/library">Library</a>
                         </li>
                     </ul>
                     <div className="img" style={{ backgroundImage: `url(${img})` }}></div>

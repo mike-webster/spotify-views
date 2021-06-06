@@ -94,7 +94,7 @@ export default class WordCloud extends React.Component {
     render(){
         return(
             <Layout nav="true">
-                <ComingSoon />
+                <ComingSoon err="true"/>
             </Layout>
             // <React.Fragment>
             //     <script src="/web/css/wordcloud2.js"></script>
