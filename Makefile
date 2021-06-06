@@ -19,6 +19,9 @@ REDIS_PORT := 6379
 API_NAME := sv-api
 API_PORT := 3001
 
+RELEASE_DATE ?= 
+RELEASE_DIR := /home/spotify-views/spotify-views/
+API_RELEASE_DIR := api-releases
 
 ## Encryption Util
 .PHONY: build_enc
@@ -56,6 +59,28 @@ kill_prod:
 .PHONY: find_pid
 find_pid:
 	pgrep -a $(APP_NAME)
+
+.PHONY: release_api
+release_api: test dev
+	echo $(RELEASE_DATE)
+ifeq ($(RELEASE_DATE),)
+	echo "cannot release without a date provided"
+	exit 1
+endif
+
+ifeq ($(GO_ENV),production)
+	# create the release directory
+	ssh spotify-views@spotify-views.com mkdir $(RELEASE_DIR)/$(API_RELEASE_DIR)/$(RELEASE_DATE)
+
+	# copy the binary into the new release directory
+	scp -r ./$(APP_NAME) spotify-views@spotify-views.com:$(RELEASE_DIR)/$(API_RELEASE_DIR)/$(RELEASE_DATE)/$(APP_NAME)
+
+	# copy the new release into the live directory, overwriting what's already there
+	ssh spotify-views@spotify-views.com cp -rf $(RELEASE_DIR)/$(API_RELEASE_DIR)/$(RELEASE_DATE)/$(APP_NAME) $(RELEASE_DIR)/$(API_RELEASE_DIR)/live
+else
+	echo "cannot release unless GO_ENV set to 'production'"
+endif
+
 
 ## Docker tools
 
