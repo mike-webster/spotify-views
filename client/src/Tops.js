@@ -146,7 +146,7 @@ export default class Tops extends React.Component {
         }
 
         // iterate through items received and 
-        const items = this.state.items.map((i) => {
+        const items = this.state.items.forEach((i) => {
             if (this.props.focus === "tracks") {
                 return this.getTracksRow(i);
             } else if (this.props.focus === "artists") {
@@ -154,6 +154,9 @@ export default class Tops extends React.Component {
             } else if (this.props.focus === "genres") {
                 return this.getGenreRow(i);
             }
+
+            console.log("unsupported focus");
+            return <div>error encountered</div>
         });
 
         // TODO: why am I doing this?
