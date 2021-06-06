@@ -50,6 +50,8 @@ export default class TopGenres extends React.Component {
                     error: error
                 });
                 console.log(error);
+                document.cookie = "sv-authed=0;path=/";
+                window.location.href = "/";
             }
         );
     };

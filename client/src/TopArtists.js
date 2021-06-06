@@ -45,8 +45,8 @@ export default class TopArtists extends React.Component {
                     error: error
                 });
                 console.log(error);
-                console.log("redirecting");
-                //window.location.href = "/";
+                document.cookie = "sv-authed=0;path=/";
+                window.location.href = "/";
             }
         );
     };
