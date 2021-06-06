@@ -601,7 +601,6 @@ func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int
 
 		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
-			fmt.Println("fuck3, ", err)
 			return nil, ctx
 		}
 
@@ -658,7 +657,7 @@ func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[
 	// recs: the user's top spotify artists
 	// orderedRecs: all of the user's recommendations and how many times they were present in the process
 
-	// this method is fucked. I can't retrieve any additional info from spotify
+	// this method is foobar. I can't retrieve any additional info from spotify
 	// with the way I've been passing around this information.  I need the ids for
 	// api calls, and all I have is names.
 
@@ -820,7 +819,6 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	for _, i := range sumArtists {
 		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
-			fmt.Println("fuck3, ", err)
 			return nil, err
 		}
 

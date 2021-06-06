@@ -57,7 +57,7 @@ func TestGetArtistGenres(t *testing.T) {
 	objs := Artists{
 		Artist{Genres: []string{"emo", "rock", "rap"}},
 		Artist{Genres: []string{"hip hop", "rap", "mumble"}},
-		Artist{Genres: []string{"country", "shit", "trash", "noise"}},
+		Artist{Genres: []string{"country", "shoot", "trash", "noise"}},
 		Artist{Genres: []string{"classical"}},
 	}
 
@@ -68,7 +68,7 @@ func TestGetArtistGenres(t *testing.T) {
 	exp["hip hop"] = 1
 	exp["mumble"] = 1
 	exp["country"] = 1
-	exp["shit"] = 1
+	exp["shoot"] = 1
 	exp["trash"] = 1
 	exp["noise"] = 1
 	exp["classical"] = 1

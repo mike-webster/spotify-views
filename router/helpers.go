@@ -131,7 +131,7 @@ func runServer(ctx context.Context) {
 	r.Run(fmt.Sprint(":", env.Port))
 }
 
-// what the fuck is this? Why is it taking a gin context like a controller handler but
+// what the fudge is this? Why is it taking a gin context like a controller handler but
 // still getting invoked as if its a helper function?
 func refreshToken(ctx context.Context) (string, error) {
 	// need to refresh tokens and try again
