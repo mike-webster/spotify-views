@@ -12,7 +12,6 @@ export default class Recommendations extends React.Component {
     };
 
     componentDidMount(){
-        console.log("fetching data for recommendations");
         fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
             credentials: 'include'
         })
@@ -37,7 +36,6 @@ export default class Recommendations extends React.Component {
                     error
                 });
                 console.log(error);
-                console.log("redirecting");
                 window.location.href = "/";
             }
         )
