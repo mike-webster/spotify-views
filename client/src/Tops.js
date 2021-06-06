@@ -66,9 +66,9 @@ export default class Tops extends React.Component {
     fetchData = () => {
         if (this.props.focus === "genres") {
             this.fetchGenreData();
+            console.log("items: ", this.state.items);
             return
         }
-
 
         let url = process.env.REACT_APP_API_BASE_URL;
         url += "/" + this.props.focus + "/top?time_range=" + this.state.sort;
@@ -87,7 +87,8 @@ export default class Tops extends React.Component {
                 this.setState({
                     state: "success",
                     items: tmp
-                });
+                }, console.log("items: ", this.state.items));
+                
             },
             (error) => {
                 // TODO: something in this error state
@@ -110,13 +111,11 @@ export default class Tops extends React.Component {
 
     render(){
         // show the state of the page and footer while we're loading
-        if (!this.state.items.length) {
+        if (this.state.items.length > 0) {
             // TODO: make this better
-            return <React.Fragment>
-                <div className="body">
-                    <div>state: {this.state.state}</div>
-                </div>
-            </React.Fragment>
+            return <div className="body">
+                <div>state: {this.state.state}</div>
+            </div>
         }
 
         // iterate through items received and 
@@ -129,7 +128,7 @@ export default class Tops extends React.Component {
                     name={i.name} 
                 />;
             } else if (this.props.focus === "artists") {
-                console.log(i);
+                console.log("artist: " + i);
                 return <Result 
                     url={i.external_urls.spotify} 
                     image={ (i.images != null) ? i.images[0].url : i.album.images[0].url } 

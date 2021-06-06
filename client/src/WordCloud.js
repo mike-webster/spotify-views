@@ -3,8 +3,8 @@
 
 import React from "react"
 import ComingSoon from './ComingSoon.js'
-import Nav from './Nav.js'
-import Footer from './Footer.js'
+import Layout from './Layout'
+
 
 export default class WordCloud extends React.Component {
     constructor(){
@@ -93,11 +93,9 @@ export default class WordCloud extends React.Component {
 
     render(){
         return(
-            <React.Fragment>
-                <Nav />
+            <Layout nav="true">
                 <ComingSoon />
-                <Footer />
-            </React.Fragment>
+            </Layout>
             // <React.Fragment>
             //     <script src="/web/css/wordcloud2.js"></script>
             //     <div className="content">

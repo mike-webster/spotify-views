@@ -1,12 +1,10 @@
 import React from 'react';
-import './App.css';
 import Home from './Home';
 import ActionSelect from './ActionSelect';
 import WordCloud from './WordCloud';
 import {Route, Switch } from 'react-router-dom';
 
-export default function App() {
-
+export default function Router() {
   return (
     <main>
       <Switch>

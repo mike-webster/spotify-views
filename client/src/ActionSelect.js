@@ -1,7 +1,6 @@
 import React from 'react';
 import './ActionSelect.css';
-import Nav from './Nav.js';
-import Footer from './Footer.js';
+import Layout from './Layout.js';
 import Recommendations from './Recommendations.js';
 import Tops from './Tops.js';
 
@@ -21,6 +20,7 @@ export default class ActionSelect extends React.Component {
     };
 
     render(){
+        console.log("rendering: " + this.state.action);
         let content;
         if (this.state.action === "recommendations") {
             content = <Recommendations />;
@@ -32,8 +32,7 @@ export default class ActionSelect extends React.Component {
             content = <Tops focus="genres"/>;
         }
 
-        return <React.Fragment>
-            <Nav />
+        return<Layout nav="true">
             <div className="body">
                 <div className="action-select">
                     <p>What would you like to see?</p>
@@ -47,8 +46,7 @@ export default class ActionSelect extends React.Component {
 
                 {content}
             </div>
-            <Footer />
-        </React.Fragment>
+        </Layout>
     };
 
 }
