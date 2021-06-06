@@ -35,7 +35,7 @@ export default class TopTracks extends React.Component {
                 this.setState({
                     state: "success",
                     items: tmp,
-                }, console.log("tracks: ", this.state.items));
+                });
                 
             },
             (error) => {

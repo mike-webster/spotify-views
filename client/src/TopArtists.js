@@ -35,7 +35,7 @@ export default class TopArtists extends React.Component {
                 this.setState({
                     state: "success",
                     items: tmp,
-                }, console.log("artists: ", this.state.items));
+                });
                 
             },
             (error) => {
