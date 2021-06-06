@@ -15,13 +15,10 @@ export default class TopArtists extends React.Component {
     };
 
     componentDidMount(){
-        console.log("mounting top artists")
         this.fetchTopArtists();
     };
 
     fetchTopArtists = () => {
-        console.log("fetching data for top artists");
-
         let url = process.env.REACT_APP_API_BASE_URL;
         url += "/artists/top?time_range=" + this.state.sort;
         fetch(url, {

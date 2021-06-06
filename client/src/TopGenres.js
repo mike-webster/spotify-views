@@ -15,13 +15,10 @@ export default class TopGenres extends React.Component {
     };
 
     componentDidMount() {
-        console.log("mounting top genres")
         this.fetchGenres();
     };
 
     fetchGenres = () => {
-        console.log("fetching data for genres");
-
         let url = process.env.REACT_APP_API_BASE_URL;
         url += "/genres?time_range=" + this.state.sort;
         let totals = {};
@@ -29,7 +26,6 @@ export default class TopGenres extends React.Component {
         .then(res => res.json())
         .then(
             (result) => {
-                console.log(result);
                 // add the results to the state as 'items'
                 let tmp = [];
                 for (var i = 0; i < result.length; i++) {

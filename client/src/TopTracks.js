@@ -15,13 +15,10 @@ export default class TopTracks extends React.Component {
     };
 
     componentDidMount(){
-        console.log("componentDidMount - top tracks");
         this.fetchTopTracks();
     };
 
     fetchTopTracks = () => {
-        console.log("fetching data for tracks");
-
         let url = process.env.REACT_APP_API_BASE_URL;
         url += "/tracks/top?time_range=" + this.state.sort;
         fetch(url, {
@@ -69,10 +66,6 @@ export default class TopTracks extends React.Component {
             return <div className="body">
                 <div>state: {this.state.state}</div>
             </div>
-        }
-
-        if (this.state.items.length < 1) {
-            console.log("no data for tracks");
         }
 
         // iterate through items received and 
