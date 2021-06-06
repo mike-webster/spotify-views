@@ -51,7 +51,7 @@ export default class Nav extends React.Component {
                 <div className="nav" id="nav" data-expanded="false">
                     <ul className="links">
                         <li className="navLink menu-btn">
-                            <a href="javascript:void(0);" onClick={this.expand} ><i className="fa fa-bars"></i></a>
+                            <a href="#!" onClick={this.expand} ><i className="fa fa-bars"></i></a>
                         </li>
                         <li className="navLink">
                             <a href="/wordcloud">Word Cloud</a>
