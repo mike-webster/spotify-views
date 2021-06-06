@@ -20,19 +20,18 @@ export default class ActionSelect extends React.Component {
     };
 
     render(){
-        console.log("rendering: " + this.state.action);
         let content;
         if (this.state.action === "recommendations") {
-            content = <Recommendations />;
+            content = <Recommendations key="recs" />;
         } else if (this.state.action === "tracks") {
-            content = <Tops focus="tracks"/>;
+            content = <Tops key="tracks" focus="tracks"/>;
         } else if (this.state.action === "artists") {
-            content = <Tops focus="artists"/>;
+            content = <Tops key="artists" focus="artists"/>;
         }else if (this.state.action === "genres") {
-            content = <Tops focus="genres"/>;
+            content = <Tops key="genres" focus="genres"/>;
         }
 
-        return<Layout nav="true">
+        return<Layout key="as-table" nav="true">
             <div className="body">
                 <div className="action-select">
                     <p>What would you like to see?</p>

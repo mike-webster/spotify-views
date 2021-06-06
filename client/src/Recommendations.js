@@ -12,6 +12,7 @@ export default class Recommendations extends React.Component {
     };
 
     componentDidMount(){
+        console.log("fetching data for recommendations");
         fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
             credentials: 'include'
         })
@@ -46,11 +47,9 @@ export default class Recommendations extends React.Component {
         // show the state of the page and footer while we're loading
         if (!this.state.items.length) {
             // TODO: make this better
-            return <React.Fragment>
-                <div className="body">
-                    <div>state: {this.state.state}</div>
-                </div>
-            </React.Fragment>
+            return <div className="body">
+                <div>state: {this.state.state}</div>
+            </div>
         }
 
         // iterate through items received and 
