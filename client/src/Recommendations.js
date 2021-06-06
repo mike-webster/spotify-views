@@ -54,12 +54,13 @@ export default class Recommendations extends React.Component {
         }
 
         // iterate through items received and 
-        const items = this.state.items.map((i) => {
+        const items = this.state.items.map((item, i) => {
             return <Result 
-                url={i.external_urls.spotify} 
-                image={i.album.images[0].url} 
-                artist={i.artists[0].name} 
-                name={i.name} 
+                key={i}
+                url={item.external_urls.spotify} 
+                image={item.album.images[0].url} 
+                artist={item.artists[0].name} 
+                name={item.name} 
             />;
         });
 
@@ -69,12 +70,10 @@ export default class Recommendations extends React.Component {
             recs.push(items[i]);
         }
 
-        return <React.Fragment>
-                <div className="body">
-                    <div className="flex-table">
-                        {recs}
-                    </div>
-                </div>
-            </React.Fragment>
+        return <div data-check="false" className="body">
+            <div  className="flex-table">
+                {recs}
+            </div>
+        </div>
     }
 }

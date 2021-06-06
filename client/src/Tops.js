@@ -14,14 +14,56 @@ export default class Tops extends React.Component {
         this.changeSort = this.changeSort.bind(this);
         this.fetchData = this.fetchData.bind(this);
         this.fetchGenreData = this.fetchGenreData.bind(this);
+        this.getGenreRow = this.getGenreRow.bind(this);
+        this.getArtistRow = this.getArtistRow.bind(this);
+        this.getTracksRow = this.getTracksRow.bind();
     };
 
-    changeSort = (e) => {
-        this.setState({sort: e.target.value}, ()=>{
-            // do this in the callback to make sure we wait
-            // for the state to change
-            this.fetchData();
-        });
+    componentDidMount(){
+        console.log("rendering")
+        this.fetchData();
+    };
+
+    fetchData = () => {
+        console.log("fetching data for " + this.props.focus);
+
+        if (this.props.focus === "genres") {
+            this.fetchGenreData();
+            return
+        }
+
+        let url = process.env.REACT_APP_API_BASE_URL;
+        url += "/" + this.props.focus + "/top?time_range=" + this.state.sort;
+        fetch(url, {
+            credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(
+            (result) => {
+                // add the results to the state as 'items'
+                let tmp = [];
+                for (var i = 0; i < result.length; i++) {
+                    tmp.push(result[i])
+                }
+
+                this.setState({
+                    state: "success",
+                    items: tmp
+                }, console.log("items: ", this.state.items));
+                
+            },
+            (error) => {
+                // TODO: something in this error state
+                this.setState({
+                    state: "error",
+                    error: error,
+                    items: []
+                });
+                console.log(error);
+                console.log("redirecting");
+                //window.location.href = "/";
+            }
+        );
     };
 
     fetchGenreData = () => {
@@ -63,50 +105,35 @@ export default class Tops extends React.Component {
         );
     };
 
-    fetchData = () => {
-        if (this.props.focus === "genres") {
-            this.fetchGenreData();
-            console.log("items: ", this.state.items);
-            return
-        }
-
-        let url = process.env.REACT_APP_API_BASE_URL;
-        url += "/" + this.props.focus + "/top?time_range=" + this.state.sort;
-        fetch(url, {
-            credentials: 'include'
-        })
-        .then(res => res.json())
-        .then(
-            (result) => {
-                // add the results to the state as 'items'
-                let tmp = [];
-                for (var i = 0; i < result.length; i++) {
-                    tmp.push(result[i])
-                }
-
-                this.setState({
-                    state: "success",
-                    items: tmp
-                }, console.log("items: ", this.state.items));
-                
-            },
-            (error) => {
-                // TODO: something in this error state
-                this.setState({
-                    state: "error",
-                    error: error,
-                    items: []
-                });
-                console.log(error);
-                console.log("redirecting");
-                //window.location.href = "/";
-            }
-        );
+    changeSort = (e) => {
+        this.setState({sort: e.target.value}, ()=>{
+            // do this in the callback to make sure we wait
+            // for the state to change
+            this.fetchData();
+        });
     };
 
-    componentDidMount(){
-        console.log("rendering")
-        this.fetchData();
+    getTracksRow(i) {
+        return <Result 
+            url={i.external_urls.spotify} 
+            image={i.album.images[0].url} 
+            artist={i.artists[0].name} 
+            name={i.name} 
+        />; 
+    };
+
+    getArtistRow(i) {
+        return <Result 
+            url={i.external_urls.spotify} 
+            image={ (i.images != null) ? i.images[0].url : i.album.images[0].url } 
+            artist={i.name} 
+        />
+    };
+
+    getGenreRow(i) {
+        <Result 
+            artist={i} 
+        />
     };
 
     render(){
@@ -121,29 +148,12 @@ export default class Tops extends React.Component {
         // iterate through items received and 
         const items = this.state.items.map((i) => {
             if (this.props.focus === "tracks") {
-                return <Result 
-                    url={i.external_urls.spotify} 
-                    image={i.album.images[0].url} 
-                    artist={i.artists[0].name} 
-                    name={i.name} 
-                />;
+                return this.getTracksRow(i);
             } else if (this.props.focus === "artists") {
-                console.log("artist: " + i);
-                return <Result 
-                    url={i.external_urls.spotify} 
-                    image={ (i.images != null) ? i.images[0].url : i.album.images[0].url } 
-                    artist={i.name} 
-                />;
+                return this.getArtistRow(i);
             } else if (this.props.focus === "genres") {
-                return <Result 
-                    artist={i} 
-                />;
-            } else {
-                return <React.Fragment>
-                    <div>What happened?</div>
-                </React.Fragment>
+                return this.getGenreRow(i);
             }
-            
         });
 
         // TODO: why am I doing this?
