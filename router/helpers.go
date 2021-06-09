@@ -56,6 +56,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 
 var (
 	PathSpotifyOauth     = "/spotify/oauth"
+	PathSpotifyCodeSwap  = "/token"
 	PathTopTracks        = "/tracks/top"
 	PathTopArtists       = "/artists/top"
 	PathTopArtistGenres  = "/artists/genres"
@@ -100,6 +101,11 @@ func runServer(ctx context.Context) {
 	// r.StaticFile("/favicon.ico", "./web/logos/favicon.ico")
 	// r.LoadHTMLGlob("web/templates/*")
 
+	r.GET(PathHome, func(c *gin.Context) {
+		// healthcheck
+		c.Status(200)
+	})
+
 	//r.GET(PathHome, handlerHome)
 	r.GET(PathSpotifyOauth, handlerOauth) // leave this one
 	r.GET(PathLogin, handlerLogin)        // remove
@@ -114,12 +120,13 @@ func runServer(ctx context.Context) {
 
 	// TODOEND
 
+	spot := r.Group("/spotify")
+	{
+		spot.POST(PathSpotifyCodeSwap, handlerSpotifyCodeSwap)
+	}
+
 	api := r.Group("/api/v1")
 	{
-		r.GET(PathHome, func(c *gin.Context) {
-			// healthcheck
-			c.Status(200)
-		})
 		api.GET(PathLogin, handlerLogin)
 		api.GET(PathRecommendations, handlerRecommendations)
 		api.GET(PathTopTracks, authenticate, handlerTopTracks)

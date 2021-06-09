@@ -42,6 +42,77 @@ var (
 	}
 )
 
+func handlerSpotifyCodeSwap(c *gin.Context) {
+	form := struct {
+		Code string `json:"code"`
+	}{}
+
+	err := c.Bind(&form)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).WithField("event", "code_swap_bind_err").Error("couldnt parse form")
+		c.Status(500)
+		return
+	}
+
+	if len(form.Code) < 1 {
+		logging.GetLogger(c).WithField("event", "invalid_form").Error("no code provided")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	tok, err := spotify.ExchangeOauthCode(c, form.Code)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("error handling spotify oauth")
+		c.Status(500)
+		return
+	}
+
+	c.Set(string(keys.ContextSpotifyAccessToken), tok.Access)
+	c.Set(string(keys.ContextSpotifyRefreshToken), tok.Refresh)
+
+	if len(tok.Access) < 1 {
+		logging.GetLogger(c).WithError(err).Error("no access token returned from spotify")
+		c.Status(500)
+		return
+	}
+
+	u, err := spotify.GetUser(c)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve userid from spotify")
+		c.Status(500)
+		return
+	}
+
+	err = u.Save(c)
+	if err != nil {
+		logging.GetLogger(c).WithField("info", *u).WithError(err).Error("couldnt save user")
+		c.Status(500)
+		return
+	}
+
+	if len(tok.Refresh) < 1 {
+		logging.GetLogger(c).Error("no refresh token returned from spotify")
+	}
+
+	logging.GetLogger(c).WithFields(logrus.Fields{
+		"event": "user_login",
+		"id":    u.ID,
+		"email": u.Email,
+	}).Info("user logged in successfully")
+
+	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
+	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+
+	host := c.Request.Referer()
+	red, _ := c.Cookie("redirect_url")
+	if len(red) > 0 {
+		host = fmt.Sprint(host, red)
+	}
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(host))
+	return
+}
+
 func handlerOauth(c *gin.Context) {
 	logger := logging.GetLogger(c)
 	code := c.Query(queryStringCode)
