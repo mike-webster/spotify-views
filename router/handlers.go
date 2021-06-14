@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -43,26 +44,26 @@ var (
 )
 
 func handlerSpotifyCodeSwap(c *gin.Context) {
-	form := struct {
-		Code string `json:"code"`
-	}{}
-
-	err := c.Bind(&form)
+	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		logging.GetLogger(c).WithError(err).WithField("event", "code_swap_bind_err").Error("couldnt parse form")
+		logging.GetLogger(c).WithField("event", "couldnt_read_body").Error(err)
 		c.Status(500)
 		return
 	}
 
-	if len(form.Code) < 1 {
+	// TODO: this is getting away from me... fix this later, I'm just
+	//       gonna get it working
+
+	if len(body) < 1 {
 		logging.GetLogger(c).WithField("event", "invalid_form").Error("no code provided")
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	tok, err := spotify.ExchangeOauthCode(c, form.Code)
+	code := strings.Replace(string(body), "code=", "", 1)
+	tok, err := spotify.ExchangeOauthCode(c, code)
 	if err != nil {
-		logging.GetLogger(c).WithError(err).Error("error handling spotify oauth")
+		logging.GetLogger(c).WithError(err).WithField("code", string(body)).Error("error handling spotify oauth")
 		c.Status(500)
 		return
 	}
@@ -100,9 +101,12 @@ func handlerSpotifyCodeSwap(c *gin.Context) {
 		"email": u.Email,
 	}).Info("user logged in successfully")
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
-	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, true)
+	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	// c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
+	// c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 
 	host := c.Request.Referer()
 	red, _ := c.Cookie("redirect_url")
@@ -165,9 +169,12 @@ func handlerOauth(c *gin.Context) {
 		"email": u.Email,
 	}).Info("user logged in successfully")
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
-	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
+	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	// c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
+	// c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	// val, err := c.Cookie("redirect_url")
 	// if err == nil && len(val) > 0 {
 	// 	c.Redirect(http.StatusTemporaryRedirect, val)
@@ -209,14 +216,8 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	//data := getTopTracksViewBag(trax)
-
-	if os.Getenv("EXP_REACT") == "1" {
-		c.JSON(200, trax)
-		return
-	}
-
-	c.HTML(200, "newtops.tmpl", trax)
+	c.JSON(200, trax)
+	return
 }
 
 func getTopTracksViewBag(trax *spotify.Tracks) interface{} {
@@ -271,7 +272,8 @@ func handlerTopArtists(c *gin.Context) {
 			// as the error value.  Set the cookie to the new value and redirect the user back to the
 			// same path  to start the process again with the new token.
 			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+				setCookie(c, cookieKeyToken, fmt.Sprint(err.Error()), false, false)
+				// c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtists)
 				return
 			}
@@ -284,44 +286,8 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	// type Result struct {
-	// 	Key        string
-	// 	Value      string
-	// 	Background string
-	// 	Width      int
-	// 	Height     int
-	// }
-
-	// type tempBag struct {
-	// 	Category string
-	// 	Type     string
-	// 	Opts     []string
-	// 	Results  []Result
-	// }
-
-	// r := []Result{}
-	// for _, i := range *artists {
-	// 	r = append(r, Result{
-	// 		Key:        "",
-	// 		Value:      i.Name,
-	// 		Background: i.FindImage().URL,
-	// 		Height:     i.FindImage().Height,
-	// 		Width:      i.FindImage().Width,
-	// 	})
-	// }
-	// data := tempBag{
-	// 	Category: "Artists",
-	// 	Type:     "",
-	// 	Opts:     []string{"Recent", "In Between", "Going Way Back"},
-	// 	Results:  r,
-	// }
-
-	if os.Getenv("EXP_REACT") == "1" {
-		c.JSON(200, *artists)
-		return
-	}
-
-	c.HTML(200, "newtops.tmpl", artists)
+	c.JSON(200, *artists)
+	return
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
@@ -375,7 +341,7 @@ func handlerUserLibraryTempo(c *gin.Context) {
 		vb.Items = append(vb.Items, item{Artist: artist, Title: title, Tempo: i.Value})
 	}
 
-	c.HTML(200, "library.tmpl", vb)
+	c.JSON(200, vb)
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
@@ -570,7 +536,8 @@ func handlerLogin(c *gin.Context) {
 		returl)
 
 	if len(c.Query("redirectUrl")) > 0 {
-		c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
+		setCookie(c, "redirect_url", c.Query("redirectUrl"), false, false)
+		// c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	}
 
 	logging.GetLogger(c).WithFields(logrus.Fields{
@@ -592,12 +559,7 @@ func handlerRecommendations(c *gin.Context) {
 		return
 	}
 
-	if os.Getenv("EXP_REACT") == "1" {
-		c.JSON(200, *recs)
-		return
-	}
-
-	c.HTML(200, "recommendations.tmpl", *recs)
+	c.JSON(200, *recs)
 }
 
 func handlerTest(c *gin.Context) {

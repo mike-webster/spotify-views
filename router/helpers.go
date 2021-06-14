@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,16 @@ import (
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
 	"github.com/psykhi/wordclouds"
+	"github.com/sirupsen/logrus"
 )
+
+func setCookie(c *gin.Context, key string, val string, secure bool, httpOnly bool) {
+	host := "localhost"
+	if os.Getenv("GO_ENV") != "production" {
+		host = ".spotify-views.com"
+	}
+	c.SetCookie(key, val, 3600, "/", host, secure, httpOnly)
+}
 
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
 	colors := []color.RGBA{
@@ -57,6 +67,7 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 var (
 	PathSpotifyOauth     = "/spotify/oauth"
 	PathSpotifyCodeSwap  = "/token"
+	PathSpotifyReturn    = "/oauthreturn"
 	PathTopTracks        = "/tracks/top"
 	PathTopArtists       = "/artists/top"
 	PathTopArtistGenres  = "/artists/genres"
@@ -91,6 +102,22 @@ func runServer(ctx context.Context) {
 	r.Use(setEnv)
 	r.Use(setDependencies)
 	r.Use(CORSMiddleware)
+	// if os.Getenv("GO_ENV") != "production" {
+	// 	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+	// 		// your custom format
+	// 		return fmt.Sprintf("%s - [%s] \n\t\"%s %s %s %d %s \"%s\" %s\"\n",
+	// 			param.ClientIP,
+	// 			param.TimeStamp.Format(time.RFC1123),
+	// 			param.Method,
+	// 			param.Path,
+	// 			param.Request.Proto,
+	// 			param.StatusCode,
+	// 			param.Latency,
+	// 			param.Request.UserAgent(),
+	// 			param.ErrorMessage,
+	// 		)
+	// 	}))
+	// }
 
 	// TODO: remove this once we're done migrating to the react app
 	// r.StaticFile("/sitemap", "./web/sitemap.xml")
@@ -123,6 +150,72 @@ func runServer(ctx context.Context) {
 	spot := r.Group("/spotify")
 	{
 		spot.POST(PathSpotifyCodeSwap, handlerSpotifyCodeSwap)
+		spot.GET(PathSpotifyReturn, func(c *gin.Context) {
+			lgr := logging.GetLogger(ctx)
+			code := c.Query(queryStringCode)
+
+			// TODO: query state verification
+			qErr := c.Query(queryStringError)
+			if len(qErr) > 0 {
+				// the user denied access
+				lgr.WithError(errors.New(qErr)).Error("user did not grant access")
+				c.Status(500)
+
+				return
+			}
+
+			tok, err := spotify.ExchangeOauthCode(c, code)
+			if err != nil {
+				lgr.WithError(err).Error("error handling spotify oauth")
+				c.Status(500)
+				return
+			}
+
+			c.Set(string(keys.ContextSpotifyAccessToken), tok.Access)
+			c.Set(string(keys.ContextSpotifyRefreshToken), tok.Refresh)
+
+			if len(tok.Access) < 1 {
+				lgr.WithError(err).Error("no access token returned from spotify")
+				c.Status(500)
+				return
+			}
+
+			u, err := spotify.GetUser(c)
+			if err != nil {
+				lgr.WithError(err).Error("couldnt retrieve userid from spotify")
+				c.Status(500)
+				return
+			}
+
+			err = u.Save(c)
+			if err != nil {
+				lgr.WithField("info", *u).WithError(err).Error("couldnt save user")
+				c.Status(500)
+				return
+			}
+
+			if len(tok.Refresh) < 1 {
+				lgr.Error("no refresh token returned from spotify")
+			}
+
+			lgr.WithFields(logrus.Fields{
+				"event": "user_login",
+				"id":    u.ID,
+				"email": u.Email,
+			}).Info("user logged in successfully")
+
+			setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
+			setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+			setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+
+			host := c.Request.Referer()
+			red, _ := c.Cookie("redirect_url")
+			if len(red) > 0 {
+				host = fmt.Sprint(host, red)
+			}
+			c.Redirect(http.StatusTemporaryRedirect, host)
+			return
+		})
 	}
 
 	api := r.Group("/api/v1")

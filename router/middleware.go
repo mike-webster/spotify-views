@@ -70,7 +70,12 @@ func setEnv(c *gin.Context) {
 	if strings.Contains(env.Host, "localhost") {
 		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://", env.Host, ":", env.Port, "/spotify/oauth"))
 	} else {
-		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://www.", env.Host, "/spotify/oauth"))
+		if os.Getenv("GO_ENV") == "uat" {
+			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://testing-api.", env.Host, "/spotify/oauthreturn"))
+		} else {
+			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://www.", env.Host, "/spotify/oauth"))
+		}
+
 	}
 
 	c.Next()
@@ -167,11 +172,30 @@ func parseLoggerValues(c *gin.Context) *logging.LoggerFields {
 }
 
 func CORSMiddleware(c *gin.Context) {
-	if os.Getenv("GO_ENV") != "production" {
+	genv := os.Getenv("GO_ENV")
+	if genv == "development" || genv == "testing" {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 	} else {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "spotify-views.com")
+		ref := c.Request.Referer()
+		if strings.HasSuffix(ref, "/") {
+			ref = ref[:len(ref)-1]
+		}
+		acceptable := false
+		domains := []string{"testing.spotify-views.com", "www.spotify-views.com", "spotify-views.com"}
+		for _, i := range domains {
+			if strings.Contains(ref, i) {
+				logging.GetLogger(c).WithField("domain", ref).Debug("cors: found acceptable match")
+				acceptable = true
+				break
+			}
+		}
+		if acceptable {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", ref)
+		} else {
+			logging.GetLogger(c).WithField("host", c.Request.Referer()).Debug("unknown request getting rejected")
+		}
 	}
+
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
