@@ -37,7 +37,7 @@ export default class Recommendations extends React.Component {
                 });
                 console.log(error);
                 document.cookie = "sv-authed=0;path=/";
-                window.location.href = "/";
+                // window.location.href = "/";
             }
         )
     };
