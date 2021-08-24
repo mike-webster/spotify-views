@@ -191,7 +191,7 @@ func handlerOauth(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, host)
 		return
 	}
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint("https://www.spotify-views.com/oauth?svauth=", tok.Access))
 }
 
 func handlerTopTracks(c *gin.Context) {

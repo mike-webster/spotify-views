@@ -68,12 +68,13 @@ func setEnv(c *gin.Context) {
 
 	// fix for local dev
 	if strings.Contains(env.Host, "localhost") {
-		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://", env.Host, ":", env.Port, "/spotify/oauth"))
+		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://api.", env.Host, ":", env.Port, "/spotify/oauth"))
 	} else {
 		if os.Getenv("GO_ENV") == "uat" {
+			// what the fuck is this?!
 			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://testing-api.", env.Host, "/spotify/oauthreturn"))
 		} else {
-			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://www.", env.Host, "/spotify/oauth"))
+			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://api.", env.Host, "/spotify/oauth"))
 		}
 
 	}

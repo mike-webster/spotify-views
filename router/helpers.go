@@ -20,8 +20,8 @@ import (
 
 func setCookie(c *gin.Context, key string, val string, secure bool, httpOnly bool) {
 	host := "localhost"
-	if os.Getenv("GO_ENV") != "production" {
-		host = ".spotify-views.com"
+	if os.Getenv("GO_ENV") == "production" {
+		host = "spotify-views.com"
 	}
 	c.SetCookie(key, val, 3600, "/", host, secure, httpOnly)
 }

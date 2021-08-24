@@ -1,5 +1,6 @@
 import React from 'react';
 import Home from './Home';
+import OAuth from './OAuth';
 import ActionSelect from './ActionSelect';
 import WordCloud from './WordCloud';
 import Library from './Library';
@@ -10,6 +11,7 @@ export default function Router() {
     <main>
       <Switch>
         <Route exact path="/" component={Home} />
+        <Route exact path="/oauth" component={OAuth} />
         <Route exact path="/discover" component={ActionSelect} />
         <Route exact path="/wordcloud" component={WordCloud} />
         <Route exact path="/library" component={Library} />
