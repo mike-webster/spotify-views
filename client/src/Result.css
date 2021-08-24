@@ -1,0 +1,36 @@
+
+.flex-table-item {
+    flex: 1 0 26%; 
+    margin: 5px;
+    padding: 5px;
+}
+
+.flex-table-item a {
+    color: black;
+}
+
+.album {
+    display: flex;
+    flex-direction: column;
+    border-color: var(--green);
+    border-width: 5px;
+    border-style: solid;
+    height: 160px;
+    width: 160px;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
+    justify-content: center;
+    align-items: center;
+}
+
+.blurry-back-white {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+.album-info {
+    width: 100%;
+    color: black;
+    text-align: center;
+}

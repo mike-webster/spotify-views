@@ -1,0 +1,17 @@
+.action-select {
+    border-width: 2px;
+    border-bottom-style: ridge;
+    text-align: center;
+}
+
+#action {
+    margin:auto;
+    margin-bottom: 16px;
+}
+
+.body {
+    height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+}

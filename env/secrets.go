@@ -58,7 +58,7 @@ func ParseSecrets(ctx context.Context) (*Secrets, error) {
 		return nil, errors.New("no go environment provided")
 	}
 
-	if !(env == "development" || env == "test" || env == "production") {
+	if !(env == "development" || env == "test" || env == "production" || env == "uat") {
 		return nil, errors.New(fmt.Sprint("unsupported GO_ENV :", env))
 	}
 

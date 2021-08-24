@@ -50,7 +50,7 @@ footer {
 
 .footer {
     flex-shrink: 0;
-    background-color: #333;
+    background-color: var(--gray);
     color: #FFF;
     width: 100%;
     text-align: center;

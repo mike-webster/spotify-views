@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -41,19 +43,92 @@ var (
 	}
 )
 
+func handlerSpotifyCodeSwap(c *gin.Context) {
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		logging.GetLogger(c).WithField("event", "couldnt_read_body").Error(err)
+		c.Status(500)
+		return
+	}
+
+	// TODO: this is getting away from me... fix this later, I'm just
+	//       gonna get it working
+
+	if len(body) < 1 {
+		logging.GetLogger(c).WithField("event", "invalid_form").Error("no code provided")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	code := strings.Replace(string(body), "code=", "", 1)
+	tok, err := spotify.ExchangeOauthCode(c, code)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).WithField("code", string(body)).Error("error handling spotify oauth")
+		c.Status(500)
+		return
+	}
+
+	c.Set(string(keys.ContextSpotifyAccessToken), tok.Access)
+	c.Set(string(keys.ContextSpotifyRefreshToken), tok.Refresh)
+
+	if len(tok.Access) < 1 {
+		logging.GetLogger(c).WithError(err).Error("no access token returned from spotify")
+		c.Status(500)
+		return
+	}
+
+	u, err := spotify.GetUser(c)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve userid from spotify")
+		c.Status(500)
+		return
+	}
+
+	err = u.Save(c)
+	if err != nil {
+		logging.GetLogger(c).WithField("info", *u).WithError(err).Error("couldnt save user")
+		c.Status(500)
+		return
+	}
+
+	if len(tok.Refresh) < 1 {
+		logging.GetLogger(c).Error("no refresh token returned from spotify")
+	}
+
+	logging.GetLogger(c).WithFields(logrus.Fields{
+		"event": "user_login",
+		"id":    u.ID,
+		"email": u.Email,
+	}).Info("user logged in successfully")
+
+	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, true)
+	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	// c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
+	// c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+
+	host := c.Request.Referer()
+	red, _ := c.Cookie("redirect_url")
+	if len(red) > 0 {
+		host = fmt.Sprint(host, red)
+	}
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(host))
+	return
+}
+
 func handlerOauth(c *gin.Context) {
 	logger := logging.GetLogger(c)
 	code := c.Query(queryStringCode)
 	// TODO: query state verification
 	qErr := c.Query(queryStringError)
 	if len(qErr) > 0 {
-		// the user is a fucker and they denied access
+		// the user denied access
 		logger.WithError(errors.New(qErr)).Error("user did not grant access")
 		c.Status(500)
 		return
 	}
 
-	//accessTok, refreshTok, err := spotify.HandleOauth(c, code)
 	tok, err := spotify.ExchangeOauthCode(c, code)
 	if err != nil {
 		logger.WithError(err).Error("error handling spotify oauth")
@@ -94,19 +169,33 @@ func handlerOauth(c *gin.Context) {
 		"email": u.Email,
 	}).Info("user logged in successfully")
 
-	c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
-	val, err := c.Cookie("redirect_url")
-	if err == nil && len(val) > 0 {
-		c.Redirect(http.StatusTemporaryRedirect, val)
+	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
+	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	// c.SetCookie(cookieKeyToken, fmt.Sprint(tok.Access), 3600, "/", strings.Replace(host, "https://", "", -1), false, false)
+	// c.SetCookie(cookieKeyRefresh, fmt.Sprint(tok.Refresh), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+	// val, err := c.Cookie("redirect_url")
+	// if err == nil && len(val) > 0 {
+	// 	c.Redirect(http.StatusTemporaryRedirect, val)
+	// }
+
+	// EXP_REACT is a feature flag that will be used to toggle new behavior
+	// without breaking the existing stuff.
+	if os.Getenv("EXP_REACT") == "1" {
+		host := c.Request.Referer()
+		red, _ := c.Cookie("redirect_url")
+		if len(red) > 0 {
+			host = fmt.Sprint(host, red)
+		}
+		c.Redirect(http.StatusTemporaryRedirect, host)
+		return
 	}
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint(PathTopTracks, "?", queryStringTimeRange, "=short_term"))
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprint("https://www.spotify-views.com/oauth?svauth=", tok.Access))
 }
 
 func handlerTopTracks(c *gin.Context) {
 	logger := logging.GetLogger(c)
-	logger.Debug("loading user's top tracks")
 
 	tr := c.Query(queryStringTimeRange)
 	if len(tr) > 0 {
@@ -127,9 +216,8 @@ func handlerTopTracks(c *gin.Context) {
 		return
 	}
 
-	data := getTopTracksViewBag(trax)
-
-	c.HTML(200, "newtops.tmpl", data)
+	c.JSON(200, trax)
+	return
 }
 
 func getTopTracksViewBag(trax *spotify.Tracks) interface{} {
@@ -184,7 +272,8 @@ func handlerTopArtists(c *gin.Context) {
 			// as the error value.  Set the cookie to the new value and redirect the user back to the
 			// same path  to start the process again with the new token.
 			if len(err.Error()) > 0 {
-				c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
+				setCookie(c, cookieKeyToken, fmt.Sprint(err.Error()), false, false)
+				// c.SetCookie(cookieKeyToken, fmt.Sprint(err.Error()), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
 				c.Redirect(http.StatusTemporaryRedirect, PathTopArtists)
 				return
 			}
@@ -197,39 +286,8 @@ func handlerTopArtists(c *gin.Context) {
 		return
 	}
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
-	}
-
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
-	for _, i := range *artists {
-		r = append(r, Result{
-			Key:        "",
-			Value:      i.Name,
-			Background: i.FindImage().URL,
-			Height:     i.FindImage().Height,
-			Width:      i.FindImage().Width,
-		})
-	}
-	data := tempBag{
-		Category: "Artists",
-		Type:     "",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
-	}
-
-	c.HTML(200, "newtops.tmpl", data)
+	c.JSON(200, *artists)
+	return
 }
 
 func handlerUserLibraryTempo(c *gin.Context) {
@@ -283,7 +341,7 @@ func handlerUserLibraryTempo(c *gin.Context) {
 		vb.Items = append(vb.Items, item{Artist: artist, Title: title, Tempo: i.Value})
 	}
 
-	c.HTML(200, "library.tmpl", vb)
+	c.JSON(200, vb)
 }
 
 func handlerTopArtistsGenres(c *gin.Context) {
@@ -302,37 +360,68 @@ func handlerTopArtistsGenres(c *gin.Context) {
 
 	genres := artists.GetGenres(c)
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
-	}
-
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range *genres {
-		r = append(r, Result{
-			Key:   i.Key,
-			Value: fmt.Sprint("( ", i.Value, ")"),
-		})
-	}
-	data := tempBag{
-		Category: "Genres",
-		Type:     "artists",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
+	c.JSON(200, *genres)
+	return
+}
+
+func handlerCombinedGenres(c *gin.Context) {
+	logger := logging.GetLogger(c)
+	tr := c.Query(queryStringTimeRange)
+	if len(tr) > 0 {
+		mv := ddlOpts[tr]
+		c.Set(string(keys.ContextSpotifyTimeRange), mv)
 	}
 
-	c.HTML(200, "newtops.tmpl", data)
+	artists, err := spotify.GetTopArtists(c)
+	if err != nil {
+		logging.GetLogger(c).WithError(err).Error("couldnt retrieve top artists from spotify")
+		c.Status(500)
+		return
+	}
+
+	genres := artists.GetGenres(c)
+
+	trax, err := spotify.GetTopTracks(c, spotify.GetTimeFrame(ddlOpts[tr]))
+	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
+		}
+
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
+		c.Status(500)
+		return
+	}
+
+	genres2, err := trax.GetGenres(c)
+	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrTokenExpired("")) {
+			// TODO: try to refresh token and repeat request
+			c.Redirect(http.StatusTemporaryRedirect, PathHome)
+			return
+		}
+
+		logger.WithError(err).Error("couldnt retrieve top tracks from spotify")
+		c.Status(500)
+		return
+	}
+
+	for _, g := range *genres2 {
+		i := genres.Contains(g.Key)
+		if i < 0 {
+			// doesn't exist yet
+			(*genres) = append((*genres), g)
+			continue
+		}
+
+		(*genres)[i].Value += g.Value
+	}
+
+	sort.Sort(sort.Reverse(genres))
+	c.JSON(200, *genres)
+	return
 }
 
 func handlerTopTracksGenres(c *gin.Context) {
@@ -370,37 +459,9 @@ func handlerTopTracksGenres(c *gin.Context) {
 		return
 	}
 
-	type Result struct {
-		Key        string
-		Value      string
-		Background string
-		Width      int
-		Height     int
-	}
-
-	type tempBag struct {
-		Category string
-		Type     string
-		Opts     []string
-		Results  []Result
-	}
-
-	r := []Result{}
 	sort.Sort(sort.Reverse(genres))
-	for _, i := range *genres {
-		r = append(r, Result{
-			Key:   i.Key,
-			Value: fmt.Sprint("( ", i.Value, ")"),
-		})
-	}
-	data := tempBag{
-		Category: "Genres",
-		Type:     "tracks",
-		Opts:     []string{"Recent", "In Between", "Going Way Back"},
-		Results:  r,
-	}
-
-	c.HTML(200, "newtops.tmpl", data)
+	c.JSON(200, *genres)
+	return
 }
 
 func handlerWordCloud(c *gin.Context) {
@@ -462,9 +523,7 @@ func handlerWordCloudData(c *gin.Context) {
 
 func handlerLogin(c *gin.Context) {
 	returl := keys.GetContextValue(c, keys.ContextSpotifyReturnURL)
-	logging.GetLogger(c).Warn(returl)
 	if returl == nil {
-		//c.HTML(500, "error.tmpl", nil)
 		c.Status(500)
 		return
 	}
@@ -477,7 +536,8 @@ func handlerLogin(c *gin.Context) {
 		returl)
 
 	if len(c.Query("redirectUrl")) > 0 {
-		c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
+		setCookie(c, "redirect_url", c.Query("redirectUrl"), false, false)
+		// c.SetCookie("redirect_url", c.Query("redirectUrl"), 600, "/", strings.Replace(host, "https://", "", -1), false, true)
 	}
 
 	logging.GetLogger(c).WithFields(logrus.Fields{
@@ -499,9 +559,7 @@ func handlerRecommendations(c *gin.Context) {
 		return
 	}
 
-	logging.GetLogger(c).WithField("event", "image_check").Info(recs.Tracks[0].Album.Images[0].URL)
-
-	c.HTML(200, "recommendations.tmpl", *recs)
+	c.JSON(200, *recs)
 }
 
 func handlerTest(c *gin.Context) {
@@ -576,7 +634,6 @@ func getLevel1Recs(ctx context.Context, seeds *spotify.Artists) (*map[string]int
 
 		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
-			fmt.Println("fuck3, ", err)
 			return nil, ctx
 		}
 
@@ -633,7 +690,7 @@ func getLevel2Recs(ctx context.Context, recs *spotify.Artists, orderedRecs *map[
 	// recs: the user's top spotify artists
 	// orderedRecs: all of the user's recommendations and how many times they were present in the process
 
-	// this method is fucked. I can't retrieve any additional info from spotify
+	// this method is foobar. I can't retrieve any additional info from spotify
 	// with the way I've been passing around this information.  I need the ids for
 	// api calls, and all I have is names.
 
@@ -795,7 +852,6 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	for _, i := range sumArtists {
 		res, err := i.GetRelatedArtists(ctx)
 		if err != nil {
-			fmt.Println("fuck3, ", err)
 			return nil, err
 		}
 
@@ -824,8 +880,6 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	topSeeds := sortedSeeds.Take(5)
 	seedIDs := []string{}
 
-	logging.GetLogger(ctx).WithField("top seeds", topSeeds).Info()
-
 	for _, i := range topSeeds {
 		seedIDs = append(seedIDs, i.Key)
 	}
@@ -834,6 +888,7 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("got recommendations")
 
 	return res, nil
 }

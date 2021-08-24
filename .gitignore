@@ -3,6 +3,7 @@ web/clouds/*
 /enc
 /secrets.yaml
 /client/node_modules/*
+/client/build/*
 
 # this was for a redis visualization tool
 rv.yml

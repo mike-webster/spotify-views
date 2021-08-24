@@ -10,14 +10,14 @@ import (
 )
 
 type LoggerFields struct {
-	UserAgent string
-	Referer string
+	UserAgent   string
+	Referer     string
 	QueryString string
-	Path string
-	Method string
-	ClientIP string
-	RequestID string
-	UserID string
+	Path        string
+	Method      string
+	ClientIP    string
+	RequestID   string
+	UserID      string
 }
 
 var _logger *logrus.Logger
@@ -27,7 +27,7 @@ func newLogger() *logrus.Logger {
 		return _logger
 	}
 	_logger := logrus.New()
-	if os.Getenv("GO_ENV") == "development" {
+	if os.Getenv("GO_ENV") != "production" {
 		_logger.Formatter = &logrus.TextFormatter{}
 	} else {
 		_logger.Formatter = &logrus.JSONFormatter{

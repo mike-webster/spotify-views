@@ -68,9 +68,15 @@ func setEnv(c *gin.Context) {
 
 	// fix for local dev
 	if strings.Contains(env.Host, "localhost") {
-		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://", env.Host, ":", env.Port, "/spotify/oauth"))
+		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("http://api.", env.Host, ":", env.Port, "/spotify/oauth"))
 	} else {
-		c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://www.", env.Host, "/spotify/oauth"))
+		if os.Getenv("GO_ENV") == "uat" {
+			// what the fuck is this?!
+			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://testing-api.", env.Host, "/spotify/oauthreturn"))
+		} else {
+			c.Set(string(keys.ContextSpotifyReturnURL), fmt.Sprint("https://api.", env.Host, "/spotify/oauth"))
+		}
+
 	}
 
 	c.Next()
@@ -107,11 +113,21 @@ func setDependencies(c *gin.Context) {
 		logging.GetLogger(c).WithError(err).Error("couldnt connect to database")
 	}
 
+	deps := spotify.Dependencies{
+		Client: &http.Client{},
+		DB:     db,
+	}
+
+	if os.Getenv("GO_ENV") == "development" {
+		ca, err := data.GetLiveCache(c)
+		if err != nil {
+			logging.GetLogger(c).WithError(err).Error("couldnt get redis cache")
+		}
+		deps.Cache = ca
+	}
+
 	c.Set(string(keys.ContextDependencies),
-		&spotify.Dependencies{
-			Client: &http.Client{},
-			DB:     db,
-		})
+		&deps)
 	c.Next()
 }
 
@@ -154,4 +170,52 @@ func parseLoggerValues(c *gin.Context) *logging.LoggerFields {
 		RequestID:   reqID.String(),
 		UserID:      uid,
 	}
+}
+
+func CORSMiddleware(c *gin.Context) {
+	genv := os.Getenv("GO_ENV")
+	if genv == "development" || genv == "testing" {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	} else {
+		ref := c.Request.Referer()
+		if strings.HasSuffix(ref, "/") {
+			ref = ref[:len(ref)-1]
+		}
+		acceptable := false
+		domains := []string{"testing.spotify-views.com", "www.spotify-views.com", "spotify-views.com"}
+		for _, i := range domains {
+			if strings.Contains(ref, i) {
+				logging.GetLogger(c).WithField("domain", ref).Debug("cors: found acceptable match")
+				acceptable = true
+				break
+			}
+		}
+		if acceptable {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", ref)
+		} else {
+			logging.GetLogger(c).WithField("host", c.Request.Referer()).Debug("unknown request getting rejected")
+		}
+	}
+
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+	if c.Request.Method == "OPTIONS" {
+		c.AbortWithStatus(204)
+		return
+	}
+
+	c.Next()
+}
+
+func setSpotifyUserID(c *gin.Context) {
+	uid, err := c.Cookie(cookieKeyID)
+	if err == nil {
+		if len(uid) > 0 {
+			c.Set(string(keys.ContextSpotifyUserID), uid)
+		}
+	}
+
+	c.Next()
 }

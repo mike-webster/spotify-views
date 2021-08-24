@@ -29,6 +29,7 @@ func GetDependencies(ctx context.Context) *Dependencies {
 type Dependencies struct {
 	Client HttpClient
 	DB     data.DB
+	Cache  data.Cache
 }
 
 type HttpClient interface {

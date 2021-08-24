@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -14,100 +15,16 @@ import (
 	"github.com/mike-webster/spotify-views/logging"
 	"github.com/mike-webster/spotify-views/spotify"
 	"github.com/psykhi/wordclouds"
+	"github.com/sirupsen/logrus"
 )
 
-// TODO: put together a yaml config to parse these for me
-// TODO: these context keys should all be the same type, not unique per package. abstract
-//       the keys package
-// func parseEnvironmentVariables(ctx context.Context) (map[interface{}]interface{}, error) {
-// 	type env struct {
-// 		ClientID     string `envconfig:"CLIENT_ID"`
-// 		ClientSecret string `envconfig:"CLIENT_SECRET"`
-// 		Host         string `envconfig:"HOST"`
-// 		Port         string `envconfig:"PORT"`
-// 		LyricsKey    string `envconfig:"LYRICS_KEY"`
-// 		DbHost       string `envconfig:"DB_HOST"`
-// 		DbUser       string `envconfig:"DB_USER"`
-// 		DbPass       string `envconfig:"DB_PASS"`
-// 		DbName       string `envconfig:"DB_NAME"`
-// 		SecKey       string `envconfig:"SEC_KEY"`
-// 		RedisHost    string `envconfig:"REDIS_HOST"`
-// 		RedisPort    string `envconfig:"REDIS_PORT"`
-// 		RedisPass    string `envconfig:"REDIS_PASS"`
-// 	}
-// 	e := env{}
-// 	envconfig.MustProcess("", &e)
-
-// 	ret := map[interface{}]interface{}{}
-// 	if len(e.ClientID) < 1 {
-// 		return nil, errors.New("no client id provided1")
-// 	}
-// 	ret[keys.ContextSpotifyClientID] = e.ClientID
-
-// 	if len(e.ClientSecret) < 1 {
-// 		return nil, errors.New("no client secret provided")
-// 	}
-// 	ret[keys.ContextSpotifyClientSecret] = e.ClientSecret
-
-// 	if len(e.Host) < 1 {
-// 		return nil, errors.New("no host provided")
-// 	}
-// 	ret[keys.ContextHost] = e.Host
-
-// 	if len(e.Port) < 1 {
-// 		return nil, errors.New("no port provided")
-// 	}
-// 	ret[keys.ContextPort] = e.Port
-
-// 	// fix for local dev
-// 	if strings.Contains(e.Host, "localhost") {
-// 		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("http://", e.Host, ":", e.Port, "/spotify/oauth")
-// 	} else {
-// 		ret[keys.ContextSpotifyReturnURL] = fmt.Sprint("https://www.", e.Host, "/spotify/oauth")
-// 	}
-
-// 	// TODO: Do we need this in the context? or just set for the main package?
-// 	// consider: the main goal here is to be able to verify everything is working
-// 	// on app start using the context returned from this method.
-
-// 	if len(e.LyricsKey) < 1 {
-// 		return nil, errors.New("no lyrics key provided")
-// 	}
-// 	ret[keys.ContextLyricsToken] = e.LyricsKey
-
-// 	if len(e.DbHost) < 1 {
-// 		return nil, errors.New("no db host provided")
-// 	}
-// 	ret[keys.ContextDbHost] = e.DbHost
-
-// 	if len(e.DbUser) < 1 {
-// 		return nil, errors.New("no db user provided")
-// 	}
-// 	ret[keys.ContextDbUser] = e.DbUser
-
-// 	if len(e.DbPass) < 1 {
-// 		return nil, errors.New("no db pass provided")
-// 	}
-// 	ret[keys.ContextDbPass] = e.DbPass
-
-// 	if len(e.DbName) < 1 {
-// 		return nil, errors.New("no db name provided")
-// 	}
-// 	ret[keys.ContextDatabase] = e.DbName
-
-// 	if len(e.SecKey) < 1 {
-// 		return nil, errors.New("no sec key provided")
-// 	}
-// 	ret[keys.ContextSecurityKey] = e.SecKey
-
-// 	ret["port"] = e.Port
-
-// 	ret["redis-host"] = os.Getenv("REDIS_HOST")
-// 	ret["redis-port"] = os.Getenv("REDIS_PORT")
-// 	ret["redis-pass"] = os.Getenv("REDIS_PASS")
-
-// 	return ret, nil
-// }
+func setCookie(c *gin.Context, key string, val string, secure bool, httpOnly bool) {
+	host := "localhost"
+	if os.Getenv("GO_ENV") == "production" {
+		host = "spotify-views.com"
+	}
+	c.SetCookie(key, val, 3600, "/", host, secure, httpOnly)
+}
 
 func generateWordCloud(ctx context.Context, filename string, wordCounts map[string]int) error {
 	colors := []color.RGBA{
@@ -149,10 +66,13 @@ func generateWordCloud(ctx context.Context, filename string, wordCounts map[stri
 
 var (
 	PathSpotifyOauth     = "/spotify/oauth"
+	PathSpotifyCodeSwap  = "/token"
+	PathSpotifyReturn    = "/oauthreturn"
 	PathTopTracks        = "/tracks/top"
 	PathTopArtists       = "/artists/top"
 	PathTopArtistGenres  = "/artists/genres"
 	PathTopTracksGenres  = "/tracks/genres"
+	PathCombinedGenres   = "/genres"
 	PathLogin            = "/login"
 	PathHome             = "/"
 	PathWordCloud        = "/wordcloud"
@@ -164,14 +84,6 @@ var (
 
 func Run(ctx context.Context) {
 	ctx = context.WithValue(ctx, keys.ContextMasterKey, os.Getenv("MASTER_KEY"))
-
-	// vals, err := parseEnvironmentVariables(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// for k, v := range vals {
-	// 	ctx = context.WithValue(ctx, k, v)
-	// }
 
 	if os.Getenv("GO_ENV") == "test" {
 		//testMethod(ctx)
@@ -186,30 +98,137 @@ func runServer(ctx context.Context) {
 	r.Use(recovery)
 	r.Use(setContextLogger)
 	r.Use(setTokens)
+	r.Use(setSpotifyUserID)
 	r.Use(setEnv)
 	r.Use(setDependencies)
+	r.Use(CORSMiddleware)
+	// if os.Getenv("GO_ENV") != "production" {
+	// 	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+	// 		// your custom format
+	// 		return fmt.Sprintf("%s - [%s] \n\t\"%s %s %s %d %s \"%s\" %s\"\n",
+	// 			param.ClientIP,
+	// 			param.TimeStamp.Format(time.RFC1123),
+	// 			param.Method,
+	// 			param.Path,
+	// 			param.Request.Proto,
+	// 			param.StatusCode,
+	// 			param.Latency,
+	// 			param.Request.UserAgent(),
+	// 			param.ErrorMessage,
+	// 		)
+	// 	}))
+	// }
 
-	r.StaticFile("/sitemap", "./web/sitemap.xml")
-	r.Static("/web/css", "./web")
-	r.Static("/web/js", "./web")
-	r.Static("/logos/", "./web/logos")
-	r.Static("/images/", "./web/images")
-	r.StaticFile("/favicon.ico", "./web/logos/favicon.ico")
-	r.LoadHTMLGlob("web/templates/*")
+	// TODO: remove this once we're done migrating to the react app
+	// r.StaticFile("/sitemap", "./web/sitemap.xml")
+	// r.Static("/web/css", "./web")
+	// r.Static("/web/js", "./web")
+	// r.Static("/logos/", "./web/logos")
+	// r.Static("/images/", "./web/images")
+	// r.StaticFile("/favicon.ico", "./web/logos/favicon.ico")
+	// r.LoadHTMLGlob("web/templates/*")
 
-	r.GET(PathHome, handlerHome)
-	r.GET(PathSpotifyOauth, handlerOauth)
-	r.GET(PathLogin, handlerLogin)
+	r.GET(PathHome, func(c *gin.Context) {
+		// healthcheck
+		c.Status(200)
+	})
 
-	r.GET(PathTopTracks, authenticate, handlerTopTracks)
-	r.GET(PathTopArtists, authenticate, handlerTopArtists)
-	r.GET(PathTopArtistGenres, authenticate, handlerTopArtistsGenres)
-	r.GET(PathTopTracksGenres, authenticate, handlerTopTracksGenres)
-	r.GET(PathWordCloud, authenticate, handlerWordCloud)
-	r.GET(PathWordCloudData, authenticate, handlerWordCloudData)
-	r.GET(PathUserLibraryTempo, authenticate, handlerUserLibraryTempo)
-	r.GET(PathRecommendations, authenticate, handlerRecommendations)
-	r.GET(PathTest, authenticate, handlerTest)
+	//r.GET(PathHome, handlerHome)
+	r.GET(PathSpotifyOauth, handlerOauth) // leave this one
+	r.GET(PathLogin, handlerLogin)        // remove
+
+	//r.GET(PathTopTracks, authenticate, handlerTopTracks)
+	//r.GET(PathWordCloud, authenticate, handlerWordCloud)
+	//r.GET(PathUserLibraryTempo, authenticate, handlerUserLibraryTempo)
+	//r.GET(PathRecommendations, authenticate, handlerRecommendations) // remove
+	if os.Getenv("GO_ENV") != "production" {
+		r.GET(PathTest, authenticate, handlerTest)
+	}
+
+	// TODOEND
+
+	spot := r.Group("/spotify")
+	{
+		spot.POST(PathSpotifyCodeSwap, handlerSpotifyCodeSwap)
+		spot.GET(PathSpotifyReturn, func(c *gin.Context) {
+			lgr := logging.GetLogger(ctx)
+			code := c.Query(queryStringCode)
+
+			// TODO: query state verification
+			qErr := c.Query(queryStringError)
+			if len(qErr) > 0 {
+				// the user denied access
+				lgr.WithError(errors.New(qErr)).Error("user did not grant access")
+				c.Status(500)
+
+				return
+			}
+
+			tok, err := spotify.ExchangeOauthCode(c, code)
+			if err != nil {
+				lgr.WithError(err).Error("error handling spotify oauth")
+				c.Status(500)
+				return
+			}
+
+			c.Set(string(keys.ContextSpotifyAccessToken), tok.Access)
+			c.Set(string(keys.ContextSpotifyRefreshToken), tok.Refresh)
+
+			if len(tok.Access) < 1 {
+				lgr.WithError(err).Error("no access token returned from spotify")
+				c.Status(500)
+				return
+			}
+
+			u, err := spotify.GetUser(c)
+			if err != nil {
+				lgr.WithError(err).Error("couldnt retrieve userid from spotify")
+				c.Status(500)
+				return
+			}
+
+			err = u.Save(c)
+			if err != nil {
+				lgr.WithField("info", *u).WithError(err).Error("couldnt save user")
+				c.Status(500)
+				return
+			}
+
+			if len(tok.Refresh) < 1 {
+				lgr.Error("no refresh token returned from spotify")
+			}
+
+			lgr.WithFields(logrus.Fields{
+				"event": "user_login",
+				"id":    u.ID,
+				"email": u.Email,
+			}).Info("user logged in successfully")
+
+			setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
+			setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
+			setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
+
+			host := c.Request.Referer()
+			red, _ := c.Cookie("redirect_url")
+			if len(red) > 0 {
+				host = fmt.Sprint(host, red)
+			}
+			c.Redirect(http.StatusTemporaryRedirect, host)
+			return
+		})
+	}
+
+	api := r.Group("/api/v1")
+	{
+		api.GET(PathLogin, handlerLogin)
+		api.GET(PathRecommendations, handlerRecommendations)
+		api.GET(PathTopTracks, authenticate, handlerTopTracks)
+		api.GET(PathTopArtists, authenticate, handlerTopArtists)
+		// api.GET(PathTopArtistGenres, authenticate, handlerTopArtistsGenres)
+		// api.GET(PathTopTracksGenres, authenticate, handlerTopTracksGenres)
+		api.GET(PathCombinedGenres, authenticate, handlerCombinedGenres)
+		api.GET(PathWordCloudData, authenticate, handlerWordCloudData)
+	}
 
 	env, err := env.ParseEnv()
 	if err != nil {
@@ -219,7 +238,7 @@ func runServer(ctx context.Context) {
 	r.Run(fmt.Sprint(":", env.Port))
 }
 
-// what the fuck is this? Why is it taking a gin context like a controller handler but
+// what the fudge is this? Why is it taking a gin context like a controller handler but
 // still getting invoked as if its a helper function?
 func refreshToken(ctx context.Context) (string, error) {
 	// need to refresh tokens and try again

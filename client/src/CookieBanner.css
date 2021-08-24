@@ -21,14 +21,12 @@
     border-width: 3px;
 }
 
-div {
-    width: 100%;
-}
 
 .cookie-back {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
     position: absolute;
+    width: 100%;
 }
 
 .cookie-close {
