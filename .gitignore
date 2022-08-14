@@ -7,3 +7,5 @@ web/clouds/*
 
 # this was for a redis visualization tool
 rv.yml
+
+.vscode
