@@ -56,8 +56,8 @@ export default class Home extends React.Component {
                             Using Spotify Views, you can take a dive into your music taste to discover more about the music you love! Log in with your existing
                             Spotify account and learn about your top tracks, artists and genres, get recommendations for new artists, and more!
                         </div>
-                        <CookieBanner />
                     </div>
+                    <CookieBanner />
                 </div>
             </Layout>
         );
