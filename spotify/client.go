@@ -67,16 +67,16 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 	resp, err := deps.Client.Do(req)
 	dur := time.Since(s)
 
+	if err != nil {
+		return nil, err
+	}
+
 	logger.WithFields(logrus.Fields{
 		"status":   resp.StatusCode,
 		"url":      req.URL,
 		"event":    "external_request",
 		"duration": dur.String(),
 	}).Info("making external request")
-
-	if err != nil {
-		return nil, err
-	}
 
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
