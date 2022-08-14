@@ -23,6 +23,12 @@ RELEASE_DATE ?=
 RELEASE_DIR := /home/spotify-views/
 API_RELEASE_DIR := releases-api
 
+CLIENT_RELEASE_DIR := releases-client
+
+.PHONY: get_date
+get_date:  
+	${date +%Y%m%d-%H%M}
+
 ## Encryption Util
 .PHONY: build_enc
 build_enc:
@@ -85,6 +91,24 @@ ifeq ($(GO_ENV),production)
 else
 	echo "cannot release unless GO_ENV set to 'production'"
 endif
+
+.PHONY: release_client
+release_client:
+ifeq ($(RELEASE_DATE),)
+	echo "cannot release without a date provided"
+	exit 1
+endif
+	# build
+	( cd client; npm run build )
+
+	# create directory
+	ssh -i ~/.ssh/id_rsa root@spotify-views.com mkdir $(RELEASE_DIR)$(CLIENT_RELEASE_DIR)/$(RELEASE_DATE)
+
+	# copy 
+	scp -r ./client/build/* root@spotify-views.com:$(RELEASE_DIR)$(CLIENT_RELEASE_DIR)/$(RELEASE_DATE)
+
+	# load into live
+	ssh root@spotify-views.com cp -rf $(RELEASE_DIR)$(CLIENT_RELEASE_DIR)/$(RELEASE_DATE)/* $(RELEASE_DIR)$(CLIENT_RELEASE_DIR)/live
 
 
 ## Docker tools
