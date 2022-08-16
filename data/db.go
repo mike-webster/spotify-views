@@ -29,6 +29,7 @@ func (db *LiveDB) Exec(ctx context.Context, sql string) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	res, err := conn.ExecContext(ctx, sql)
 	return res, err
