@@ -160,6 +160,10 @@ func setContextLogger(c *gin.Context) {
 func parseLoggerValues(c *gin.Context) *logging.LoggerFields {
 	reqID, _ := uuid.NewV4()
 	uid, _ := c.Cookie("svid")
+	ip := c.GetHeader("X-Forwarded-For")
+	if ip == "" {
+		ip = strings.Split(c.Request.RemoteAddr, ":")[0]
+	}
 	return &logging.LoggerFields{
 		UserAgent:   c.Request.UserAgent(),
 		Referer:     c.Request.Referer(),
@@ -167,6 +171,7 @@ func parseLoggerValues(c *gin.Context) *logging.LoggerFields {
 		Path:        c.Request.URL.Path,
 		Method:      c.Request.Method,
 		ClientIP:    c.ClientIP(),
+		NewIP:       ip,
 		RequestID:   reqID.String(),
 		UserID:      uid,
 	}

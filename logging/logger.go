@@ -18,6 +18,7 @@ type LoggerFields struct {
 	ClientIP    string
 	RequestID   string
 	UserID      string
+	NewIP       string
 }
 
 var _logger *logrus.Logger
@@ -47,6 +48,7 @@ func parseRequestValues(logger *logrus.Logger, lf *LoggerFields) *logrus.Entry {
 	entry = addNonEmptyField(lf.Path, "path", entry)
 	entry = addNonEmptyField(lf.Method, "method", entry)
 	entry = addNonEmptyField(lf.ClientIP, "client_ip", entry)
+	entry = addNonEmptyField(lf.NewIP, "new_ip", entry)
 	entry = addNonEmptyField(lf.RequestID, "request_id", entry)
 	entry = addNonEmptyField(lf.UserID, "user_id", entry)
 	return entry
