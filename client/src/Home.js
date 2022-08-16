@@ -43,8 +43,8 @@ export default class Home extends React.Component {
     render(){
         return (
             <Layout >
-                <div className="container">
-                    <div className="panel blurry-back-white">
+                <div className="container" style={{backgroundImage: `url('${process.env.REACT_APP_HOST}/assets/images/human-headphones-back.jpg')`}}>
+                    <div className="panel blurry-back-white" >
                         <div className="large-pad-bottom">
                             <h1 className="full-width center-text large-pad-top">Spotify Views</h1>
                             <p className="full-width center-text">Find More Of What You Love</p>

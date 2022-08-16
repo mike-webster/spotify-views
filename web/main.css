@@ -129,15 +129,6 @@ a:hover {
     margin-top: 50px;
 }
 
-.home-banner {
-    background-image: url('/images/human-headphones-back.jpg');
-    background-size: cover;
-    background-position: center center;
-    height: 600px;
-    display: flex;
-    flex-direction: column;
-}
-
 .blurry-back-white {
     background-color: rgba(255, 255, 255, 0.75);
 }
