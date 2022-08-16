@@ -219,3 +219,12 @@ func setSpotifyUserID(c *gin.Context) {
 
 	c.Next()
 }
+
+func logRequests(c *gin.Context) {
+	logger := logging.GetLogger(c)
+	// body, _ := ioutil.ReadAll(c.Request.Body)
+	logger.WithField("event", "incoming_request").Info()
+	// println(string(body))
+
+	// c.Request.Body = ioutil.NopCloser(bytes.NewReader(body))
+}

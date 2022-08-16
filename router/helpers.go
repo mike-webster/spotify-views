@@ -102,6 +102,7 @@ func runServer(ctx context.Context) {
 	r.Use(setEnv)
 	r.Use(setDependencies)
 	r.Use(CORSMiddleware)
+	r.Use(logRequests)
 	// if os.Getenv("GO_ENV") != "production" {
 	// 	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 	// 		// your custom format
