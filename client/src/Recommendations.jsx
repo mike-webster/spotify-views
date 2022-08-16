@@ -1,5 +1,6 @@
 import React from 'react';
 import './Shared.css';
+import './Recommendations.css';
 import Result from './Result.js';
 
 export default class Recommendations extends React.Component {
@@ -12,6 +13,9 @@ export default class Recommendations extends React.Component {
     };
 
     componentDidMount(){
+        let body  = document.getElementById('recommendations');
+        if (body) body.innerHTML = '<div id="loader" class="loader"></div>';
+        
         fetch(process.env.REACT_APP_API_BASE_URL + "/tracks/recommendations", {
             credentials: 'include'
         })
@@ -23,6 +27,9 @@ export default class Recommendations extends React.Component {
                 for (var i = 0; i < result.tracks.length; i++) {
                     tmp.push(result.tracks[i])
                 }
+
+                let body  = document.getElementById('recommendations');
+                body.innerHTML = '';
 
                 this.setState({
                     state: "success",
@@ -46,9 +53,7 @@ export default class Recommendations extends React.Component {
         // show the state of the page and footer while we're loading
         if (!this.state.items.length) {
             // TODO: make this better
-            return <div className="body">
-                <div>state: {this.state.state}</div>
-            </div>
+            return <div id="recommendations" className="body"></div>
         }
 
         // iterate through items received and 

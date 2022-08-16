@@ -15,6 +15,8 @@ export default class TopGenres extends React.Component {
     };
 
     componentDidMount() {
+        let body  = document.getElementById('topgenres');
+        if (body) body.innerHTML = '<div id="loader" class="loader"></div>';
         this.fetchGenres();
     };
 
@@ -38,6 +40,8 @@ export default class TopGenres extends React.Component {
                         totals[result[i].Key] += result[i].Value
                     }
                 }
+                let body  = document.getElementById('topgenres');
+                if (body) body.innerHTML = '';
 
                 this.setState({
                     state: "success",
@@ -68,9 +72,7 @@ export default class TopGenres extends React.Component {
         // show the state of the page and footer while we're loading
         if (this.state.items.length < 1) {
             // TODO: make this better
-            return <div className="body">
-                <div>state: {this.state.state}</div>
-            </div>
+            return <div className="body" id="topgenres"></div>
         }
 
         // iterate through items received and 

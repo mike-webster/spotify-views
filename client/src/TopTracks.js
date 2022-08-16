@@ -15,6 +15,8 @@ export default class TopTracks extends React.Component {
     };
 
     componentDidMount(){
+        let body  = document.getElementById('toptracks');
+        if (body) body.innerHTML = '<div id="loader" class="loader"></div>';
         this.fetchTopTracks();
     };
 
@@ -32,6 +34,10 @@ export default class TopTracks extends React.Component {
                 for (var i = 0; i < result.length; i++) {
                     tmp.push(result[i])
                 }
+
+                let body  = document.getElementById('toptracks');
+                if (body) body.innerHTML = '';
+
                 this.setState({
                     state: "success",
                     items: tmp,
@@ -63,9 +69,7 @@ export default class TopTracks extends React.Component {
         // show the state of the page and footer while we're loading
         if (this.state.items.length < 1) {
             // TODO: make this better
-            return <div className="body">
-                <div>state: {this.state.state}</div>
-            </div>
+            return <div  id="toptracks"  className="body"></div>
         }
 
         // iterate through items received and 

@@ -1,7 +1,7 @@
 import React from 'react';
 import './ActionSelect.css';
 import Layout from './Layout.js';
-import Recommendations from './Recommendations.js';
+import Recommendations from './Recommendations.jsx';
 import Tops from './Tops.js';
 
 export default class ActionSelect extends React.Component {

@@ -1,5 +1,6 @@
 import React from 'react';
 import Result from './Result.js';
+import './Tops.css';
 
 export default class TopArtists extends React.Component {
     constructor(props){
@@ -15,6 +16,8 @@ export default class TopArtists extends React.Component {
     };
 
     componentDidMount(){
+        let body  = document.getElementById('topartists');
+        if (body) body.innerHTML = '<div id="loader" class="loader"></div>';
         this.fetchTopArtists();
     };
 
@@ -32,6 +35,10 @@ export default class TopArtists extends React.Component {
                 for (var i = 0; i < result.length; i++) {
                     tmp.push(result[i])
                 }
+
+                let body  = document.getElementById('topartists');
+                if (body) body.innerHTML = '';
+
                 this.setState({
                     state: "success",
                     items: tmp,
@@ -63,9 +70,7 @@ export default class TopArtists extends React.Component {
         // show the state of the page and footer while we're loading
         if (this.state.items.length < 1 ) {
             // TODO: make this better
-            return <div className="body">
-                <div>state: {this.state.state}</div>
-            </div>
+            return <div id="topartists"  className="body"> </div>
         }
 
         // iterate through items received and 
