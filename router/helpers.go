@@ -134,8 +134,8 @@ func runServer(ctx context.Context) {
 	})
 
 	//r.GET(PathHome, handlerHome)
-	r.GET(PathSpotifyOauth, handlerOauth) // leave this one
-	r.GET(PathLogin, handlerLogin)        // remove
+	r.GET(PathSpotifyOauth, handlerOauth) // step 2 - code swap
+	r.GET(PathLogin, handlerLogin)        // step 1 - user permission
 
 	//r.GET(PathTopTracks, authenticate, handlerTopTracks)
 	//r.GET(PathWordCloud, authenticate, handlerWordCloud)
