@@ -888,7 +888,6 @@ func getRecommendations(ctx context.Context) (*spotify.Recommendation, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("got recommendations")
 
 	return res, nil
 }
