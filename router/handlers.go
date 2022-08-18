@@ -43,6 +43,7 @@ var (
 	}
 )
 
+// I... don't thinkn this is being used?
 func handlerSpotifyCodeSwap(c *gin.Context) {
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
@@ -77,6 +78,10 @@ func handlerSpotifyCodeSwap(c *gin.Context) {
 		return
 	}
 
+	if len(tok.Refresh) < 1 {
+		logging.GetLogger(c).Error("no refresh token returned from spotify")
+	}
+
 	u, err := spotify.GetUser(c)
 	if err != nil {
 		logging.GetLogger(c).WithError(err).Error("couldnt retrieve userid from spotify")
@@ -84,24 +89,22 @@ func handlerSpotifyCodeSwap(c *gin.Context) {
 		return
 	}
 
-	err = u.Save(c)
-	if err != nil {
-		logging.GetLogger(c).WithField("info", *u).WithError(err).Error("couldnt save user")
-		c.Status(500)
-		return
+	if u != nil {
+		err = u.Save(c)
+		if err != nil {
+			logging.GetLogger(c).WithField("info", *u).WithError(err).Error("couldnt save user")
+			// we don't want the inability to persist data to cause an outage for the user
+		}
+
+		logging.GetLogger(c).WithFields(logrus.Fields{
+			"event": "user_login",
+			"id":    u.ID,
+			"email": u.Email,
+		}).Info("user logged in successfully")
+
+		setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, true)
 	}
 
-	if len(tok.Refresh) < 1 {
-		logging.GetLogger(c).Error("no refresh token returned from spotify")
-	}
-
-	logging.GetLogger(c).WithFields(logrus.Fields{
-		"event": "user_login",
-		"id":    u.ID,
-		"email": u.Email,
-	}).Info("user logged in successfully")
-
-	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, true)
 	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
 	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
 	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)
@@ -128,9 +131,13 @@ func handlerOauth(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-
 	tok, err := spotify.ExchangeOauthCode(c, code)
 	if err != nil {
+		if reflect.TypeOf(err) == reflect.TypeOf(spotify.ErrAuthCodeExpired("")) {
+			logger.Info("oauth token expired")
+			c.Redirect(http.StatusTemporaryRedirect, c.Request.Referer())
+			return
+		}
 		logger.WithError(err).Error("error handling spotify oauth")
 		c.Status(500)
 		return
@@ -145,6 +152,10 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
+	if len(tok.Refresh) < 1 {
+		logger.Error("no refresh token returned from spotify")
+	}
+
 	u, err := spotify.GetUser(c)
 	if err != nil {
 		logger.WithError(err).Error("couldnt retrieve userid from spotify")
@@ -152,24 +163,21 @@ func handlerOauth(c *gin.Context) {
 		return
 	}
 
-	err = u.Save(c)
-	if err != nil {
-		logger.WithField("info", *u).WithError(err).Error("couldnt save user")
-		c.Status(500)
-		return
+	if u != nil {
+		err = u.Save(c)
+		if err != nil {
+			logger.WithField("info", *u).WithError(err).Error("couldnt save user")
+		}
+
+		logger.WithFields(logrus.Fields{
+			"event": "user_login",
+			"id":    u.ID,
+			"email": u.Email,
+		}).Info("user logged in successfully")
+
+		setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
 	}
 
-	if len(tok.Refresh) < 1 {
-		logger.Error("no refresh token returned from spotify")
-	}
-
-	logger.WithFields(logrus.Fields{
-		"event": "user_login",
-		"id":    u.ID,
-		"email": u.Email,
-	}).Info("user logged in successfully")
-
-	setCookie(c, cookieKeyID, fmt.Sprint(u.ID), false, false)
 	setCookie(c, cookieKeyToken, fmt.Sprint(tok.Access), false, false)
 	setCookie(c, cookieKeyRefresh, fmt.Sprint(tok.Refresh), false, false)
 	// c.SetCookie(cookieKeyID, fmt.Sprint(u.ID), 3600, "/", strings.Replace(host, "https://", "", -1), false, true)

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mike-webster/spotify-views/keys"
@@ -101,6 +102,8 @@ func makeRequest(ctx context.Context, req *http.Request) (*[]byte, error) {
 
 			time.Sleep(time.Duration(wait) * time.Second)
 			makeRequest(ctx, req)
+		} else if strings.Contains(string(b), "\"Authorization code expired\"") {
+			return nil, ErrAuthCodeExpired("")
 		}
 
 		logger.WithFields(logrus.Fields{
