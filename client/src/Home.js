@@ -50,7 +50,8 @@ export default class Home extends React.Component {
                             <p className="full-width center-text">Find More Of What You Love</p>
                         </div>
                         <div className="large-pad-v large-marg-top">
-                            <Button path="/login?redirectUrl=?authed" text="LOG IN WITH SPOTIFY" css="btn half-width center-text" />
+                            {/* <Button path="/login?redirectUrl=?authed" text="LOG IN WITH SPOTIFY" css="btn half-width center-text" /> */}
+                            <p>Apologies for the inconvenience! We are down for the short term while we make some upgrades to our service. Please check back later!</p>
                         </div>
                         <div className="med-pad-v large-pad-h">
                             Using Spotify Views, you can take a dive into your music taste to discover more about the music you love! Log in with your existing
