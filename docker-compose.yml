@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  api:
+    build: ./.
+    container_name: sv-api
+    environment:
+      - HOST=localhost
+      - PORT=3001
+      - GO_ENV=development
+      - MASTER_KEY=replace_this_with_secret
+    ports: 
+      - 3001:3001
+    networks:
+      - svnet
+  sv-db: 
+    image: mysql
+    container_name: sv-db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    networks:
+      - svnet
+    ports:
+      - 3306:3306
+    volumes:
+      - ./data/create_db.sql:/data/application/init.sql # this creates the db if it doesn't exist 
+networks:
+  svnet:
+    driver: bridge
