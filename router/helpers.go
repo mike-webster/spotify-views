@@ -120,28 +120,14 @@ func runServer(ctx context.Context) {
 	// 	}))
 	// }
 
-	// TODO: remove this once we're done migrating to the react app
-	// r.StaticFile("/sitemap", "./web/sitemap.xml")
-	// r.Static("/web/css", "./web")
-	// r.Static("/web/js", "./web")
-	// r.Static("/logos/", "./web/logos")
-	// r.Static("/images/", "./web/images")
-	// r.StaticFile("/favicon.ico", "./web/logos/favicon.ico")
-	// r.LoadHTMLGlob("web/templates/*")
-
 	r.GET(PathHome, func(c *gin.Context) {
 		// healthcheck
 		c.Status(200)
 	})
 
-	//r.GET(PathHome, handlerHome)
 	r.GET(PathSpotifyOauth, handlerOauth) // step 2 - code swap
 	r.GET(PathLogin, handlerLogin)        // step 1 - user permission
 
-	//r.GET(PathTopTracks, authenticate, handlerTopTracks)
-	//r.GET(PathWordCloud, authenticate, handlerWordCloud)
-	//r.GET(PathUserLibraryTempo, authenticate, handlerUserLibraryTempo)
-	//r.GET(PathRecommendations, authenticate, handlerRecommendations) // remove
 	if os.Getenv("GO_ENV") != "production" {
 		r.GET(PathTest, authenticate, handlerTest)
 	}
