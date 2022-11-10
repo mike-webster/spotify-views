@@ -1,6 +1,7 @@
 web/clouds/*
 /spotify-views
 /enc
+/enc.out
 /secrets.yaml
 /secrets.enc
 /master.key
