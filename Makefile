@@ -27,7 +27,7 @@ CLIENT_RELEASE_DIR := releases-client
 
 .PHONY: get_date
 get_date:  
-	${date +%Y%m%d-%H%M}
+	echo 'date +%Y%m%d-%H%M'
 
 ## Encryption Util
 .PHONY: build_enc
@@ -66,6 +66,8 @@ kill_prod:
 find_pid:
 	pgrep -a $(APP_NAME)
 
+# don't forget to include the master key inline ENV so the secrets can
+# be encrypted
 .PHONY: release_api
 release_api: test refresh_secrets
 	echo $(RELEASE_DATE)
@@ -92,6 +94,7 @@ else
 	echo "cannot release unless GO_ENV set to 'production'"
 endif
 
+# add NODE_OPTIONS=--openssl-legacy-provider if it fails
 .PHONY: release_client
 release_client:
 ifeq ($(RELEASE_DATE),)
@@ -232,5 +235,5 @@ client_start: client_build client_clear
 		--name $(CLIENT_NAME) \
 		-d \
 		-p $(CLIENT_PORT):$(CLIENT_PORT) \
-		-v /Users/webby/Code/spotify-views/client:/app \
+		-v /Users/mikewebster/Code/spotify-views/client:/app \
 		$(CLIENT_NAME)
