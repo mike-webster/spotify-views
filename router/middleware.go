@@ -107,15 +107,15 @@ func setDependencies(c *gin.Context) {
 		logging.GetLogger(c).Warn(fmt.Sprint("missing connection string info: ", report))
 	}
 
-	conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)
-	db, err := data.GetLiveDB(conStr)
-	if err != nil {
-		logging.GetLogger(c).WithError(err).Error("couldnt connect to database")
-	}
+	// conStr := fmt.Sprintf(`%s:%s@tcp(%s)/%s`, user, pass, host, dbname)
+	// db, err := data.GetLiveDB(conStr)
+	// if err != nil {
+	// 	logging.GetLogger(c).WithError(err).Error("couldnt connect to database")
+	// }
 
 	deps := spotify.Dependencies{
 		Client: &http.Client{},
-		DB:     db,
+		DB:     nil,
 	}
 
 	if os.Getenv("GO_ENV") == "development" {

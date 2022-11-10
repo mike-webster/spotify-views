@@ -45,27 +45,32 @@ func (u *User) Save(ctx context.Context) error {
 	query := `INSERT INTO users	(spotify_id, email) VALUES ('p1', 'p2')`
 	query = strings.Replace(query, "p1", u.ID, 1)
 	query = strings.Replace(query, "p2", u.Email, 1)
-	res, err := deps.DB.Exec(ctx, query)
-	if err != nil {
-		if strings.Contains(err.Error(), "Error 1062: Duplicate entry") {
-			logging.GetLogger(ctx).WithFields(map[string]interface{}{
-				"event": "duplicate_user_insert",
-				"email": u.Email,
-			}).Error()
-			return nil
-		}
-		return err
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
 
-	if rows > 0 {
-		return nil
-	}
+	logging.GetLogger(ctx).WithField("user", *u).Info("TODO: user tracking")
+	return nil
 
-	return errors.New(ErrNoRowsAffected)
+	// TODO: eventually restore this so I can track users
+	// res, err := deps.DB.Exec(ctx, query)
+	// if err != nil {
+	// 	if strings.Contains(err.Error(), "Error 1062: Duplicate entry") {
+	// 		logging.GetLogger(ctx).WithFields(map[string]interface{}{
+	// 			"event": "duplicate_user_insert",
+	// 			"email": u.Email,
+	// 		}).Error()
+	// 		return nil
+	// 	}
+	// 	return err
+	// }
+	// rows, err := res.RowsAffected()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if rows > 0 {
+	// 	return nil
+	// }
+
+	// return errors.New(ErrNoRowsAffected)
 }
 
 func GetUser(ctx context.Context) (*User, error) {
