@@ -6,7 +6,7 @@
     background-color: var(--gray);
     color: #FFF;
     height: 5vh;
-    align-items: center;
+    justify-content: space-between;
 }
 
 a {

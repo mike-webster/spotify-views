@@ -1,3 +1,8 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Disallow: /login
+Disallow: /library
+Disallow: /tracks
+Disallow: /artists
+Disallow: /discover
+Disallow: /wordcloud
